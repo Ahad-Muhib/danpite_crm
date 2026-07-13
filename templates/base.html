@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DANPITE CRM</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand">DANPITE CRM</div>
+      <!-- <div class="subtitle">Clients, invoices, payments, expenses, accounts</div> -->
+    </div>
+    <nav class="nav">
+      <a href="/">Dashboard</a>
+      <a href="/staff/">Staff</a>
+      <a href="/clients/">Clients</a>
+      <a href="/invoices/">Invoices</a>
+      <a href="/payments/">Payments</a>
+      <a href="/expenses/">Expenses</a>
+      <a href="/accounts/">Accounts</a>
+      {% if user.is_authenticated %}
+        <form action="{% url 'logout' %}" method="post" class="inline-form">
+          {% csrf_token %}
+          <button type="submit">Logout</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}">Login</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main class="container">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="message">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

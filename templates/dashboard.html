@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero">
+  <h1>Dashboard</h1>
+  <p>Quick snapshot of your CRM and financial activity.</p>
+</section>
+<section class="grid cards">
+  <article class="card"><strong>{{ staff_count }}</strong><span>Staff</span></article>
+  <article class="card"><strong>{{ client_count }}</strong><span>Clients</span></article>
+  <article class="card"><strong>{{ invoice_count }}</strong><span>Invoices</span></article>
+  <article class="card"><strong>{{ payment_count }}</strong><span>Payments</span></article>
+  <article class="card"><strong>{{ expense_count }}</strong><span>Expenses</span></article>
+  <article class="card"><strong>{{ accounts_total }}</strong><span>Account Balance</span></article>
+</section>
+<section class="grid cards">
+  <article class="card"><strong>{{ invoice_total }}</strong><span>Invoice Value</span></article>
+  <article class="card"><strong>{{ paid_total }}</strong><span>Payments Received</span></article>
+  <article class="card"><strong>{{ expense_total }}</strong><span>Total Expenses</span></article>
+</section>
+{% endblock %}

@@ -1,0 +1,215 @@
+DANPITE CRM - PROJECT BUILD LOG
+
+Date range: July 13-14, 2026
+Stack: Django + SQLite
+
+1. Goal and scope
+
+The request was to create a Django-based CRM with these core areas:
+login, staff creation, client listing, invoice management, payment tracking, expenses, and an accounts section. The user also asked that the project use the default SQLite database only and not be connected to any external database.
+
+The implementation was built as a small but complete Django project with a single app named crm. The project was intentionally kept simple and native to Django, so it would be easy to extend later without introducing unnecessary dependencies or infrastructure.
+
+2. Workspace discovery
+
+The workspace initially contained only a README file and no Django project structure. The first task was to inspect the folder contents and confirm that there was no existing app or configuration that needed to be preserved. That meant the work started from a clean slate.
+
+The Python environment was then configured for the workspace so the correct interpreter could be used for any Django commands, migrations, or validation. This step mattered because the workspace was on Windows and the environment needed to be explicit and repeatable.
+
+3. Package selection
+
+Only one dependency was added: Django. A requirements file was created so the project could be installed consistently with pip. No database driver package was added because SQLite is built into Python and Django supports it out of the box.
+
+The dependency choice was deliberate:
+- Django provides built-in authentication, admin, forms, ORM, and templating.
+- SQLite satisfies the requirement for a default local database.
+- No extra ORM tools, no REST framework, and no third-party UI packages were added because they were not required for this scope.
+
+4. Project scaffold
+
+The basic Django project files were created first:
+- manage.py as the command-line entry point
+- danpite_crm/settings.py for configuration
+- danpite_crm/urls.py for top-level routing
+- danpite_crm/wsgi.py and danpite_crm/asgi.py for deployment compatibility
+
+The project name was set to danpite_crm, and the app name was set to crm. The app was added to INSTALLED_APPS so Django would load its models, templates, and URL routing.
+
+5. SQLite configuration
+
+The database configuration in settings.py used Django’s default SQLite backend with a local db.sqlite3 file inside the project root. This was the key requirement from the user, and it was followed exactly.
+
+The settings also configured:
+- templates to load from the project-level templates directory
+- static files from the static directory
+- login and logout redirects for the authentication flow
+- default auto field behavior for models
+
+6. Authentication flow
+
+Login was implemented using Django’s built-in auth system. The URL configuration mapped:
+- /accounts/login/ to Django’s LoginView
+- /accounts/logout/ to Django’s LogoutView
+
+The login page uses a custom template so it fits the project’s UI instead of the plain default Django form. Authentication is required for the dashboard and the CRM screens, and staff-only areas are protected using Django’s user_passes_test decorator.
+
+One important detail is that the project does not hard-code a username or password. The login credentials come from a superuser or staff user that is created later using Django’s createsuperuser command or the staff creation screen.
+
+7. Data model design
+
+The crm app was designed with separate models for each area of the CRM so the data stays normalized and easy to manage.
+
+StaffProfile:
+This model extends Django’s built-in User model with CRM-specific staff fields such as phone, job title, and active status. The user relation is a one-to-one link, so each staff profile belongs to exactly one user account.
+
+Client:
+This model stores customer information such as name, company, email, phone, and address. It also stores a creation timestamp so new clients can be tracked over time.
+
+Invoice:
+This model links each invoice to a client and stores invoice number, issue date, due date, status, subtotal, tax, and notes. The invoice number is unique, which prevents duplicate invoice references. A total property was added to calculate subtotal plus tax without storing redundant data.
+
+Payment:
+This model links a payment to an invoice and stores amount, date paid, payment method, and optional reference text. The relation uses PROTECT so an invoice cannot be deleted while payments reference it.
+
+Expense:
+This model stores operational spending such as date, title, category, amount, and notes.
+
+AccountEntry:
+This model acts as a simple ledger for account movements. It stores whether an entry is income or expense, the title, date, amount, and description. A balance is computed in the view by adding income and subtracting expense entries.
+
+8. Forms
+
+Model forms were added for the main entities to simplify create screens:
+- StaffProfileForm
+- ClientForm
+- InvoiceForm
+- PaymentForm
+- ExpenseForm
+- AccountEntryForm
+
+The forms use date input widgets for date fields so the browser renders date pickers where supported. The staff form includes extra fields for username, names, email, and password because those fields belong to Django’s User model rather than the StaffProfile model itself.
+
+9. Views and behavior
+
+The project includes one dashboard view and separate list/create views for each CRM area.
+
+Dashboard:
+This view summarizes counts and totals for staff, clients, invoices, payments, expenses, and account balance. It uses Django ORM aggregation functions to compute totals.
+
+Staff views:
+The staff list is restricted to logged-in staff users. The create view builds both the Django User account and the associated StaffProfile object in one operation.
+
+Client views:
+Clients can be listed by any authenticated user, while client creation is staff-only.
+
+Invoice views:
+Invoices can be listed by any authenticated user. Invoice creation is staff-only.
+
+Payment views:
+Payments can be listed by any authenticated user. Payment creation is staff-only.
+
+Expense views:
+Expenses can be listed by any authenticated user. Expense creation is staff-only.
+
+Account views:
+Account entries can be listed by any authenticated user. New account entries are staff-only.
+
+This separation keeps the app simple while still reflecting a real CRM workflow: general users can inspect records, but staff members control creation.
+
+10. URL structure
+
+The root URL configuration includes the crm app and auth routes. The crm app has clean, direct URLs:
+- / for dashboard
+- /staff/ and /staff/new/
+- /clients/ and /clients/new/
+- /invoices/ and /invoices/new/
+- /payments/ and /payments/new/
+- /expenses/ and /expenses/new/
+- /accounts/ and /accounts/new/
+
+This makes the project easy to navigate and keeps the routing logic straightforward.
+
+11. Templates and layout
+
+The templates were built with a single base layout so the pages share the same header, navigation, and general styling.
+
+base.html:
+Provides the top navigation, login/logout links, flash message display, and a content block for page-specific content.
+
+dashboard.html:
+Shows summary cards for the main CRM metrics.
+
+registration/login.html:
+Provides a styled login page.
+
+crm templates:
+Each major feature has its own list page and form page. The list pages use tables. The form pages use a compact panel layout with the form rendered via {{ form.as_p }} for speed and maintainability.
+
+The templating approach was kept intentionally practical rather than over-engineered. It gives the project a working UI quickly while leaving room for later refinement.
+
+12. Styling
+
+A custom CSS file was added under static/css/style.css.
+
+The style direction is a dark dashboard theme with:
+- a radial background effect
+- glass-like panels
+- accent colors for links and buttons
+- responsive table wrapping
+- compact cards for dashboard metrics
+
+The goal was to avoid the plain default Django appearance and give the CRM a more intentional product feel without introducing a frontend framework.
+
+13. Admin registration
+
+All core models were registered in Django admin:
+- StaffProfile
+- Client
+- Invoice
+- Payment
+- Expense
+- AccountEntry
+
+This allows quick inspection and manual editing from /admin/ if needed.
+
+14. Initial migration and database setup
+
+After the models were created, Django’s makemigrations command generated the initial migration for the crm app. Then migrate was run so all tables were created in the default SQLite database.
+
+This was a critical validation step because it proved the model definitions, database settings, and app registration were all correct. The migration completed successfully, and Django’s system check reported no issues.
+
+15. Verification
+
+The project was validated in three ways:
+- static error checks on the new Python files
+- Django migrations applied successfully
+- Django system checks passed with zero issues
+
+During verification, Django also created bytecode cache files and the local SQLite database file. The cache files were removed afterward so the workspace stayed clean. The database file was intentionally kept because it is the default SQLite database required by the project.
+
+16. Documentation and housekeeping
+
+The README was expanded with setup instructions so the project can be run again later without guessing. A .gitignore file was added to ignore Python caches, virtual environments, and the SQLite database file if the repository is committed later.
+
+17. Final outcome
+
+The result is a working Django CRM starter project that includes:
+- login/logout
+- staff creation and listing
+- client listing and creation
+- invoice creation and listing
+- payment recording and listing
+- expense tracking
+- accounts/ledger section
+- SQLite-only persistence
+
+It is ready for local use after creating a superuser, running the server, and logging in.
+
+18. Practical next steps
+
+If you want to continue, the next improvements would usually be:
+- add edit/delete screens for each record type
+- make invoice totals update from line items instead of subtotal/tax inputs
+- add filters and search to the listing pages
+- add role-based permissions for non-staff users
+- add printable invoice output or PDF export
