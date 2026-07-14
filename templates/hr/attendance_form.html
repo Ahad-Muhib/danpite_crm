@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Record Attendance{% endblock %}
+{% block page_title %}Record Attendance{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:600px;">
+  <div class="crm-card-header"><span class="crm-card-title">Attendance Details</span></div>
+  <div class="p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label fw-medium">Employee</label>{{ form.employee }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Date</label>{{ form.date }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Status</label>{{ form.status }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Check In</label>{{ form.check_in }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Check Out</label>{{ form.check_out }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Record Attendance</button>
+        <a href="{% url 'attendance_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

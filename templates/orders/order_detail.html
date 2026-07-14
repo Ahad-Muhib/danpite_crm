@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}{{ order.order_number }}{% endblock %}
+{% block page_title %}{{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:860px;">
+  <div class="crm-card-header">
+    <span class="crm-card-title">Order: {{ order.order_number }}</span>
+    {% if order.status == 'delivered' %}<span class="badge bg-success fs-6">Delivered</span>
+    {% elif order.status == 'cancelled' %}<span class="badge bg-danger fs-6">Cancelled</span>
+    {% elif order.status == 'shipped' %}<span class="badge bg-info text-dark fs-6">Shipped</span>
+    {% elif order.status == 'processing' %}<span class="badge bg-primary fs-6">Processing</span>
+    {% else %}<span class="badge bg-warning text-dark fs-6">Pending</span>{% endif %}
+  </div>
+  <div class="p-4">
+    <div class="row g-3 mb-4">
+      <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">CLIENT</div><div class="fw-medium">{{ order.client.name|default:"—" }}</div></div>
+      <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">ORDER DATE</div><div>{{ order.order_date }}</div></div>
+      <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">DELIVERY DATE</div><div>{{ order.delivery_date|default:"—" }}</div></div>
+      <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">TOTAL</div><div class="fw-bold fs-5">{{ order.total }}</div></div>
+      <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">ASSIGNED TO</div><div>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</div></div>
+    </div>
+    {% if order.notes %}<div class="mb-4"><div class="text-muted mb-1" style="font-size:12px;">NOTES</div><div>{{ order.notes }}</div></div>{% endif %}
+    <table class="table table-bordered">
+      <thead class="table-light"><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr><td>{{ item.product_name }}</td><td>{{ item.quantity }}</td><td>{{ item.unit_price }}</td><td class="fw-medium">{{ item.total }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No items.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <div class="d-flex gap-2 mt-2">
+      <a href="{% url 'order_edit' order.pk %}" class="btn btn-primary btn-sm">Edit Order</a>
+      <a href="{% url 'order_delete' order.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete</a>
+      <a href="{% url 'order_list' %}" class="btn btn-outline-secondary btn-sm">← Back</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

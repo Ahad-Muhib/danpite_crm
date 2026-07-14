@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}{{ employee.name }}{% endblock %}
+{% block page_title %}{{ employee.name }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="crm-card">
+      <div class="p-4 text-center border-bottom">
+        {% if employee.avatar %}
+          <img src="{{ employee.avatar.url }}" class="rounded-circle mb-3" width="70" height="70" style="object-fit:cover;">
+        {% else %}
+          <div class="avatar-sm mx-auto mb-3" style="width:70px;height:70px;font-size:26px;background:#7c3aed;">{{ employee.name|slice:":1"|upper }}</div>
+        {% endif %}
+        <h5 class="fw-bold mb-0">{{ employee.name }}</h5>
+        {% if employee.designation %}<div class="text-muted" style="font-size:13px;">{{ employee.designation.title }}</div>{% endif %}
+        <div class="mt-2 d-flex gap-1 justify-content-center flex-wrap">
+          {% if employee.status == 'active' %}<span class="badge bg-success">Active</span>
+          {% elif employee.status == 'on_leave' %}<span class="badge bg-warning text-dark">On Leave</span>
+          {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+          {% if employee.is_new_hire %}<span class="badge bg-info text-dark">New Hire</span>{% endif %}
+        </div>
+      </div>
+      <ul class="list-group list-group-flush" style="font-size:13px;">
+        <li class="list-group-item d-flex gap-2"><i class="bi bi-credit-card text-muted"></i>{{ employee.employee_id }}</li>
+        <li class="list-group-item d-flex gap-2"><i class="bi bi-envelope text-muted"></i>{{ employee.email }}</li>
+        <li class="list-group-item d-flex gap-2"><i class="bi bi-shield text-muted"></i>{{ employee.get_role_display }}</li>
+        {% if employee.department %}<li class="list-group-item d-flex gap-2"><i class="bi bi-building text-muted"></i>{{ employee.department.name }}</li>{% endif %}
+        {% if employee.joining_date %}<li class="list-group-item d-flex gap-2"><i class="bi bi-calendar text-muted"></i>Joined {{ employee.joining_date }}</li>{% endif %}
+      </ul>
+      <div class="p-3 d-flex flex-column gap-2">
+        <a href="{% url 'employee_edit' employee.pk %}" class="btn btn-primary btn-sm">Edit Employee</a>
+        <a href="{% url 'employee_delete' employee.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8 d-flex flex-column gap-3">
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Leave History</span></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Type</th><th>From</th><th>To</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for l in leaves %}
+            <tr>
+              <td>{{ l.get_leave_type_display }}</td>
+              <td>{{ l.start_date }}</td><td>{{ l.end_date }}</td>
+              <td>
+                {% if l.status == 'approved' %}<span class="badge bg-success">Approved</span>
+                {% elif l.status == 'rejected' %}<span class="badge bg-danger">Rejected</span>
+                {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No leave records.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Recent Attendance</span></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for a in attendances %}
+            <tr>
+              <td>{{ a.date }}</td><td>{{ a.check_in|default:"—" }}</td><td>{{ a.check_out|default:"—" }}</td>
+              <td>
+                {% if a.status == 'present' %}<span class="badge bg-success">Present</span>
+                {% elif a.status == 'absent' %}<span class="badge bg-danger">Absent</span>
+                {% elif a.status == 'late' %}<span class="badge bg-warning text-dark">Late</span>
+                {% else %}<span class="badge bg-secondary">{{ a.get_status_display }}</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No attendance records.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

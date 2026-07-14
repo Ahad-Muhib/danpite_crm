@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}{{ client.name }}{% endblock %}
+{% block page_title %}{{ client.name }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="crm-card">
+      <div class="p-4 text-center border-bottom">
+        <div class="avatar-sm mx-auto mb-3" style="width:60px;height:60px;font-size:22px;background:#0891b2;">{{ client.name|slice:":1"|upper }}</div>
+        <h5 class="fw-bold mb-0">{{ client.name }}</h5>
+        {% if client.company %}<div class="text-muted" style="font-size:13px;">{{ client.company }}</div>{% endif %}
+        <div class="mt-2">
+          {% if client.status == 'active' %}<span class="badge bg-success">Active</span>
+          {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+        </div>
+      </div>
+      <ul class="list-group list-group-flush" style="font-size:13px;">
+        {% if client.email %}<li class="list-group-item d-flex gap-2"><i class="bi bi-envelope text-muted"></i>{{ client.email }}</li>{% endif %}
+        {% if client.mobile %}<li class="list-group-item d-flex gap-2"><i class="bi bi-phone text-muted"></i>{{ client.mobile }}</li>{% endif %}
+        {% if client.category %}<li class="list-group-item d-flex gap-2"><i class="bi bi-tag text-muted"></i>{{ client.get_category_display }}</li>{% endif %}
+        <li class="list-group-item d-flex gap-2"><i class="bi bi-calendar text-muted"></i>Since {{ client.created_at|date:"d M Y" }}</li>
+      </ul>
+      <div class="p-3 d-flex flex-column gap-2">
+        <a href="{% url 'client_edit' client.pk %}" class="btn btn-primary btn-sm">Edit Client</a>
+        <a href="{% url 'client_delete' client.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8 d-flex flex-column gap-3">
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Recent Invoices</span><a href="{% url 'invoice_list' %}" class="btn btn-sm btn-outline-primary">View All</a></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Code</th><th>Total</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for inv in invoices %}
+            <tr>
+              <td class="fw-medium text-primary">{{ inv.code }}</td>
+              <td>{{ inv.total }}</td>
+              <td class="text-muted">{{ inv.invoice_date }}</td>
+              <td>
+                {% if inv.status == 'paid' %}<span class="badge bg-success">Paid</span>
+                {% elif inv.status == 'overdue' %}<span class="badge bg-danger">Overdue</span>
+                {% elif inv.status == 'sent' %}<span class="badge bg-primary">Sent</span>
+                {% else %}<span class="badge bg-secondary">{{ inv.get_status_display }}</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No invoices.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Recent Orders</span><a href="{% url 'order_list' %}" class="btn btn-sm btn-outline-primary">View All</a></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Order #</th><th>Total</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for o in orders %}
+            <tr>
+              <td class="fw-medium text-primary">{{ o.order_number }}</td>
+              <td>{{ o.total }}</td>
+              <td class="text-muted">{{ o.order_date }}</td>
+              <td><span class="badge bg-secondary">{{ o.get_status_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No orders.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

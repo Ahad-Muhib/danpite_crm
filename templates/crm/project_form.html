@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Project{% endblock %}
+{% block page_title %}{{ action }} Project{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:680px;">
+  <div class="crm-card-header"><span class="crm-card-title">Project Details</span></div>
+  <div class="p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label fw-medium">Name <span class="text-danger">*</span></label>{{ form.name }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Status</label>{{ form.status }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Manager</label>{{ form.manager }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Start Date</label>{{ form.start_date }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">End Date</label>{{ form.end_date }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Description</label>{{ form.description }}</div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">{{ action }} Project</button>
+        <a href="{% url 'project_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

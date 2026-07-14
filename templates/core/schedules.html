@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Schedules{% endblock %}
+{% block page_title %}Schedules{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header">
+    <span class="crm-card-title">All Schedules</span>
+    <a href="{% url 'schedule_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Schedule</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Title</th><th>Start</th><th>End</th><th>Location</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for s in schedules %}
+        <tr>
+          <td class="fw-medium">{{ s.title }}</td>
+          <td class="text-muted">{{ s.start_datetime|date:"d M Y, H:i" }}</td>
+          <td class="text-muted">{{ s.end_datetime|date:"d M Y, H:i" }}</td>
+          <td>{{ s.location|default:"—" }}</td>
+          <td>
+            <a href="{% url 'schedule_edit' s.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'schedule_delete' s.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-5">No schedules yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

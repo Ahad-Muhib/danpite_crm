@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Projects{% endblock %}
+{% block page_title %}Projects{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header">
+    <span class="crm-card-title">All Projects</span>
+    <a href="{% url 'project_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>New Project</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>Manager</th><th>Start</th><th>End</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for p in projects %}
+        <tr>
+          <td class="fw-medium">{{ p.name }}</td>
+          <td>{{ p.manager.get_full_name|default:p.manager.username|default:"—" }}</td>
+          <td class="text-muted">{{ p.start_date|default:"—" }}</td>
+          <td class="text-muted">{{ p.end_date|default:"—" }}</td>
+          <td>
+            {% if p.status == 'completed' %}<span class="badge bg-success">Completed</span>
+            {% elif p.status == 'in_progress' %}<span class="badge bg-primary">In Progress</span>
+            {% elif p.status == 'on_hold' %}<span class="badge bg-warning text-dark">On Hold</span>
+            {% else %}<span class="badge bg-secondary">Not Started</span>{% endif %}
+          </td>
+          <td>
+            <a href="{% url 'project_edit' p.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'project_delete' p.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-5">No projects yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

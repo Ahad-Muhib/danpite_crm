@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Schedule{% endblock %}
+{% block page_title %}{{ action }} Schedule{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:680px;">
+  <div class="crm-card-header"><span class="crm-card-title">Schedule Details</span></div>
+  <div class="p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label fw-medium">Title <span class="text-danger">*</span></label>{{ form.title }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Start Date & Time</label>{{ form.start_datetime }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">End Date & Time</label>{{ form.end_datetime }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Location</label>{{ form.location }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Description</label>{{ form.description }}</div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">{{ action }} Schedule</button>
+        <a href="{% url 'schedule_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

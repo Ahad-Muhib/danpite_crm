@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Task{% endblock %}
+{% block page_title %}{{ action }} Task{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:680px;">
+  <div class="crm-card-header"><span class="crm-card-title">Task Details</span></div>
+  <div class="p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label fw-medium">Title <span class="text-danger">*</span></label>{{ form.title }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Priority</label>{{ form.priority }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Status</label>{{ form.status }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Assigned To</label>{{ form.assigned_to }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Due Date</label>{{ form.due_date }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Description</label>{{ form.description }}</div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">{{ action }} Task</button>
+        <a href="{% url 'task_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

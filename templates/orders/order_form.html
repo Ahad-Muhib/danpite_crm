@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Order{% endblock %}
+{% block page_title %}{{ action }} Order{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:680px;">
+  <div class="crm-card-header"><span class="crm-card-title">Order Details</span></div>
+  <div class="p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label fw-medium">Client</label>{{ form.client }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Status</label>{{ form.status }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Total</label>{{ form.total }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Delivery Date</label>{{ form.delivery_date }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">{{ action }} Order</button>
+        <a href="{% url 'order_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

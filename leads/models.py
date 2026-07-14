@@ -1,0 +1,46 @@
+from django.contrib.auth.models import User
+from django.db import models
+
+
+class LeadContact(models.Model):
+    SOURCE = [('none', 'None'), ('cold_call', 'Cold Call'), ('email', 'Email'), ('website', 'Website'), ('social', 'Social Media'), ('referral', 'Referral'), ('other', 'Other')]
+    salutation = models.CharField(max_length=10, blank=True)
+    name = models.CharField(max_length=200)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=30)
+    company = models.CharField(max_length=200, blank=True)
+    website = models.URLField(blank=True)
+    address = models.TextField(blank=True)
+    lead_source = models.CharField(max_length=30, choices=SOURCE, default='none')
+    lead_owner = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='owned_leads')
+    added_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='added_leads')
+    is_converted = models.BooleanField(default=False)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Deal(models.Model):
+    PIPELINE = [('sales', 'Sales'), ('marketing', 'Marketing'), ('support', 'Support')]
+    STAGE = [('generated', 'Generated'), ('qualified', 'Qualified'), ('presentation', 'Presentation'), ('negotiation', 'Negotiation'), ('won', 'Won'), ('lost', 'Lost')]
+    lead_contact = models.ForeignKey(LeadContact, null=True, blank=True, on_delete=models.SET_NULL, related_name='deals')
+    deal_name = models.CharField(max_length=200)
+    pipeline = models.CharField(max_length=30, choices=PIPELINE, default='sales')
+    stage = models.CharField(max_length=30, choices=STAGE, default='generated')
+    value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=10, default='USD')
+    close_date = models.DateField(null=True, blank=True)
+    deal_agent = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='agent_deals')
+    deal_watcher = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='watched_deals')
+    category = models.CharField(max_length=100, blank=True)
+    description = models.TextField(blank=True)
+    auto_convert = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.deal_name
+

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Tasks{% endblock %}
+{% block page_title %}Tasks{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header">
+    <form class="d-flex gap-2 search-form" method="get">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search tasks..." style="width:220px;">
+      <button class="btn btn-sm btn-outline-secondary">Search</button>
+    </form>
+    <a href="{% url 'task_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Task</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>#</th><th>Title</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Due Date</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for t in tasks %}
+        <tr>
+          <td class="text-muted">{{ t.pk }}</td>
+          <td class="fw-medium">{{ t.title }}</td>
+          <td>
+            {% if t.priority == 'high' %}<span class="badge bg-danger">High</span>
+            {% elif t.priority == 'medium' %}<span class="badge bg-warning text-dark">Medium</span>
+            {% else %}<span class="badge bg-secondary">Low</span>{% endif %}
+          </td>
+          <td>
+            {% if t.status == 'completed' %}<span class="badge bg-success">Completed</span>
+            {% elif t.status == 'in_progress' %}<span class="badge bg-primary">In Progress</span>
+            {% else %}<span class="badge bg-secondary">Pending</span>{% endif %}
+          </td>
+          <td>{{ t.assigned_to.get_full_name|default:t.assigned_to.username|default:"—" }}</td>
+          <td class="text-muted">{{ t.due_date|default:"—" }}</td>
+          <td>
+            <a href="{% url 'task_edit' t.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'task_delete' t.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete this task?')"><i class="bi bi-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-5">No tasks found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

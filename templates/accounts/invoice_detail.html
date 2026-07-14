@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}{{ invoice.code }}{% endblock %}
+{% block page_title %}{{ invoice.code }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="crm-card">
+      <div class="crm-card-header">
+        <span class="crm-card-title">Invoice Details</span>
+        {% if invoice.status == 'paid' %}<span class="badge bg-success fs-6">Paid</span>
+        {% elif invoice.status == 'overdue' %}<span class="badge bg-danger fs-6">Overdue</span>
+        {% elif invoice.status == 'sent' %}<span class="badge bg-primary fs-6">Sent</span>
+        {% else %}<span class="badge bg-secondary fs-6">{{ invoice.get_status_display }}</span>{% endif %}
+      </div>
+      <div class="p-4">
+        <div class="row g-3 mb-4">
+          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">CLIENT</div><div class="fw-medium">{{ invoice.client.name|default:"—" }}</div></div>
+          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">PROJECT</div><div>{{ invoice.project|default:"—" }}</div></div>
+          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">INVOICE DATE</div><div>{{ invoice.invoice_date }}</div></div>
+          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">DUE DATE</div><div>{{ invoice.due_date|default:"—" }}</div></div>
+        </div>
+        <table class="table table-bordered mb-4">
+          <thead class="table-light"><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+          <tbody>
+            {% for item in items %}
+            <tr><td>{{ item.description }}</td><td>{{ item.quantity }}</td><td>{{ item.unit_price }}</td><td class="fw-medium">{{ item.total }}</td></tr>
+            {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No line items.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        <div class="d-flex flex-column align-items-end gap-1" style="font-size:14px;">
+          <div class="d-flex gap-5"><span class="text-muted">Subtotal</span><span class="fw-medium">{{ invoice.total }}</span></div>
+          <div class="d-flex gap-5"><span class="text-muted">Tax</span><span>{{ invoice.tax }}%</span></div>
+          <div class="d-flex gap-5"><span class="text-muted">Discount</span><span>{{ invoice.discount }}%</span></div>
+          <hr class="w-100 my-1">
+          <div class="d-flex gap-5 fs-5 fw-bold"><span>Total</span><span>{{ invoice.total }}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4 d-flex flex-column gap-3">
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Actions</span></div>
+      <div class="p-3 d-flex flex-column gap-2">
+        <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-primary btn-sm">Edit Invoice</a>
+        <a href="{% url 'payment_create' %}" class="btn btn-success btn-sm">Record Payment</a>
+        <a href="{% url 'invoice_delete' invoice.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete Invoice</a>
+      </div>
+    </div>
+    {% if payments %}
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Payments</span></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Amount</th><th>Date</th><th>Method</th></tr></thead>
+          <tbody>
+            {% for p in payments %}
+            <tr><td class="fw-medium">{{ p.amount }}</td><td class="text-muted">{{ p.payment_date }}</td><td>{{ p.get_method_display }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
