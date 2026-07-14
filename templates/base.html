@@ -7,36 +7,48 @@
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div>
-      <div class="brand">DANPITE CRM</div>
-      <!-- <div class="subtitle">Clients, invoices, payments, expenses, accounts</div> -->
-    </div>
-    <nav class="nav">
-      <a href="/">Dashboard</a>
-      <a href="/staff/">Staff</a>
-      <a href="/clients/">Clients</a>
-      <a href="/invoices/">Invoices</a>
-      <a href="/payments/">Payments</a>
-      <a href="/expenses/">Expenses</a>
-      <a href="/accounts/">Accounts</a>
-      {% if user.is_authenticated %}
-        <form action="{% url 'logout' %}" method="post" class="inline-form">
-          {% csrf_token %}
-          <button type="submit">Logout</button>
-        </form>
-      {% else %}
-        <a href="{% url 'login' %}">Login</a>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">DANPITE CRM</div>
+        <!-- <div class="subtitle">Clients, invoices, payments, expenses, accounts</div> -->
+      </div>
+      <nav class="nav">
+        <a href="/">Dashboard</a>
+        <a href="/clients/">Clients</a>
+        <a href="/payments/">Payments</a>
+        <details class="nav-dropdown">
+          <summary>HR</summary>
+          <div class="nav-dropdown-menu">
+            <a href="/staff/">Staff</a>
+          </div>
+        </details>
+        <details class="nav-dropdown">
+          <summary>Accounts</summary>
+          <div class="nav-dropdown-menu">
+            <a href="/invoices/">Invoices</a>
+            <a href="/expenses/">Expenses</a>
+            <a href="/accounts/">Accounts</a>
+          </div>
+        </details>
+        {% if user.is_authenticated %}
+          <form action="{% url 'logout' %}" method="post" class="inline-form">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Login</a>
+        {% endif %}
+      </nav>
+    </aside>
+    <main class="container">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="message">{{ message }}</div>
+        {% endfor %}
       {% endif %}
-    </nav>
-  </header>
-  <main class="container">
-    {% if messages %}
-      {% for message in messages %}
-        <div class="message">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-    {% block content %}{% endblock %}
-  </main>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 </body>
 </html>
