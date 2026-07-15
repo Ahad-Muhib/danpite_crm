@@ -16,6 +16,7 @@ class Client(models.Model):
     sub_category = models.CharField(max_length=100, blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default='active')
     account_manager = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='managed_clients')
+    lead_contact = models.ForeignKey('leads.LeadContact', null=True, blank=True, on_delete=models.SET_NULL, related_name='converted_clients')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

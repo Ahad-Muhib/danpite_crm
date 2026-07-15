@@ -6,7 +6,7 @@ from .models import Deal, LeadContact
 class LeadContactForm(forms.ModelForm):
     class Meta:
         model = LeadContact
-        fields = ['salutation', 'name', 'email', 'phone', 'company', 'website', 'address', 'lead_source', 'lead_owner', 'notes']
+        fields = ['salutation', 'name', 'email', 'phone', 'company', 'website', 'address', 'lead_source', 'contact_type', 'lead_owner', 'notes']
         widgets = {
             'salutation': forms.Select(attrs={'class': 'form-select'}, choices=[('', '--'), ('Mr.', 'Mr.'), ('Ms.', 'Ms.'), ('Mrs.', 'Mrs.'), ('Dr.', 'Dr.')]),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -15,7 +15,8 @@ class LeadContactForm(forms.ModelForm):
             'company': forms.TextInput(attrs={'class': 'form-control'}),
             'website': forms.URLInput(attrs={'class': 'form-control'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'lead_source': forms.Select(attrs={'class': 'form-select'}),
+            'lead_source': forms.TextInput(attrs={'class': 'form-control', 'list': 'lead-source-options', 'placeholder': 'Type or choose a source'}),
+            'contact_type': forms.Select(attrs={'class': 'form-select'}),
             'lead_owner': forms.Select(attrs={'class': 'form-select'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -36,4 +37,3 @@ class DealForm(forms.ModelForm):
             'deal_agent': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
-

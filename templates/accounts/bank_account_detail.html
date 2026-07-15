@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Bank Account - {{ account.bank_name }}{% endblock %}
+{% block page_title %}Bank Account Details{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:700px;">
+  <div class="crm-card-header">
+    <span class="crm-card-title">{{ account.bank_name }}</span>
+    <div class="d-flex gap-2">
+      <a href="{% url 'bank_account_edit' account.pk %}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil me-1"></i>Edit</a>
+      <a href="{% url 'bank_account_list' %}" class="btn btn-sm btn-outline-secondary">Back to List</a>
+    </div>
+  </div>
+  <div class="p-4">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Bank Name</label>
+        <div class="fw-medium">{{ account.bank_name }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Account Name</label>
+        <div class="fw-medium">{{ account.account_name }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Account Number</label>
+        <div><code>{{ account.account_number }}</code></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Account Type</label>
+        <div><span class="badge bg-light text-dark border">{{ account.get_account_type_display }}</span></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Branch</label>
+        <div>{{ account.branch|default:"—" }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Routing Number</label>
+        <div>{{ account.routing_number|default:"—" }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Opening Balance</label>
+        <div class="fw-medium">{{ account.opening_balance }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Status</label>
+        <div>{% if account.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Created At</label>
+        <div>{{ account.created_at|date:"d M Y H:i" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

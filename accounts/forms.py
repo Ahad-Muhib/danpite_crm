@@ -4,11 +4,12 @@ from .models import BankAccount, Expense, Invoice, Payment
 
 
 class InvoiceForm(forms.ModelForm):
+    client_name = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Type client name...'}), label='Client')
+
     class Meta:
         model = Invoice
-        fields = ['client', 'project', 'total', 'tax', 'discount', 'invoice_date', 'due_date', 'status', 'notes']
+        fields = ['project', 'total', 'tax', 'discount', 'invoice_date', 'due_date', 'status', 'notes']
         widgets = {
-            'client': forms.Select(attrs={'class': 'form-select'}),
             'project': forms.TextInput(attrs={'class': 'form-control'}),
             'total': forms.NumberInput(attrs={'class': 'form-control'}),
             'tax': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -19,20 +20,33 @@ class InvoiceForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get('instance')
+        super().__init__(*args, **kwargs)
+        if instance and instance.client:
+            self.fields['client_name'].initial = instance.client.name
+
 
 class PaymentForm(forms.ModelForm):
+    client_name = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Type client name...'}), label='Client')
+
     class Meta:
         model = Payment
-        fields = ['invoice', 'client', 'amount', 'payment_date', 'method', 'reference', 'notes']
+        fields = ['invoice', 'amount', 'payment_date', 'method', 'reference', 'notes']
         widgets = {
             'invoice': forms.Select(attrs={'class': 'form-select'}),
-            'client': forms.Select(attrs={'class': 'form-select'}),
             'amount': forms.NumberInput(attrs={'class': 'form-control'}),
             'payment_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'method': forms.Select(attrs={'class': 'form-select'}),
             'reference': forms.TextInput(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get('instance')
+        super().__init__(*args, **kwargs)
+        if instance and instance.client:
+            self.fields['client_name'].initial = instance.client.name
 
 
 class ExpenseForm(forms.ModelForm):

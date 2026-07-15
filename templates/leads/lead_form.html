@@ -14,8 +14,17 @@
         <div class="col-md-6"><label class="form-label fw-medium">Phone <span class="text-danger">*</span></label>{{ form.phone }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Company</label>{{ form.company }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Website</label>{{ form.website }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Lead Source</label>{{ form.lead_source }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Added By</label>{{ form.lead_owner }}</div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Lead Source</label>
+          {{ form.lead_source }}
+          <datalist id="lead-source-options">
+            {% for option in lead_source_options %}
+            <option value="{{ option }}"></option>
+            {% endfor %}
+          </datalist>
+        </div>
+        <div class="col-md-6"><label class="form-label fw-medium">Type</label>{{ form.contact_type }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Lead Owner</label>{{ form.lead_owner }}</div>
         <div class="col-12"><label class="form-label fw-medium">Address</label>{{ form.address }}</div>
         <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
       </div>

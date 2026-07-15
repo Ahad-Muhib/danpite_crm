@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Add Expense{% endblock %}
-{% block page_title %}Add Expense{% endblock %}
+{% block title %}{{ action|default:"Add" }} Expense{% endblock %}
+{% block page_title %}{{ action|default:"Add" }} Expense{% endblock %}
 {% block content %}
 <div class="crm-card" style="max-width:680px;">
   <div class="crm-card-header"><span class="crm-card-title">Expense Details</span></div>
@@ -16,7 +16,7 @@
         <div class="col-12"><label class="form-label fw-medium">Description</label>{{ form.description }}</div>
       </div>
       <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary">Add Expense</button>
+        <button type="submit" class="btn btn-primary">{{ action|default:"Add" }} Expense</button>
         <a href="{% url 'expense_list' %}" class="btn btn-outline-secondary">Cancel</a>
       </div>
     </form>

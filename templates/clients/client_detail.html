@@ -72,6 +72,32 @@
         </table>
       </div>
     </div>
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Deals</span><a href="{% url 'deal_list' %}" class="btn btn-sm btn-outline-primary">View All</a></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Deal Name</th><th>Pipeline</th><th>Stage</th><th>Value</th><th>Close Date</th></tr></thead>
+          <tbody>
+            {% for d in deals %}
+            <tr>
+              <td class="fw-medium">{{ d.deal_name }}</td>
+              <td><span class="badge bg-light text-dark border">{{ d.get_pipeline_display }}</span></td>
+              <td>
+                {% if d.stage == 'won' %}<span class="badge bg-success">Won</span>
+                {% elif d.stage == 'lost' %}<span class="badge bg-danger">Lost</span>
+                {% elif d.stage == 'negotiation' %}<span class="badge bg-warning text-dark">Negotiation</span>
+                {% else %}<span class="badge bg-primary">{{ d.get_stage_display }}</span>{% endif %}
+              </td>
+              <td class="fw-medium">{{ d.currency }} {{ d.value }}</td>
+              <td class="text-muted">{{ d.close_date|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-3">No deals.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

@@ -5,7 +5,16 @@
 <div class="crm-card">
   <div class="crm-card-header">
     <span class="crm-card-title">Bank Accounts</span>
-    <a href="{% url 'bank_account_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Bank Account</a>
+    <div class="d-flex gap-2 align-items-center">
+      <form method="get" class="d-flex gap-2 align-items-center">
+        <select name="status" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+        </select>
+      </form>
+      <a href="{% url 'bank_account_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Bank Account</a>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
@@ -19,8 +28,19 @@
           <td><span class="badge bg-light text-dark border">{{ a.get_account_type_display }}</span></td>
           <td>{{ a.branch|default:"—" }}</td>
           <td class="fw-medium">{{ a.opening_balance }}</td>
-          <td>{% if a.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
-          <td><a href="{% url 'bank_account_delete' a.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a></td>
+          <td>
+            <form method="post" action="{% url 'bank_account_toggle' a.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm {% if a.is_active %}btn-success{% else %}btn-secondary{% endif %}" title="Click to toggle status">
+                {% if a.is_active %}Active{% else %}Inactive{% endif %}
+              </button>
+            </form>
+          </td>
+          <td>
+            <a href="{% url 'bank_account_detail' a.pk %}" class="btn btn-sm btn-outline-info btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'bank_account_edit' a.pk %}" class="btn btn-sm btn-outline-warning btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'bank_account_delete' a.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')" title="Delete"><i class="bi bi-trash"></i></a>
+          </td>
         </tr>
         {% empty %}
         <tr><td colspan="8" class="text-center text-muted py-5">No bank accounts added.</td></tr>

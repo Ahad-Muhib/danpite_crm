@@ -8,7 +8,7 @@
     <form method="post">
       {% csrf_token %}
       <div class="row g-3">
-        <div class="col-md-6"><label class="form-label fw-medium">Client</label>{{ form.client }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Client</label>{{ form.client_name }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Project</label>{{ form.project }}</div>
         <div class="col-md-4"><label class="form-label fw-medium">Invoice Date <span class="text-danger">*</span></label>{{ form.invoice_date }}</div>
         <div class="col-md-4"><label class="form-label fw-medium">Due Date</label>{{ form.due_date }}</div>

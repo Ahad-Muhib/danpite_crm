@@ -45,7 +45,8 @@ def client_detail(request, pk):
     client = get_object_or_404(Client, pk=pk)
     invoices = client.invoices.all()[:5]
     orders = client.orders.all()[:5]
-    return render(request, 'clients/client_detail.html', {'client': client, 'invoices': invoices, 'orders': orders})
+    deals = client.lead_contact.deals.all() if client.lead_contact else []
+    return render(request, 'clients/client_detail.html', {'client': client, 'invoices': invoices, 'orders': orders, 'deals': deals})
 
 
 @login_required

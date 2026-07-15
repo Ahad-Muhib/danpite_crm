@@ -21,7 +21,11 @@
           <td class="fw-medium text-danger">{{ e.amount }}</td>
           <td class="text-muted">{{ e.expense_date }}</td>
           <td>{{ e.created_by.username|default:"—" }}</td>
-          <td><a href="{% url 'expense_delete' e.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a></td>
+          <td>
+            <a href="{% url 'expense_detail' e.pk %}" class="btn btn-sm btn-outline-info btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'expense_edit' e.pk %}" class="btn btn-sm btn-outline-warning btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'expense_delete' e.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')" title="Delete"><i class="bi bi-trash"></i></a>
+          </td>
         </tr>
         {% empty %}
         <tr><td colspan="6" class="text-center text-muted py-5">No expenses recorded.</td></tr>

@@ -4,39 +4,80 @@
 {% block content %}
 <div class="crm-card">
   <div class="crm-card-header">
-    <form class="d-flex gap-2 search-form" method="get">
-      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search leads..." style="width:200px;">
+    <form class="d-flex gap-2 search-form" method="get" id="lead-filter-form">
+      <select name="type" id="lead-type-filter" class="form-select form-select-sm" style="width:120px;">
+        <option value="">All</option>
+        <option value="lead" {% if contact_type == 'lead' %}selected{% endif %}>Lead</option>
+        <option value="deal" {% if contact_type == 'deal' %}selected{% endif %}>Deal</option>
+      </select>
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Start typing to search" style="width:240px;">
       <select name="source" class="form-select form-select-sm" style="width:160px;">
         <option value="">All Sources</option>
-        <option value="cold_call" {% if source == 'cold_call' %}selected{% endif %}>Cold Call</option>
-        <option value="email" {% if source == 'email' %}selected{% endif %}>Email</option>
-        <option value="website" {% if source == 'website' %}selected{% endif %}>Website</option>
-        <option value="social" {% if source == 'social' %}selected{% endif %}>Social Media</option>
-        <option value="referral" {% if source == 'referral' %}selected{% endif %}>Referral</option>
+        {% for option in source_options %}
+        <option value="{{ option }}" {% if source == option %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
       </select>
       <button class="btn btn-sm btn-outline-secondary">Filter</button>
     </form>
-    <a href="{% url 'lead_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Lead</a>
+    <form method="post" id="lead-bulk-form" class="d-flex gap-2">
+      {% csrf_token %}
+      <input type="hidden" name="bulk_action" id="bulk-action-input" value="">
+      <select name="bulk_action_select" id="bulk-action-select" class="form-select form-select-sm" style="width:150px;">
+        <option value="">Actions</option>
+        <option value="convert">Convert Selected</option>
+        <option value="delete">Delete Selected</option>
+      </select>
+      <button type="submit" class="btn btn-sm btn-outline-secondary">Apply</button>
+      <a href="{% url 'lead_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Lead Contact</a>
+    </form>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Source</th><th>Owner</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead>
+        <tr>
+          <th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-leads" aria-label="Select all leads"></th>
+          <th>Id</th>
+          <th>Contact Name</th>
+          <th>Phone Number</th>
+          <th>Email</th>
+          <th>Lead Owner</th>
+          <th>Added By</th>
+          <th>Creation Time</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for l in leads %}
         <tr>
+          <td><input type="checkbox" name="selected_leads" value="{{ l.pk }}" class="form-check-input lead-checkbox" form="lead-bulk-form" aria-label="Select lead {{ l.pk }}"></td>
+          <td>{{ l.pk }}</td>
           <td>
             <div class="d-flex align-items-center gap-2">
-              <div class="avatar-sm" style="background:#6366f1;">{{ l.name|slice:":1"|upper }}</div>
               <span class="fw-medium">{{ l.name }}</span>
             </div>
           </td>
+          <td>{{ l.phone|default:"—" }}</td>
           <td class="text-muted">{{ l.email|default:"—" }}</td>
-          <td>{{ l.company|default:"—" }}</td>
-          <td><span class="badge bg-light text-dark border">{{ l.get_lead_source_display }}</span></td>
-          <td>{{ l.lead_owner.username|default:"—" }}</td>
           <td>
-            {% if l.is_converted %}<span class="badge bg-success">Converted</span>
-            {% else %}<span class="badge bg-info text-dark">Active</span>{% endif %}
+            {% if l.lead_owner %}
+              {{ l.lead_owner.get_full_name|default:l.lead_owner.username }}
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if l.added_by %}
+              {{ l.added_by.get_full_name|default:l.added_by.username }}
+              {% if l.added_by == request.user %}<span class="text-muted">(It's you)</span>{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-muted">{{ l.created_at|date:"d-m-Y H:i" }}</td>
+          <td>
+            <form method="post" action="{% url 'lead_toggle_active' l.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm {% if l.is_converted %}btn-success{% else %}btn-info text-dark{% endif %}" title="Click to toggle">
+                {% if l.is_converted %}Client{% else %}Active{% endif %}
+              </button>
+            </form>
           </td>
           <td>
             <a href="{% url 'lead_detail' l.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
@@ -48,10 +89,44 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center text-muted py-5">No leads found.</td></tr>
+        <tr><td colspan="10" class="text-center text-muted py-5">No leads found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+<script>
+  const selectAllLeads = document.getElementById('select-all-leads');
+  const leadCheckboxes = document.querySelectorAll('.lead-checkbox');
+  const leadFilterForm = document.getElementById('lead-filter-form');
+  const leadTypeFilter = document.getElementById('lead-type-filter');
+  const bulkForm = document.getElementById('lead-bulk-form');
+  const bulkActionSelect = document.getElementById('bulk-action-select');
+  const bulkActionInput = document.getElementById('bulk-action-input');
+
+  leadTypeFilter?.addEventListener('change', () => {
+    leadFilterForm.submit();
+  });
+
+  selectAllLeads?.addEventListener('change', () => {
+    leadCheckboxes.forEach((checkbox) => {
+      checkbox.checked = selectAllLeads.checked;
+    });
+  });
+
+  bulkForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const selected = document.querySelectorAll('.lead-checkbox:checked').length;
+    const action = bulkActionSelect.value;
+    if (!selected || !action) {
+      alert('Select at least one lead contact and choose an action.');
+      return;
+    }
+    if (action === 'delete' && !confirm('Delete selected lead contacts?')) {
+      return;
+    }
+    bulkActionInput.value = action;
+    bulkForm.submit();
+  });
+</script>
 {% endblock %}

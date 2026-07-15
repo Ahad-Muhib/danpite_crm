@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
+from clients.models import Client
+
 from .forms import BankAccountForm, ExpenseForm, InvoiceForm, PaymentForm
 from .models import BankAccount, Expense, Invoice, Payment
 
@@ -25,6 +27,10 @@ def invoice_create(request):
     if form.is_valid():
         obj = form.save(commit=False)
         obj.created_by = request.user
+        client_name = form.cleaned_data.get('client_name', '').strip()
+        if client_name:
+            client, _ = Client.objects.get_or_create(name=client_name)
+            obj.client = client
         obj.save()
         messages.success(request, 'Invoice created.')
         return redirect('invoice_list')
@@ -36,7 +42,14 @@ def invoice_edit(request, pk):
     obj = get_object_or_404(Invoice, pk=pk)
     form = InvoiceForm(request.POST or None, instance=obj)
     if form.is_valid():
-        form.save()
+        obj = form.save(commit=False)
+        client_name = form.cleaned_data.get('client_name', '').strip()
+        if client_name:
+            client, _ = Client.objects.get_or_create(name=client_name)
+            obj.client = client
+        else:
+            obj.client = None
+        obj.save()
         messages.success(request, 'Invoice updated.')
         return redirect('invoice_list')
     return render(request, 'accounts/invoice_form.html', {'form': form, 'action': 'Edit'})
@@ -70,10 +83,38 @@ def payment_create(request):
     if form.is_valid():
         obj = form.save(commit=False)
         obj.created_by = request.user
+        client_name = form.cleaned_data.get('client_name', '').strip()
+        if client_name:
+            client, _ = Client.objects.get_or_create(name=client_name)
+            obj.client = client
         obj.save()
         messages.success(request, 'Payment recorded.')
         return redirect('payment_list')
-    return render(request, 'accounts/payment_form.html', {'form': form})
+    return render(request, 'accounts/payment_form.html', {'form': form, 'action': 'Record'})
+
+
+@login_required
+def payment_detail(request, pk):
+    obj = get_object_or_404(Payment, pk=pk)
+    return render(request, 'accounts/payment_detail.html', {'payment': obj})
+
+
+@login_required
+def payment_edit(request, pk):
+    obj = get_object_or_404(Payment, pk=pk)
+    form = PaymentForm(request.POST or None, instance=obj)
+    if form.is_valid():
+        obj = form.save(commit=False)
+        client_name = form.cleaned_data.get('client_name', '').strip()
+        if client_name:
+            client, _ = Client.objects.get_or_create(name=client_name)
+            obj.client = client
+        else:
+            obj.client = None
+        obj.save()
+        messages.success(request, 'Payment updated.')
+        return redirect('payment_list')
+    return render(request, 'accounts/payment_form.html', {'form': form, 'action': 'Edit'})
 
 
 @login_required
@@ -99,7 +140,24 @@ def expense_create(request):
         obj.save()
         messages.success(request, 'Expense recorded.')
         return redirect('expense_list')
-    return render(request, 'accounts/expense_form.html', {'form': form})
+    return render(request, 'accounts/expense_form.html', {'form': form, 'action': 'Add'})
+
+
+@login_required
+def expense_detail(request, pk):
+    obj = get_object_or_404(Expense, pk=pk)
+    return render(request, 'accounts/expense_detail.html', {'expense': obj})
+
+
+@login_required
+def expense_edit(request, pk):
+    obj = get_object_or_404(Expense, pk=pk)
+    form = ExpenseForm(request.POST or None, request.FILES or None, instance=obj)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Expense updated.')
+        return redirect('expense_list')
+    return render(request, 'accounts/expense_form.html', {'form': form, 'action': 'Edit'})
 
 
 @login_required
@@ -111,8 +169,13 @@ def expense_delete(request, pk):
 
 @login_required
 def bank_account_list(request):
+    status = request.GET.get('status', '')
     qs = BankAccount.objects.all()
-    return render(request, 'accounts/bank_accounts.html', {'accounts': qs})
+    if status == 'active':
+        qs = qs.filter(is_active=True)
+    elif status == 'inactive':
+        qs = qs.filter(is_active=False)
+    return render(request, 'accounts/bank_accounts.html', {'accounts': qs, 'status': status})
 
 
 @login_required
@@ -122,7 +185,34 @@ def bank_account_create(request):
         form.save()
         messages.success(request, 'Bank account added.')
         return redirect('bank_account_list')
-    return render(request, 'accounts/bank_account_form.html', {'form': form})
+    return render(request, 'accounts/bank_account_form.html', {'form': form, 'action': 'Add'})
+
+
+@login_required
+def bank_account_detail(request, pk):
+    obj = get_object_or_404(BankAccount, pk=pk)
+    return render(request, 'accounts/bank_account_detail.html', {'account': obj})
+
+
+@login_required
+def bank_account_edit(request, pk):
+    obj = get_object_or_404(BankAccount, pk=pk)
+    form = BankAccountForm(request.POST or None, instance=obj)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Bank account updated.')
+        return redirect('bank_account_list')
+    return render(request, 'accounts/bank_account_form.html', {'form': form, 'action': 'Edit'})
+
+
+@login_required
+def bank_account_toggle(request, pk):
+    obj = get_object_or_404(BankAccount, pk=pk)
+    obj.is_active = not obj.is_active
+    obj.save()
+    status = "activated" if obj.is_active else "deactivated"
+    messages.success(request, f'Bank account {status}.')
+    return redirect('bank_account_list')
 
 
 @login_required

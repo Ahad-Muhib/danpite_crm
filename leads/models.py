@@ -4,6 +4,9 @@ from django.db import models
 
 class LeadContact(models.Model):
     SOURCE = [('none', 'None'), ('cold_call', 'Cold Call'), ('email', 'Email'), ('website', 'Website'), ('social', 'Social Media'), ('referral', 'Referral'), ('other', 'Other')]
+    SOURCE_LABELS = dict(SOURCE)
+    SOURCE_SUGGESTIONS = [label for _, label in SOURCE if label != 'None']
+    CONTACT_TYPE = [('lead', 'Lead'), ('deal', 'Deal')]
     salutation = models.CharField(max_length=10, blank=True)
     name = models.CharField(max_length=200)
     email = models.EmailField(blank=True)
@@ -11,7 +14,8 @@ class LeadContact(models.Model):
     company = models.CharField(max_length=200, blank=True)
     website = models.URLField(blank=True)
     address = models.TextField(blank=True)
-    lead_source = models.CharField(max_length=30, choices=SOURCE, default='none')
+    lead_source = models.CharField(max_length=100, default='none', blank=True)
+    contact_type = models.CharField(max_length=10, choices=CONTACT_TYPE, default='lead')
     lead_owner = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='owned_leads')
     added_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='added_leads')
     is_converted = models.BooleanField(default=False)
@@ -21,6 +25,12 @@ class LeadContact(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def lead_source_label(self):
+        if not self.lead_source:
+            return 'None'
+        return self.SOURCE_LABELS.get(self.lead_source, self.lead_source)
 
 
 class Deal(models.Model):
@@ -43,4 +53,3 @@ class Deal(models.Model):
 
     def __str__(self):
         return self.deal_name
-

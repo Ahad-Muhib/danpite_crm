@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}{{ expense.title }}{% endblock %}
+{% block page_title %}Expense Details{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:680px;">
+  <div class="crm-card-header">
+    <span class="crm-card-title">{{ expense.title }}</span>
+    <div class="d-flex gap-2">
+      <a href="{% url 'expense_edit' expense.pk %}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil me-1"></i>Edit</a>
+      <a href="{% url 'expense_list' %}" class="btn btn-sm btn-outline-secondary">Back to List</a>
+    </div>
+  </div>
+  <div class="p-4">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Title</label>
+        <div class="fw-medium">{{ expense.title }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Category</label>
+        <div><span class="badge bg-light text-dark border">{{ expense.get_category_display }}</span></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Amount</label>
+        <div class="fw-medium text-danger">{{ expense.amount }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Expense Date</label>
+        <div>{{ expense.expense_date }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Description</label>
+        <div>{{ expense.description|default:"—" }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Receipt</label>
+        <div>{% if expense.receipt %}<a href="{{ expense.receipt.url }}" class="text-primary text-decoration-none" target="_blank">View Receipt</a>{% else %}—{% endif %}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Added By</label>
+        <div>{{ expense.created_by.username|default:"—" }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Created At</label>
+        <div>{{ expense.created_at|date:"d M Y H:i" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
