@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Follow Up{% endblock %}
+{% block page_title %}{{ action }} Follow Up{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:760px;">
+  <div class="crm-card-header"><span class="crm-card-title">Follow Up Details</span></div>
+  <div class="p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label fw-medium">Lead</label>{{ form.lead }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Deal</label>{{ form.deal }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Type <span class="text-danger">*</span></label>{{ form.followup_type }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Subject <span class="text-danger">*</span></label>{{ form.subject }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Next Follow Up Date</label>{{ form.next_followup_date }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Outcome</label>{{ form.outcome }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">{{ action }} Follow Up</button>
+        <a href="{% url 'followup_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Follow Ups{% endblock %}
+{% block page_title %}Follow Ups{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header">
+    <span class="crm-card-title">All Follow Ups</span>
+    <a href="{% url 'followup_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Log Follow Up</a>
+  </div>
+  <div class="p-3 border-bottom">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <input type="text" name="q" class="form-control form-control-sm" placeholder="Search subject, lead, notes..." value="{{ q }}">
+      </div>
+      <div class="col-md-2">
+        <select name="type" class="form-select form-select-sm">
+          <option value="">All Types</option>
+          <option value="call" {% if ftype == 'call' %}selected{% endif %}>Call</option>
+          <option value="email" {% if ftype == 'email' %}selected{% endif %}>Email</option>
+          <option value="meeting" {% if ftype == 'meeting' %}selected{% endif %}>Meeting</option>
+          <option value="note" {% if ftype == 'note' %}selected{% endif %}>Note</option>
+          <option value="other" {% if ftype == 'other' %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="upcoming" class="form-select form-select-sm">
+          <option value="">All Dates</option>
+          <option value="1" {% if upcoming == '1' %}selected{% endif %}>Upcoming</option>
+          <option value="0" {% if upcoming == '0' %}selected{% endif %}>Overdue</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Filter</button>
+      </div>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Date</th><th>Type</th><th>Subject</th><th>Lead</th><th>Deal</th><th>Next Follow Up</th><th>Outcome</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for f in followups %}
+        <tr>
+          <td class="text-muted">{{ f.created_at|date:"d M Y H:i" }}</td>
+          <td>
+            {% if f.followup_type == 'call' %}<span class="badge bg-success"><i class="bi bi-telephone me-1"></i>Call</span>
+            {% elif f.followup_type == 'email' %}<span class="badge bg-primary"><i class="bi bi-envelope me-1"></i>Email</span>
+            {% elif f.followup_type == 'meeting' %}<span class="badge bg-info text-dark"><i class="bi bi-camera-video me-1"></i>Meeting</span>
+            {% elif f.followup_type == 'note' %}<span class="badge bg-secondary"><i class="bi bi-journal-text me-1"></i>Note</span>
+            {% else %}<span class="badge bg-light text-dark border"><i class="bi bi-three-dots me-1"></i>Other</span>{% endif %}
+          </td>
+          <td class="fw-medium">{{ f.subject }}</td>
+          <td>{% if f.lead %}<a href="{% url 'lead_detail' f.lead.pk %}">{{ f.lead.name }}</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>{% if f.deal %}{{ f.deal.deal_name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>
+            {% if f.next_followup_date %}
+              {% if f.next_followup_date < today %}
+                <span class="badge bg-danger">{{ f.next_followup_date }}</span>
+              {% elif f.next_followup_date == today %}
+                <span class="badge bg-warning text-dark">Today</span>
+              {% else %}
+                <span class="badge bg-info text-dark">{{ f.next_followup_date }}</span>
+              {% endif %}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-muted">{{ f.outcome|default:"—" }}</td>
+          <td>
+            <a href="{% url 'followup_delete' f.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-5">No follow-ups found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -19,16 +19,16 @@
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Code</th><th>Client</th><th>Project</th><th>Total</th><th>Date</th><th>Due</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Code</th><th>Client</th><th>Phone</th><th>Project</th><th>Total</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
       <tbody>
         {% for inv in invoices %}
         <tr>
           <td class="fw-medium text-primary">{{ inv.code }}</td>
           <td>{{ inv.client.name|default:"—" }}</td>
+          <td class="text-muted">{{ inv.phone|default:"—" }}</td>
           <td class="text-muted">{{ inv.project|default:"—" }}</td>
           <td class="fw-medium">{{ inv.total }}</td>
           <td class="text-muted">{{ inv.invoice_date }}</td>
-          <td class="text-muted">{{ inv.due_date|default:"—" }}</td>
           <td>
             {% if inv.status == 'paid' %}<span class="badge bg-success">Paid</span>
             {% elif inv.status == 'overdue' %}<span class="badge bg-danger">Overdue</span>

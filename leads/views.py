@@ -5,8 +5,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from clients.models import Client
 
-from .forms import DealForm, LeadContactForm
-from .models import Deal, LeadContact
+from .forms import DealForm, FollowUpForm, LeadContactForm
+from .models import Deal, FollowUp, LeadContact
 
 
 @login_required
@@ -104,9 +104,12 @@ def lead_edit(request, pk):
 
 @login_required
 def lead_detail(request, pk):
+    from django.utils import timezone
     lead = get_object_or_404(LeadContact, pk=pk)
     deals = lead.deals.all()
-    return render(request, 'leads/lead_detail.html', {'lead': lead, 'deals': deals})
+    followups = lead.followups.all().order_by('-created_at')[:10]
+    today = timezone.now().date()
+    return render(request, 'leads/lead_detail.html', {'lead': lead, 'deals': deals, 'followups': followups, 'today': today})
 
 
 @login_required
@@ -162,8 +165,10 @@ def lead_convert(request, pk):
 
 @login_required
 def deal_list(request):
+    from django.utils import timezone
+    today = timezone.now().date()
     qs = Deal.objects.all().order_by('-created_at')
-    return render(request, 'leads/deals.html', {'deals': qs})
+    return render(request, 'leads/deals.html', {'deals': qs, 'today': today})
 
 
 @login_required
@@ -192,3 +197,62 @@ def deal_delete(request, pk):
     get_object_or_404(Deal, pk=pk).delete()
     messages.success(request, 'Deal deleted.')
     return redirect('deal_list')
+
+
+@login_required
+def followup_list(request):
+    q = request.GET.get('q', '')
+    ftype = request.GET.get('type', '')
+    upcoming = request.GET.get('upcoming', '')
+    from django.utils import timezone
+    today = timezone.now().date()
+    qs = FollowUp.objects.select_related('lead', 'deal', 'created_by').all()
+    if q:
+        qs = qs.filter(Q(subject__icontains=q) | Q(lead__name__icontains=q) | Q(deal__deal_name__icontains=q) | Q(notes__icontains=q))
+    if ftype in ('call', 'email', 'meeting', 'note', 'other'):
+        qs = qs.filter(followup_type=ftype)
+    if upcoming == '1':
+        qs = qs.filter(next_followup_date__gte=today).order_by('next_followup_date')
+    elif upcoming == '0':
+        qs = qs.filter(next_followup_date__lt=today).order_by('-next_followup_date')
+    else:
+        qs = qs.order_by('-created_at')
+    return render(request, 'leads/followups.html', {
+        'followups': qs,
+        'q': q,
+        'ftype': ftype,
+        'upcoming': upcoming,
+        'today': today,
+    })
+
+
+@login_required
+def followup_create(request):
+    initial = {}
+    lead_id = request.GET.get('lead')
+    deal_id = request.GET.get('deal')
+    if lead_id:
+        initial['lead'] = lead_id
+    if deal_id:
+        initial['deal'] = deal_id
+    form = FollowUpForm(request.POST or None, initial=initial)
+    if form.is_valid():
+        obj = form.save(commit=False)
+        obj.created_by = request.user
+        obj.save()
+        if lead_id:
+            return redirect('lead_detail', pk=lead_id)
+        messages.success(request, 'Follow-up logged.')
+        return redirect('followup_list')
+    return render(request, 'leads/followup_form.html', {'form': form, 'action': 'Log'})
+
+
+@login_required
+def followup_delete(request, pk):
+    obj = get_object_or_404(FollowUp, pk=pk)
+    lead_pk = obj.lead_id
+    obj.delete()
+    messages.success(request, 'Follow-up deleted.')
+    if lead_pk:
+        return redirect('lead_detail', pk=lead_pk)
+    return redirect('followup_list')

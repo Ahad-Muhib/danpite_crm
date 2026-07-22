@@ -8,6 +8,7 @@ class Invoice(models.Model):
     STATUS = [('draft', 'Draft'), ('sent', 'Sent'), ('paid', 'Paid'), ('overdue', 'Overdue'), ('cancelled', 'Cancelled')]
     code = models.CharField(max_length=50, unique=True, blank=True)
     client = models.ForeignKey(Client, null=True, blank=True, on_delete=models.SET_NULL, related_name='invoices')
+    phone = models.CharField(max_length=30, blank=True)
     project = models.CharField(max_length=200, blank=True)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -15,6 +16,7 @@ class Invoice(models.Model):
     invoice_date = models.DateField()
     due_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default='draft')
+    received_payment = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
     created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -1,6 +1,7 @@
 from django import forms
+from django.forms import inlineformset_factory
 
-from .models import BankAccount, Expense, Invoice, Payment
+from .models import BankAccount, Expense, Invoice, InvoiceItem, Payment
 
 
 class InvoiceForm(forms.ModelForm):
@@ -8,8 +9,9 @@ class InvoiceForm(forms.ModelForm):
 
     class Meta:
         model = Invoice
-        fields = ['project', 'total', 'tax', 'discount', 'invoice_date', 'due_date', 'status', 'notes']
+        fields = ['phone', 'project', 'total', 'tax', 'discount', 'invoice_date', 'due_date', 'status', 'notes', 'received_payment']
         widgets = {
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone number'}),
             'project': forms.TextInput(attrs={'class': 'form-control'}),
             'total': forms.NumberInput(attrs={'class': 'form-control'}),
             'tax': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -18,6 +20,7 @@ class InvoiceForm(forms.ModelForm):
             'due_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'received_payment': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -25,6 +28,20 @@ class InvoiceForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if instance and instance.client:
             self.fields['client_name'].initial = instance.client.name
+
+
+InvoiceItemFormSet = inlineformset_factory(
+    Invoice, InvoiceItem,
+    fields=['description', 'quantity', 'unit_price', 'total'],
+    extra=1,
+    can_delete=True,
+    widgets={
+        'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Item description'}),
+        'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
+        'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
+        'total': forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
+    }
+)
 
 
 class PaymentForm(forms.ModelForm):

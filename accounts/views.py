@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from clients.models import Client
 
-from .forms import BankAccountForm, ExpenseForm, InvoiceForm, PaymentForm
+from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm
 from .models import BankAccount, Expense, Invoice, Payment
 
 
@@ -24,35 +24,49 @@ def invoice_list(request):
 @login_required
 def invoice_create(request):
     form = InvoiceForm(request.POST or None)
-    if form.is_valid():
-        obj = form.save(commit=False)
-        obj.created_by = request.user
-        client_name = form.cleaned_data.get('client_name', '').strip()
-        if client_name:
-            client, _ = Client.objects.get_or_create(name=client_name)
-            obj.client = client
-        obj.save()
-        messages.success(request, 'Invoice created.')
-        return redirect('invoice_list')
-    return render(request, 'accounts/invoice_form.html', {'form': form, 'action': 'Create'})
+    formset = InvoiceItemFormSet(request.POST or None)
+    if request.method == 'POST':
+        save_as_draft = 'save_as_draft' in request.POST
+        if form.is_valid() and formset.is_valid():
+            obj = form.save(commit=False)
+            obj.created_by = request.user
+            client_name = form.cleaned_data.get('client_name', '').strip()
+            if client_name:
+                client, _ = Client.objects.get_or_create(name=client_name)
+                obj.client = client
+            if save_as_draft:
+                obj.status = 'draft'
+            obj.save()
+            formset.instance = obj
+            formset.save()
+            messages.success(request, 'Invoice created.')
+            return redirect('invoice_list')
+    return render(request, 'accounts/invoice_form.html', {'form': form, 'formset': formset, 'action': 'Create'})
 
 
 @login_required
 def invoice_edit(request, pk):
     obj = get_object_or_404(Invoice, pk=pk)
     form = InvoiceForm(request.POST or None, instance=obj)
-    if form.is_valid():
-        obj = form.save(commit=False)
-        client_name = form.cleaned_data.get('client_name', '').strip()
-        if client_name:
-            client, _ = Client.objects.get_or_create(name=client_name)
-            obj.client = client
-        else:
-            obj.client = None
-        obj.save()
-        messages.success(request, 'Invoice updated.')
-        return redirect('invoice_list')
-    return render(request, 'accounts/invoice_form.html', {'form': form, 'action': 'Edit'})
+    formset = InvoiceItemFormSet(request.POST or None, instance=obj)
+    if request.method == 'POST':
+        save_as_draft = 'save_as_draft' in request.POST
+        if form.is_valid() and formset.is_valid():
+            obj = form.save(commit=False)
+            client_name = form.cleaned_data.get('client_name', '').strip()
+            if client_name:
+                client, _ = Client.objects.get_or_create(name=client_name)
+                obj.client = client
+            else:
+                obj.client = None
+            if save_as_draft:
+                obj.status = 'draft'
+            obj.save()
+            formset.instance = obj
+            formset.save()
+            messages.success(request, 'Invoice updated.')
+            return redirect('invoice_list')
+    return render(request, 'accounts/invoice_form.html', {'form': form, 'formset': formset, 'action': 'Edit', 'invoice': obj})
 
 
 @login_required

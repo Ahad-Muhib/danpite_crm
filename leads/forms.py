@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Deal, LeadContact
+from .models import Deal, FollowUp, LeadContact
 
 
 class LeadContactForm(forms.ModelForm):
@@ -25,7 +25,7 @@ class LeadContactForm(forms.ModelForm):
 class DealForm(forms.ModelForm):
     class Meta:
         model = Deal
-        fields = ['deal_name', 'lead_contact', 'pipeline', 'stage', 'value', 'currency', 'close_date', 'deal_agent', 'description']
+        fields = ['deal_name', 'lead_contact', 'pipeline', 'stage', 'value', 'currency', 'close_date', 'next_follow_up', 'deal_agent', 'description']
         widgets = {
             'deal_name': forms.TextInput(attrs={'class': 'form-control'}),
             'lead_contact': forms.Select(attrs={'class': 'form-select'}),
@@ -34,6 +34,22 @@ class DealForm(forms.ModelForm):
             'value': forms.NumberInput(attrs={'class': 'form-control'}),
             'currency': forms.TextInput(attrs={'class': 'form-control'}),
             'close_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'next_follow_up': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'deal_agent': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+
+class FollowUpForm(forms.ModelForm):
+    class Meta:
+        model = FollowUp
+        fields = ['lead', 'deal', 'followup_type', 'subject', 'notes', 'next_followup_date', 'outcome']
+        widgets = {
+            'lead': forms.Select(attrs={'class': 'form-select'}),
+            'deal': forms.Select(attrs={'class': 'form-select'}),
+            'followup_type': forms.Select(attrs={'class': 'form-select'}),
+            'subject': forms.TextInput(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'next_followup_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'outcome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Interested, Callback scheduled'}),
         }

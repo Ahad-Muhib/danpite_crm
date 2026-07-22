@@ -22,6 +22,7 @@
       </ul>
       <div class="p-3 d-flex flex-column gap-2">
         <a href="{% url 'lead_edit' lead.pk %}" class="btn btn-primary btn-sm">Edit Lead</a>
+        <a href="{% url 'followup_create' %}?lead={{ lead.pk }}" class="btn btn-success btn-sm">Log Follow Up</a>
         {% if not lead.is_converted %}
         <a href="{% url 'lead_convert' lead.pk %}" class="btn btn-success btn-sm" onclick="return confirm('Convert to client?')">Convert to Client</a>
         {% endif %}
@@ -53,6 +54,43 @@
             </tr>
             {% empty %}
             <tr><td colspan="5" class="text-center text-muted py-4">No deals yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="crm-card mt-3">
+      <div class="crm-card-header">
+        <span class="crm-card-title">Follow Ups</span>
+        <a href="{% url 'followup_create' %}?lead={{ lead.pk }}" class="btn btn-sm btn-success">+ Log Follow Up</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Date</th><th>Type</th><th>Subject</th><th>Next Follow Up</th><th>Outcome</th></tr></thead>
+          <tbody>
+            {% for f in followups %}
+            <tr>
+              <td class="text-muted">{{ f.created_at|date:"d M Y H:i" }}</td>
+              <td>
+                {% if f.followup_type == 'call' %}<span class="badge bg-success">Call</span>
+                {% elif f.followup_type == 'email' %}<span class="badge bg-primary">Email</span>
+                {% elif f.followup_type == 'meeting' %}<span class="badge bg-info text-dark">Meeting</span>
+                {% elif f.followup_type == 'note' %}<span class="badge bg-secondary">Note</span>
+                {% else %}<span class="badge bg-light text-dark border">Other</span>{% endif %}
+              </td>
+              <td class="fw-medium">{{ f.subject }}</td>
+              <td>
+                {% if f.next_followup_date %}
+                  {% if f.next_followup_date < today %}<span class="badge bg-danger">{{ f.next_followup_date }}</span>
+                  {% elif f.next_followup_date == today %}<span class="badge bg-warning text-dark">Today</span>
+                  {% else %}<span class="badge bg-info text-dark">{{ f.next_followup_date }}</span>{% endif %}
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              <td class="text-muted">{{ f.outcome|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No follow-ups yet.</td></tr>
             {% endfor %}
           </tbody>
         </table>

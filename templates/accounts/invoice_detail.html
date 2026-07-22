@@ -15,9 +15,11 @@
       <div class="p-4">
         <div class="row g-3 mb-4">
           <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">CLIENT</div><div class="fw-medium">{{ invoice.client.name|default:"—" }}</div></div>
+          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">PHONE</div><div>{{ invoice.phone|default:"—" }}</div></div>
           <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">PROJECT</div><div>{{ invoice.project|default:"—" }}</div></div>
           <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">INVOICE DATE</div><div>{{ invoice.invoice_date }}</div></div>
           <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">DUE DATE</div><div>{{ invoice.due_date|default:"—" }}</div></div>
+          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">PAYMENT</div><div>{% if invoice.received_payment %}<span class="badge bg-success">Received</span>{% else %}<span class="badge bg-secondary">Pending</span>{% endif %}</div></div>
         </div>
         <table class="table table-bordered mb-4">
           <thead class="table-light"><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
