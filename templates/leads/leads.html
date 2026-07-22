@@ -28,6 +28,14 @@
         <option value="delete">Delete Selected</option>
       </select>
       <button type="submit" class="btn btn-sm btn-outline-secondary">Apply</button>
+      <a href="{% url 'lead_import' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-upload me-1"></i>Import</a>
+      <div class="dropdown d-inline">
+        <button class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i>Export</button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="{% url 'lead_export' %}?format=csv"><i class="bi bi-filetype-csv me-2"></i>Export as CSV</a></li>
+          <li><a class="dropdown-item" href="{% url 'lead_export' %}?format=xlsx"><i class="bi bi-filetype-xlsx me-2"></i>Export as XLSX</a></li>
+        </ul>
+      </div>
       <a href="{% url 'lead_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Lead Contact</a>
     </form>
   </div>
@@ -61,7 +69,7 @@
           <td class="text-muted">{{ l.email|default:"—" }}</td>
           <td>
             {% if l.lead_owner %}
-              {{ l.lead_owner.get_full_name|default:l.lead_owner.username }}
+              {% if l.lead_owner %}{{ l.lead_owner.get_full_name|default:l.lead_owner.username }}{% else %}—{% endif %}
             {% else %}—{% endif %}
           </td>
           <td>

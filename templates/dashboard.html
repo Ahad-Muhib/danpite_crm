@@ -49,6 +49,101 @@
   </div>
 </div>
 
+<!-- Pipeline Stats (Feature 4) -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="crm-card p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-sm" style="background:#10b981;width:44px;height:44px;font-size:18px;"><i class="bi bi-currency-dollar"></i></div>
+        <div>
+          <div class="text-muted" style="font-size:11px;">PIPELINE VALUE</div>
+          <div class="fw-bold" style="font-size:20px;">${{ pipeline_value|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="crm-card p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-sm" style="background:#3b82f6;width:44px;height:44px;font-size:18px;"><i class="bi bi-graph-up"></i></div>
+        <div>
+          <div class="text-muted" style="font-size:11px;">ACTIVE DEALS</div>
+          <div class="fw-bold" style="font-size:20px;">{{ active_deal_count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="crm-card p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-sm" style="background:#f59e0b;width:44px;height:44px;font-size:18px;"><i class="bi bi-trophy"></i></div>
+        <div>
+          <div class="text-muted" style="font-size:11px;">WIN RATE</div>
+          <div class="fw-bold" style="font-size:20px;">{{ win_rate }}%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="crm-card p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-sm" style="background:#8b5cf6;width:44px;height:44px;font-size:18px;"><i class="bi bi-cash-stack"></i></div>
+        <div>
+          <div class="text-muted" style="font-size:11px;">AVG DEAL SIZE</div>
+          <div class="fw-bold" style="font-size:20px;">${{ avg_deal_value|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pipeline Bar -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="crm-card h-100">
+      <div class="crm-card-header">
+        <span class="crm-card-title">Pipeline by Stage</span>
+        <a href="{% url 'deal_kanban' %}" class="btn btn-sm btn-outline-primary">Kanban View</a>
+      </div>
+      <div class="p-3">
+        {% for stage_key, stage_label, stage_count, stage_value in pipeline_stages %}
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div style="width:110px;font-size:12px;" class="text-muted">{{ stage_label }}</div>
+          <div class="flex-grow-1" style="height:24px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+            {% if pipeline_max_count > 0 %}
+            <div style="height:100%;width:{% widthratio stage_count pipeline_max_count 100 %}%;background:{% if stage_key == 'won' %}#10b981{% elif stage_key == 'lost' %}#ef4444{% else %}#3b82f6{% endif %};border-radius:4px;transition:width .5s;"></div>
+            {% endif %}
+          </div>
+          <div style="width:80px;text-align:right;font-size:12px;" class="fw-medium">{{ stage_count }} <span class="text-muted">/ ${{ stage_value|floatformat:0 }}</span></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Lead Source Analytics (Feature 3) -->
+  <div class="col-lg-4">
+    <div class="crm-card h-100">
+      <div class="crm-card-header">
+        <span class="crm-card-title">Leads by Source</span>
+      </div>
+      <div class="p-3">
+        {% for source_name, source_count, source_pct in source_stats %}
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div style="width:100px;font-size:12px;" class="text-muted text-truncate">{{ source_name }}</div>
+          <div class="flex-grow-1" style="height:20px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:{{ source_pct }}%;background:#6366f1;border-radius:4px;"></div>
+          </div>
+          <div style="width:50px;text-align:right;font-size:11px;" class="fw-medium">{{ source_count }}</div>
+        </div>
+        {% empty %}
+        <div class="text-center text-muted py-4">No lead data yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="row g-3">
   <!-- Recent Tasks -->
   <div class="col-lg-4">

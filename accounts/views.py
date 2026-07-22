@@ -1,12 +1,31 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from clients.models import Client
 
 from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm
 from .models import BankAccount, Expense, Invoice, Payment
+
+
+@login_required
+def client_data_api(request):
+    client_id = request.GET.get('id')
+    if not client_id:
+        return JsonResponse({'error': 'missing id'}, status=400)
+    try:
+        client = Client.objects.get(pk=client_id)
+    except Client.DoesNotExist:
+        return JsonResponse({'error': 'not found'}, status=404)
+    return JsonResponse({
+        'name': client.name,
+        'phone': client.phone or '',
+        'email': client.email or '',
+        'company': client.company or '',
+        'address': client.address or '',
+    })
 
 
 @login_required
@@ -30,8 +49,13 @@ def invoice_create(request):
         if form.is_valid() and formset.is_valid():
             obj = form.save(commit=False)
             obj.created_by = request.user
+            client = form.cleaned_data.get('client')
             client_name = form.cleaned_data.get('client_name', '').strip()
-            if client_name:
+            if client:
+                obj.client = client
+                if not obj.phone and client.phone:
+                    obj.phone = client.phone
+            elif client_name:
                 client, _ = Client.objects.get_or_create(name=client_name)
                 obj.client = client
             if save_as_draft:
@@ -53,8 +77,11 @@ def invoice_edit(request, pk):
         save_as_draft = 'save_as_draft' in request.POST
         if form.is_valid() and formset.is_valid():
             obj = form.save(commit=False)
+            client = form.cleaned_data.get('client')
             client_name = form.cleaned_data.get('client_name', '').strip()
-            if client_name:
+            if client:
+                obj.client = client
+            elif client_name:
                 client, _ = Client.objects.get_or_create(name=client_name)
                 obj.client = client
             else:

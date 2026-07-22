@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Import Leads{% endblock %}
+{% block page_title %}Import Leads{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Upload File</span></div>
+      <div class="p-4">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-medium">Select CSV or XLSX File</label>
+            <input type="file" name="file" accept=".csv,.xlsx" class="form-control" required>
+            <div class="form-text">Supported formats: .csv, .xlsx</div>
+          </div>
+          <div class="mb-3">
+            <div class="alert alert-info py-2 mb-0" style="font-size:12px;">
+              <strong>Required columns:</strong> Name, Phone<br>
+              <strong>Optional:</strong> Email, Company, Website, Lead Source, Type, Lead Owner
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Import</button>
+          <a href="{% url 'lead_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">File Format Guide</span></div>
+      <div class="p-4">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-3" style="font-size:12px;">
+            <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Lead Source</th><th>Type</th><th>Lead Owner</th></tr></thead>
+            <tbody>
+              <tr><td>John Smith</td><td>john@example.com</td><td>+1234567890</td><td>Acme Corp</td><td>website</td><td>lead</td><td></td></tr>
+              <tr><td>Sara Lee</td><td>sara@company.com</td><td>+0987654321</td><td>Company Inc</td><td>referral</td><td>deal</td><td>admin</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'lead_export' %}?format=csv" class="btn btn-sm btn-outline-success"><i class="bi bi-filetype-csv me-1"></i>Download CSV template</a>
+          <a href="{% url 'lead_export' %}?format=xlsx" class="btn btn-sm btn-outline-success"><i class="bi bi-filetype-xlsx me-1"></i>Download XLSX template</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -8,9 +8,29 @@
     <form method="post" id="invoice-form">
       {% csrf_token %}
       <div class="row g-3 mb-4">
-        <div class="col-md-4">
-          <label class="form-label fw-medium">Client Name <span class="text-danger">*</span></label>
+        <!-- Client Dropdown + Add Button -->
+        <div class="col-md-5">
+          <label class="form-label fw-medium">Select Client</label>
+          <div class="input-group">
+            {{ form.client }}
+            <a href="{% url 'client_create' %}" target="_blank" class="btn btn-outline-success" title="Add new client"><i class="bi bi-plus-lg"></i></a>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label fw-medium">Or Enter New Client Name</label>
           {{ form.client_name }}
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="clear-client-btn">Clear</button>
+        </div>
+        <!-- Auto-filled info (read-only display) -->
+        <div class="col-12" id="client-info-bar" style="display:none;">
+          <div class="alert alert-light py-2 px-3 mb-0 d-flex gap-4 flex-wrap" style="font-size:12px;border:1px solid #e2e8f0;">
+            <span><i class="bi bi-person me-1"></i><strong id="info-name"></strong></span>
+            <span><i class="bi bi-building me-1"></i><span id="info-company"></span></span>
+            <span><i class="bi bi-envelope me-1"></i><span id="info-email"></span></span>
+            <span><i class="bi bi-geo-alt me-1"></i><span id="info-address"></span></span>
+          </div>
         </div>
         <div class="col-md-4">
           <label class="form-label fw-medium">Phone <span class="text-danger">*</span></label>
@@ -114,6 +134,44 @@
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // ── Client auto-fill ──
+    const clientSelect = document.getElementById('id_client_select');
+    const clientNameInput = document.getElementById('id_client_name');
+    const phoneInput = document.getElementById('id_phone');
+    const infoBar = document.getElementById('client-info-bar');
+
+    clientSelect?.addEventListener('change', function() {
+        const clientId = this.value;
+        if (!clientId) {
+            infoBar.style.display = 'none';
+            return;
+        }
+        fetch(`/accounts/client-data/?id=${clientId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.phone && !phoneInput.value.trim()) {
+                    phoneInput.value = data.phone;
+                } else if (data.phone) {
+                    phoneInput.value = data.phone;
+                }
+                document.getElementById('info-name').textContent = data.name || '';
+                document.getElementById('info-company').textContent = data.company || '';
+                document.getElementById('info-email').textContent = data.email || '';
+                document.getElementById('info-address').textContent = data.address || '';
+                infoBar.style.display = 'flex';
+                // Hide manual name input when dropdown is used
+                clientNameInput.value = '';
+            });
+    });
+
+    // Clear client selection
+    document.getElementById('clear-client-btn')?.addEventListener('click', function() {
+        clientSelect.value = '';
+        clientNameInput.value = '';
+        infoBar.style.display = 'none';
+    });
+
+    // ── Line items ──
     const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
     const itemsTable = document.getElementById('items-table');
     const tbody = itemsTable.querySelector('tbody');

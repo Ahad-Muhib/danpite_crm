@@ -1,17 +1,30 @@
 from django import forms
 from django.forms import inlineformset_factory
 
+from clients.models import Client
+
 from .models import BankAccount, Expense, Invoice, InvoiceItem, Payment
 
 
 class InvoiceForm(forms.ModelForm):
-    client_name = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Type client name...'}), label='Client')
+    client = forms.ModelChoiceField(
+        queryset=Client.objects.all().order_by('name'),
+        required=False,
+        empty_label='— Select Client —',
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_client_select'}),
+        label='Client',
+    )
+    client_name = forms.CharField(
+        max_length=200, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_client_name', 'placeholder': 'Type client name... (for new clients)'}),
+        label='New Client Name',
+    )
 
     class Meta:
         model = Invoice
         fields = ['phone', 'project', 'total', 'tax', 'discount', 'invoice_date', 'due_date', 'status', 'notes', 'received_payment']
         widgets = {
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone number'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_phone', 'placeholder': 'Phone number'}),
             'project': forms.TextInput(attrs={'class': 'form-control'}),
             'total': forms.NumberInput(attrs={'class': 'form-control'}),
             'tax': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -27,7 +40,7 @@ class InvoiceForm(forms.ModelForm):
         instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
         if instance and instance.client:
-            self.fields['client_name'].initial = instance.client.name
+            self.fields['client'].initial = instance.client
 
 
 InvoiceItemFormSet = inlineformset_factory(
@@ -94,4 +107,3 @@ class BankAccountForm(forms.ModelForm):
             'opening_balance': forms.NumberInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-

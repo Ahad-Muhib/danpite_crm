@@ -61,7 +61,7 @@ class LeadContact(models.Model):
 
 class Deal(models.Model):
     PIPELINE = [('sales','Sales'),('marketing','Marketing'),('support','Support')]
-    STAGE    = [('generated','Generated'),('qualified','Qualified'),('presentation','Presentation'),('negotiation','Negotiation'),('won','Won'),('lost','Lost')]
+    STAGE    = [('generated','Generated'),('won','Won'),('lost','Lost')]
     lead_contact  = models.ForeignKey(LeadContact, null=True, blank=True, on_delete=models.SET_NULL, related_name='deals')
     deal_name     = models.CharField(max_length=200)
     pipeline      = models.CharField(max_length=30, choices=PIPELINE, default='sales')

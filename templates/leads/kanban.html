@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block title %}Deal Pipeline — Kanban{% endblock %}
+{% block page_title %}Deal Pipeline{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex gap-2">
+    {% for pk, pl in pipelines %}
+    <a href="?pipeline={{ pk }}" class="btn btn-sm {% if current_pipeline == pk %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ pl }}</a>
+    {% endfor %}
+  </div>
+  <div class="d-flex gap-3">
+    <div class="text-center">
+      <div class="text-muted" style="font-size:11px;">TOTAL VALUE</div>
+      <div class="fw-bold" style="font-size:16px;">${{ pipeline_stats.total_value|default:"0" }}</div>
+    </div>
+    <div class="text-center">
+      <div class="text-muted" style="font-size:11px;">DEALS</div>
+      <div class="fw-bold" style="font-size:16px;">{{ pipeline_stats.deal_count|default:"0" }}</div>
+    </div>
+    <div class="text-center">
+      <div class="text-muted" style="font-size:11px;">AVG VALUE</div>
+      <div class="fw-bold" style="font-size:16px;">${{ pipeline_stats.avg_value|floatformat:0|default:"0" }}</div>
+    </div>
+    <a href="{% url 'deal_list' %}" class="btn btn-sm btn-outline-secondary align-self-center"><i class="bi bi-list-ul me-1"></i>List View</a>
+    <a href="{% url 'deal_create' %}" class="btn btn-sm btn-primary align-self-center"><i class="bi bi-plus-lg me-1"></i>New Deal</a>
+  </div>
+</div>
+
+<div class="kanban-board d-flex gap-3 overflow-auto pb-3" style="min-height:calc(100vh - 180px);">
+  {% for stage_key, stage_label, deals in deals_by_stage %}
+  <div class="kanban-column flex-shrink-0" style="width:280px;">
+    <div class="crm-card h-100">
+      <div class="crm-card-header py-2 px-3" style="border-bottom-color:{% if stage_key == 'won' %}#10b981{% elif stage_key == 'lost' %}#ef4444{% else %}#3b82f6{% endif %};border-bottom-width:3px;">
+        <span class="crm-card-title" style="font-size:13px;">{{ stage_label }}</span>
+        <span class="badge bg-secondary">{{ deals|length }}</span>
+      </div>
+      <div class="kanban-cards p-2" data-stage="{{ stage_key }}" style="min-height:200px;">
+        {% for deal in deals %}
+        <div class="kanban-card crm-card mb-2 p-3" draggable="true" data-deal-id="{{ deal.pk }}" style="cursor:grab;border-left:3px solid {% if deal.stage == 'won' %}#10b981{% elif deal.stage == 'lost' %}#ef4444{% else %}#3b82f6{% endif %};">
+          <div class="fw-medium" style="font-size:13px;">{{ deal.deal_name }}</div>
+          <div class="d-flex justify-content-between align-items-center mt-1">
+            <span class="fw-bold" style="font-size:14px;">{{ deal.currency }} {{ deal.value }}</span>
+            {% if deal.deal_agent %}
+            <div class="avatar-sm" style="width:24px;height:24px;font-size:10px;background:#6366f1;" title="{{ deal.deal_agent.get_full_name }}">{{ deal.deal_agent.get_full_name|slice:":1"|upper }}</div>
+            {% endif %}
+          </div>
+          {% if deal.lead_contact %}
+          <div class="text-muted mt-1" style="font-size:11px;"><i class="bi bi-person me-1"></i>{{ deal.lead_contact.name }}</div>
+          {% endif %}
+          {% if deal.next_follow_up %}
+          <div class="mt-1">
+            <span class="badge bg-light text-dark border" style="font-size:10px;"><i class="bi bi-calendar me-1"></i>{{ deal.next_follow_up }}</span>
+          </div>
+          {% endif %}
+          {% if stage_key == 'lost' and deal.lost_reason %}
+          <div class="mt-1"><span class="badge bg-danger bg-opacity-10 text-danger" style="font-size:10px;">{{ deal.get_lost_reason_display }}</span></div>
+          {% endif %}
+          <div class="d-flex gap-1 mt-2">
+            <a href="{% url 'deal_edit' deal.pk %}" class="btn btn-outline-secondary btn-sm" style="font-size:11px;padding:2px 6px;"><i class="bi bi-pencil"></i></a>
+            {% if stage_key != 'won' and stage_key != 'lost' %}
+            <button type="button" class="btn btn-outline-success btn-sm advance-btn" data-deal="{{ deal.pk }}" data-next="won" title="Mark Won"><i class="bi bi-check-lg"></i></button>
+            {% endif %}
+            {% if stage_key != 'lost' and stage_key != 'won' %}
+            <button type="button" class="btn btn-outline-danger btn-sm mark-lost-btn" data-deal="{{ deal.pk }}" title="Mark Lost"><i class="bi bi-x-lg"></i></button>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Lost Reason Modal -->
+<div class="modal fade" id="lostReasonModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold">Mark Deal as Lost</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-medium">Reason <span class="text-danger">*</span></label>
+        <select id="lost-reason-select" class="form-select">
+          <option value="">Select reason...</option>
+          <option value="price">Price</option>
+          <option value="competitor">Competitor</option>
+          <option value="timing">Bad Timing</option>
+          <option value="budget">No Budget</option>
+          <option value="no_need">No Need</option>
+          <option value="no_response">No Response</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-danger" id="confirm-lost-btn">Mark Lost</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function getCSRF() {
+  const v = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
+  return v ? v.split('=').pop() : '';
+}
+
+async function postStageUpdate(url, stage, lostReason) {
+  const body = new URLSearchParams({ csrfmiddlewaretoken: getCSRF(), stage: stage });
+  if (lostReason) body.append('lost_reason', lostReason);
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    body: body,
+  });
+  if (resp.ok) location.reload();
+  else alert('Update failed. Try again.');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.advance-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const url = `/deals/kanban/${btn.dataset.deal}/stage/`;
+      postStageUpdate(url, btn.dataset.next);
+    });
+  });
+
+  let currentLostUrl = null;
+  document.querySelectorAll('.mark-lost-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentLostUrl = `/deals/kanban/${btn.dataset.deal}/stage/`;
+      document.getElementById('lost-reason-select').value = '';
+      new bootstrap.Modal(document.getElementById('lostReasonModal')).show();
+    });
+  });
+  document.getElementById('confirm-lost-btn')?.addEventListener('click', () => {
+    const reason = document.getElementById('lost-reason-select').value;
+    if (!reason) { alert('Select a reason.'); return; }
+    bootstrap.Modal.getInstance(document.getElementById('lostReasonModal')).hide();
+    postStageUpdate(currentLostUrl, 'lost', reason);
+  });
+
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', card.dataset.dealId);
+      card.style.opacity = '0.4';
+    });
+    card.addEventListener('dragend', () => { card.style.opacity = '1'; });
+  });
+  document.querySelectorAll('.kanban-cards').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; col.style.background = '#f0f4f8'; });
+    col.addEventListener('dragleave', () => { col.style.background = ''; });
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.style.background = '';
+      const dealId = e.dataTransfer.getData('text/plain');
+      const newStage = col.dataset.stage;
+      postStageUpdate(`/deals/kanban/${dealId}/stage/`, newStage);
+    });
+  });
+});
+</script>
+<style>
+.kanban-card { transition: transform .15s, box-shadow .15s; }
+.kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+.kanban-cards.drag-over { background: #f0f4f8; }
+</style>
+{% endblock %}

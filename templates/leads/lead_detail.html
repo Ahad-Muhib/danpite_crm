@@ -3,6 +3,7 @@
 {% block page_title %}{{ lead.name }}{% endblock %}
 {% block content %}
 <div class="row g-3">
+  <!-- ── Left: Profile Card ────────────────────────── -->
   <div class="col-lg-4">
     <div class="crm-card">
       <div class="p-4 text-center border-bottom">
@@ -18,82 +19,207 @@
         {% if lead.email %}<li class="list-group-item d-flex gap-2"><i class="bi bi-envelope text-muted"></i> {{ lead.email }}</li>{% endif %}
         {% if lead.phone %}<li class="list-group-item d-flex gap-2"><i class="bi bi-telephone text-muted"></i> {{ lead.phone }}</li>{% endif %}
         <li class="list-group-item d-flex gap-2"><i class="bi bi-funnel text-muted"></i> {{ lead.lead_source_label }}</li>
+        <li class="list-group-item d-flex gap-2">
+          <i class="bi bi-person text-muted"></i>
+          {% if lead.lead_owner %}{{ lead.lead_owner.get_full_name|default:lead.lead_owner.username }}{% else %}Unassigned{% endif %}
+        </li>
         <li class="list-group-item d-flex gap-2"><i class="bi bi-calendar text-muted"></i> {{ lead.created_at|date:"d M Y" }}</li>
       </ul>
       <div class="p-3 d-flex flex-column gap-2">
         <a href="{% url 'lead_edit' lead.pk %}" class="btn btn-primary btn-sm">Edit Lead</a>
-        <a href="{% url 'followup_create' %}?lead={{ lead.pk }}" class="btn btn-success btn-sm">Log Follow Up</a>
+        <a href="{% url 'followup_create' %}?lead={{ lead.pk }}" class="btn btn-success btn-sm"><i class="bi bi-telephone-outgoing me-1"></i>Log Follow Up</a>
         {% if not lead.is_converted %}
-        <a href="{% url 'lead_convert' lead.pk %}" class="btn btn-success btn-sm" onclick="return confirm('Convert to client?')">Convert to Client</a>
+        <a href="{% url 'lead_convert' lead.pk %}" class="btn btn-outline-success btn-sm" onclick="return confirm('Convert to client?')">Convert to Client</a>
         {% endif %}
         <a href="{% url 'lead_delete' lead.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete</a>
       </div>
     </div>
-  </div>
-  <div class="col-lg-8">
-    <div class="crm-card">
+
+    <!-- Assignment (Feature 6) -->
+    <div class="crm-card mt-3">
       <div class="crm-card-header">
-        <span class="crm-card-title">Deals</span>
-        <a href="{% url 'deal_create' %}" class="btn btn-sm btn-primary">+ New Deal</a>
+        <span class="crm-card-title"><i class="bi bi-person-gear me-1"></i>Assignment</span>
       </div>
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead><tr><th>Deal Name</th><th>Pipeline</th><th>Stage</th><th>Value</th><th>Close Date</th></tr></thead>
-          <tbody>
-            {% for d in deals %}
-            <tr>
-              <td class="fw-medium">{{ d.deal_name }}</td>
-              <td>{{ d.get_pipeline_display }}</td>
-              <td>
-                {% if d.stage == 'won' %}<span class="badge bg-success">Won</span>
-                {% elif d.stage == 'lost' %}<span class="badge bg-danger">Lost</span>
-                {% else %}<span class="badge bg-primary">{{ d.get_stage_display }}</span>{% endif %}
-              </td>
-              <td class="fw-medium">{{ d.currency }} {{ d.value }}</td>
-              <td class="text-muted">{{ d.close_date|default:"—" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="text-center text-muted py-4">No deals yet.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="p-3">
+        <form method="post" action="{% url 'lead_assign' lead.pk %}">
+          {% csrf_token %}
+          <div class="input-group input-group-sm">
+            {{ assignment_form.lead_owner }}
+            <button type="submit" class="btn btn-primary">Assign</button>
+          </div>
+        </form>
       </div>
     </div>
 
+    <!-- Quick Log (Feature 8) -->
     <div class="crm-card mt-3">
       <div class="crm-card-header">
-        <span class="crm-card-title">Follow Ups</span>
-        <a href="{% url 'followup_create' %}?lead={{ lead.pk }}" class="btn btn-sm btn-success">+ Log Follow Up</a>
+        <span class="crm-card-title"><i class="bi bi-lightning me-1"></i>Quick Log</span>
       </div>
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead><tr><th>Date</th><th>Type</th><th>Subject</th><th>Next Follow Up</th><th>Outcome</th></tr></thead>
-          <tbody>
-            {% for f in followups %}
-            <tr>
-              <td class="text-muted">{{ f.created_at|date:"d M Y H:i" }}</td>
-              <td>
-                {% if f.followup_type == 'call' %}<span class="badge bg-success">Call</span>
-                {% elif f.followup_type == 'email' %}<span class="badge bg-primary">Email</span>
-                {% elif f.followup_type == 'meeting' %}<span class="badge bg-info text-dark">Meeting</span>
-                {% elif f.followup_type == 'note' %}<span class="badge bg-secondary">Note</span>
-                {% else %}<span class="badge bg-light text-dark border">Other</span>{% endif %}
-              </td>
-              <td class="fw-medium">{{ f.subject }}</td>
-              <td>
-                {% if f.next_followup_date %}
-                  {% if f.next_followup_date < today %}<span class="badge bg-danger">{{ f.next_followup_date }}</span>
-                  {% elif f.next_followup_date == today %}<span class="badge bg-warning text-dark">Today</span>
-                  {% else %}<span class="badge bg-info text-dark">{{ f.next_followup_date }}</span>{% endif %}
-                {% else %}<span class="text-muted">—</span>{% endif %}
-              </td>
-              <td class="text-muted">{{ f.outcome|default:"—" }}</td>
-            </tr>
+      <div class="p-3">
+        <form method="post" action="{% url 'activity_quick_log' lead.pk %}">
+          {% csrf_token %}
+          <div class="d-flex gap-1 mb-2 flex-wrap">
+            <button type="submit" name="activity_type" value="call" class="btn btn-sm btn-outline-success"><i class="bi bi-telephone"></i> Call</button>
+            <button type="submit" name="activity_type" value="email" class="btn btn-sm btn-outline-primary"><i class="bi bi-envelope"></i> Email</button>
+            <button type="submit" name="activity_type" value="meeting" class="btn btn-sm btn-outline-info"><i class="bi bi-camera-video"></i> Meeting</button>
+            <button type="submit" name="activity_type" value="note" class="btn btn-sm btn-outline-secondary"><i class="bi bi-journal-text"></i> Note</button>
+          </div>
+          <input type="text" name="title" class="form-control form-control-sm mb-1" placeholder="Subject" required>
+          <textarea name="description" class="form-control form-control-sm" rows="2" placeholder="Details (optional)"></textarea>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: Tabs ───────────────────────────────── -->
+  <div class="col-lg-8">
+    <ul class="nav nav-tabs crm-card mb-0" style="border-radius:12px 12px 0 0;border-bottom:none;padding:0 16px;">
+      <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#deals-tab">Deals</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#timeline-tab">Activity</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#comments-tab">Comments <span class="badge bg-secondary">{{ comments.count }}</span></a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#followups-tab">Follow Ups</a></li>
+    </ul>
+    <div class="crm-card" style="border-radius:0 0 12px 12px;">
+      <div class="tab-content p-3">
+        <!-- Deals Tab -->
+        <div class="tab-pane fade show active" id="deals-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">Associated Deals</h6>
+            <a href="{% url 'deal_create' %}" class="btn btn-sm btn-primary">+ New Deal</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead><tr><th>Deal Name</th><th>Stage</th><th>Value</th><th>Next Follow Up</th></tr></thead>
+              <tbody>
+                {% for d in deals %}
+                <tr>
+                  <td class="fw-medium">{{ d.deal_name }}</td>
+                  <td>
+                    {% if d.stage == 'won' %}<span class="badge bg-success">Won</span>
+                    {% elif d.stage == 'lost' %}<span class="badge bg-danger">Lost</span>
+                    {% else %}<span class="badge bg-primary">{{ d.get_stage_display }}</span>{% endif %}
+                  </td>
+                  <td class="fw-medium">{{ d.currency }} {{ d.value }}</td>
+                  <td>
+                    {% if d.next_follow_up %}
+                      {% if d.next_follow_up < today %}<span class="badge bg-danger">{{ d.next_follow_up }}</span>
+                      {% elif d.next_follow_up == today %}<span class="badge bg-warning text-dark">Today</span>
+                      {% else %}<span class="badge bg-info text-dark">{{ d.next_follow_up }}</span>{% endif %}
+                    {% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-4">No deals yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Activity Timeline (Feature 1) -->
+        <div class="tab-pane fade" id="timeline-tab">
+          <h6 class="fw-bold mb-3">Activity Timeline</h6>
+          <div class="activity-timeline">
+            {% for a in activities %}
+            <div class="activity-item d-flex gap-3 mb-3">
+              <div class="activity-icon flex-shrink-0">
+                {% if a.activity_type == 'call' %}<span class="badge bg-success rounded-circle p-2"><i class="bi bi-telephone"></i></span>
+                {% elif a.activity_type == 'email' %}<span class="badge bg-primary rounded-circle p-2"><i class="bi bi-envelope"></i></span>
+                {% elif a.activity_type == 'meeting' %}<span class="badge bg-info text-dark rounded-circle p-2"><i class="bi bi-camera-video"></i></span>
+                {% elif a.activity_type == 'conversion' %}<span class="badge bg-success rounded-circle p-2"><i class="bi bi-arrow-right-circle"></i></span>
+                {% elif a.activity_type == 'deal_update' %}<span class="badge bg-warning text-dark rounded-circle p-2"><i class="bi bi-graph-up"></i></span>
+                {% elif a.activity_type == 'assignment' %}<span class="badge bg-purple rounded-circle p-2" style="background:#8b5cf6;"><i class="bi bi-person-plus"></i></span>
+                {% elif a.activity_type == 'followup' %}<span class="badge bg-teal rounded-circle p-2" style="background:#14b8a6;"><i class="bi bi-calendar-check"></i></span>
+                {% elif a.activity_type == 'status_change' %}<span class="badge bg-orange rounded-circle p-2" style="background:#f97316;"><i class="bi bi-arrow-repeat"></i></span>
+                {% else %}<span class="badge bg-secondary rounded-circle p-2"><i class="bi bi-journal-text"></i></span>{% endif %}
+              </div>
+              <div class="flex-grow-1">
+                <div class="fw-medium" style="font-size:13px;">{{ a.title }}</div>
+                {% if a.description %}<div class="text-muted" style="font-size:12px;">{{ a.description }}</div>{% endif %}
+                <div class="text-muted" style="font-size:11px;">
+                  {% if a.created_by %}{{ a.created_by.get_full_name|default:a.created_by.username }}{% else %}System{% endif %} · {{ a.created_at|timesince }} ago
+                </div>
+              </div>
+            </div>
             {% empty %}
-            <tr><td colspan="5" class="text-center text-muted py-4">No follow-ups yet.</td></tr>
+            <div class="text-center text-muted py-4">No activity yet. Use Quick Log to start tracking.</div>
             {% endfor %}
-          </tbody>
-        </table>
+          </div>
+        </div>
+
+        <!-- Comments (Feature 5) -->
+        <div class="tab-pane fade" id="comments-tab">
+          <h6 class="fw-bold mb-3">Comments</h6>
+          {% for c in comments %}
+          <div class="d-flex gap-2 mb-3 p-2" style="background:#f8fafc;border-radius:8px;">
+            <div class="avatar-sm" style="background:#6366f1;width:32px;height:32px;font-size:12px;">{{ c.created_by.get_full_name|slice:":1"|upper|default:"?" }}</div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <span class="fw-medium" style="font-size:13px;">{{ c.created_by.get_full_name|default:c.created_by.username }}</span>
+                <span class="text-muted" style="font-size:11px;">{{ c.created_at|timesince }} ago</span>
+              </div>
+              <div style="font-size:13px;">{{ c.body|linebreaks }}</div>
+              {% if c.created_by == request.user %}
+              <form method="post" action="{% url 'comment_delete' lead.pk c.pk %}" class="d-inline mt-1">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link btn-sm text-danger p-0" onclick="return confirm('Delete comment?')" style="font-size:11px;">Delete</button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-center text-muted py-3">No comments yet.</div>
+          {% endfor %}
+          <form method="post" action="{% url 'comment_add' lead.pk %}" class="mt-3">
+            {% csrf_token %}
+            {{ comment_form.body }}
+            <button type="submit" class="btn btn-primary btn-sm mt-2">Add Comment</button>
+          </form>
+        </div>
+
+        <!-- Follow Ups Tab -->
+        <div class="tab-pane fade" id="followups-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">Follow Ups</h6>
+            <a href="{% url 'followup_create' %}?lead={{ lead.pk }}" class="btn btn-sm btn-success">+ Log Follow Up</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead><tr><th>Date</th><th>Type</th><th>Subject</th><th>Next</th><th>Outcome</th><th></th></tr></thead>
+              <tbody>
+                {% for f in followups %}
+                <tr>
+                  <td class="text-muted" style="font-size:12px;">{{ f.created_at|date:"d M Y" }}</td>
+                  <td>
+                    {% if f.followup_type == 'call' %}<span class="badge bg-success">Call</span>
+                    {% elif f.followup_type == 'email' %}<span class="badge bg-primary">Email</span>
+                    {% elif f.followup_type == 'meeting' %}<span class="badge bg-info text-dark">Meeting</span>
+                    {% else %}<span class="badge bg-secondary">{{ f.get_followup_type_display }}</span>{% endif %}
+                  </td>
+                  <td class="fw-medium">{{ f.subject }}</td>
+                  <td>
+                    {% if f.next_followup_date %}
+                      {% if f.next_followup_date < today %}<span class="badge bg-danger">{{ f.next_followup_date }}</span>
+                      {% elif f.next_followup_date == today %}<span class="badge bg-warning text-dark">Today</span>
+                      {% else %}<span class="badge bg-info text-dark">{{ f.next_followup_date }}</span>{% endif %}
+                    {% else %}<span class="text-muted">—</span>{% endif %}
+                  </td>
+                  <td class="text-muted">{{ f.outcome|default:"—" }}</td>
+                  <td>
+                    <form method="post" action="{% url 'followup_complete' f.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-success" title="Complete" onclick="return confirm('Complete this follow-up?{% if f.is_recurring %} A new one will be created.{% endif %}')"><i class="bi bi-check-lg"></i></button>
+                    </form>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">No follow-ups.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>

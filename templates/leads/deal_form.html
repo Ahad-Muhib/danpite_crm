@@ -8,15 +8,29 @@
     <form method="post">
       {% csrf_token %}
       <div class="row g-3">
-        <div class="col-12"><label class="form-label fw-medium">Deal Name <span class="text-danger">*</span></label>{{ form.deal_name }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Lead Contact</label>{{ form.lead_contact }}</div>
+        <div class="col-12">
+          <label class="form-label fw-medium">Deal Name <span class="text-danger">*</span></label>
+          {{ form.deal_name }}
+          <datalist id="deal-name-suggestions">
+            {% for lead in leads %}
+            <option value="{{ lead.name }}"></option>
+            {% endfor %}
+          </datalist>
+          <div class="form-text">Type any name, or select a lead to auto-fill.</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Lead Contact</label>
+          {{ form.lead_contact }}
+          <div class="form-text">Optional. Link a lead to this deal.</div>
+        </div>
         <div class="col-md-6"><label class="form-label fw-medium">Deal Agent</label>{{ form.deal_agent }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Pipeline</label>{{ form.pipeline }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Stage</label>{{ form.stage }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Value</label>{{ form.value }}</div>
         <div class="col-md-3"><label class="form-label fw-medium">Currency</label>{{ form.currency }}</div>
         <div class="col-md-3"><label class="form-label fw-medium">Close Date</label>{{ form.close_date }}</div>
-        <div class="col-md-3"><label class="form-label fw-medium">Next Follow Up</label>{{ form.next_follow_up }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Next Follow Up</label>{{ form.next_follow_up }}</div>
+        <div class="col-md-6" id="lost-reason-wrapper"><label class="form-label fw-medium">Lost Reason</label>{{ form.lost_reason }}</div>
         <div class="col-12"><label class="form-label fw-medium">Description</label>{{ form.description }}</div>
       </div>
       <div class="d-flex gap-2 mt-4">
@@ -26,4 +40,25 @@
     </form>
   </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const stage = document.getElementById('id_stage');
+  const lostWrapper = document.getElementById('lost-reason-wrapper');
+  const toggle = () => { lostWrapper.style.display = stage.value === 'lost' ? '' : 'none'; };
+  stage?.addEventListener('change', toggle);
+  toggle();
+
+  // Auto-fill deal name from lead selection
+  const leadSelect = document.getElementById('id_lead_contact');
+  const dealNameInput = document.getElementById('id_deal_name');
+  leadSelect?.addEventListener('change', () => {
+    if (!dealNameInput.value.trim()) {
+      const selected = leadSelect.options[leadSelect.selectedIndex];
+      if (selected && selected.text && selected.text !== '---------') {
+        dealNameInput.value = selected.text.trim();
+      }
+    }
+  });
+});
+</script>
 {% endblock %}

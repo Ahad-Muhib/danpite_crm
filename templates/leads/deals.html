@@ -19,7 +19,6 @@
           <td>
             {% if d.stage == 'won' %}<span class="badge bg-success">Won</span>
             {% elif d.stage == 'lost' %}<span class="badge bg-danger">Lost</span>
-            {% elif d.stage == 'negotiation' %}<span class="badge bg-warning text-dark">Negotiation</span>
             {% else %}<span class="badge bg-primary">{{ d.get_stage_display }}</span>{% endif %}
           </td>
           <td class="fw-medium">{{ d.currency }} {{ d.value }}</td>

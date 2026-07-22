@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Deal, FollowUp, LeadContact
+from .models import Comment, Deal, FollowUp, LeadContact
 
 
 class LeadContactForm(forms.ModelForm):
@@ -25,7 +25,7 @@ class LeadContactForm(forms.ModelForm):
 class DealForm(forms.ModelForm):
     class Meta:
         model = Deal
-        fields = ['deal_name', 'lead_contact', 'pipeline', 'stage', 'value', 'currency', 'close_date', 'next_follow_up', 'deal_agent', 'description']
+        fields = ['deal_name', 'lead_contact', 'pipeline', 'stage', 'value', 'currency', 'close_date', 'next_follow_up', 'deal_agent', 'lost_reason', 'description']
         widgets = {
             'deal_name': forms.TextInput(attrs={'class': 'form-control'}),
             'lead_contact': forms.Select(attrs={'class': 'form-select'}),
@@ -36,6 +36,7 @@ class DealForm(forms.ModelForm):
             'close_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'next_follow_up': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'deal_agent': forms.Select(attrs={'class': 'form-select'}),
+            'lost_reason': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -43,7 +44,7 @@ class DealForm(forms.ModelForm):
 class FollowUpForm(forms.ModelForm):
     class Meta:
         model = FollowUp
-        fields = ['lead', 'deal', 'followup_type', 'subject', 'notes', 'next_followup_date', 'outcome']
+        fields = ['lead', 'deal', 'followup_type', 'subject', 'notes', 'next_followup_date', 'outcome', 'is_recurring', 'recurrence_days']
         widgets = {
             'lead': forms.Select(attrs={'class': 'form-select'}),
             'deal': forms.Select(attrs={'class': 'form-select'}),
@@ -52,4 +53,29 @@ class FollowUpForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'next_followup_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'outcome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Interested, Callback scheduled'}),
+            'is_recurring': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'recurrence_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
         }
+
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['body']
+        widgets = {
+            'body': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Add a comment...'}),
+        }
+
+
+class ActivityQuickForm(forms.Form):
+    title = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Subject'}))
+    description = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Details...'}))
+
+
+class LeadAssignmentForm(forms.Form):
+    lead_owner = forms.ModelChoiceField(queryset=None, required=False, widget=forms.Select(attrs={'class': 'form-select'}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.contrib.auth.models import User
+        self.fields['lead_owner'].queryset = User.objects.filter(is_active=True).order_by('username')

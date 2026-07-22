@@ -2,6 +2,49 @@ from django.contrib.auth.models import User
 from django.db import models
 
 
+class Activity(models.Model):
+    TYPE = [
+        ('call', 'Call'),
+        ('email', 'Email'),
+        ('meeting', 'Meeting'),
+        ('note', 'Note'),
+        ('status_change', 'Status Change'),
+        ('deal_update', 'Deal Update'),
+        ('assignment', 'Assignment'),
+        ('conversion', 'Conversion'),
+        ('followup', 'Follow-up'),
+        ('other', 'Other'),
+    ]
+    lead = models.ForeignKey('LeadContact', null=True, blank=True, on_delete=models.SET_NULL, related_name='activities')
+    deal = models.ForeignKey('Deal', null=True, blank=True, on_delete=models.SET_NULL, related_name='activities')
+    activity_type = models.CharField(max_length=20, choices=TYPE, default='note')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    meta = models.JSONField(default=dict, blank=True)
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='activities_created')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.get_activity_type_display()} - {self.title}"
+
+
+class Comment(models.Model):
+    lead = models.ForeignKey('LeadContact', on_delete=models.CASCADE, related_name='comments')
+    body = models.TextField()
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='lead_comments')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Comment by {self.created_by} on {self.lead}"
+
+
 class FollowUp(models.Model):
     TYPE = [('call', 'Call'), ('email', 'Email'), ('meeting', 'Meeting'), ('note', 'Note'), ('other', 'Other')]
     lead = models.ForeignKey('LeadContact', null=True, blank=True, on_delete=models.SET_NULL, related_name='followups')
@@ -11,6 +54,8 @@ class FollowUp(models.Model):
     notes = models.TextField(blank=True)
     next_followup_date = models.DateField(null=True, blank=True)
     outcome = models.CharField(max_length=100, blank=True)
+    is_recurring = models.BooleanField(default=False)
+    recurrence_days = models.PositiveIntegerField(default=7, help_text='Days until next follow-up is auto-created')
     created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='followups_created')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -51,7 +96,8 @@ class LeadContact(models.Model):
 
 class Deal(models.Model):
     PIPELINE = [('sales', 'Sales'), ('marketing', 'Marketing'), ('support', 'Support')]
-    STAGE = [('generated', 'Generated'), ('qualified', 'Qualified'), ('presentation', 'Presentation'), ('negotiation', 'Negotiation'), ('won', 'Won'), ('lost', 'Lost')]
+    STAGE = [('generated', 'Generated'), ('won', 'Won'), ('lost', 'Lost')]
+    LOST_REASON = [('', '—'), ('price', 'Price'), ('competitor', 'Competitor'), ('timing', 'Bad Timing'), ('budget', 'No Budget'), ('no_need', 'No Need'), ('no_response', 'No Response'), ('other', 'Other')]
     lead_contact = models.ForeignKey(LeadContact, null=True, blank=True, on_delete=models.SET_NULL, related_name='deals')
     deal_name = models.CharField(max_length=200)
     pipeline = models.CharField(max_length=30, choices=PIPELINE, default='sales')
@@ -64,6 +110,7 @@ class Deal(models.Model):
     deal_watcher = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='watched_deals')
     category = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True)
+    lost_reason = models.CharField(max_length=30, choices=LOST_REASON, blank=True, default='')
     auto_convert = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
