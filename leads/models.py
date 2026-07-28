@@ -64,10 +64,44 @@ class FollowUp(models.Model):
 
 
 class LeadContact(models.Model):
-    SOURCE = [('none', 'None'), ('cold_call', 'Cold Call'), ('email', 'Email'), ('website', 'Website'), ('social', 'Social Media'), ('referral', 'Referral'), ('other', 'Other')]
+    SOURCE = [
+        ('none', 'None'),
+        ('affiliate', 'Affiliate'),
+        ('email_marketing', 'Email Marketing'),
+        ('event', 'Event'),
+        ('existing_customer', 'Existing Customer'),
+        ('facebook', 'Facebook'),
+        ('facebook_ads', 'Facebook Ads'),
+        ('google', 'Google'),
+        ('google_ads', 'Google Ads'),
+        ('instagram', 'Instagram'),
+        ('linkedin', 'LinkedIn'),
+        ('phone_call', 'Phone Call'),
+        ('reference', 'Reference'),
+        ('sms_campaign', 'SMS Campaign'),
+        ('walk_in', 'Walk-in'),
+        ('website', 'Website'),
+        ('other', 'Other'),
+    ]
     SOURCE_LABELS = dict(SOURCE)
     SOURCE_SUGGESTIONS = [label for _, label in SOURCE if label != 'None']
-    CONTACT_TYPE = [('lead', 'Lead'), ('deal', 'Deal')]
+    CONTACT_TYPE = [('hot', 'Hot'), ('cold', 'Cold'), ('mid', 'Mid')]
+    STATE = [('open', 'Open'), ('closed', 'Closed')]
+    STATUS = [
+        ('', '---'),
+        ('attempted_contact', 'Attempted Contact'),
+        ('contacted', 'Contacted'),
+        ('convert_to_sale', 'Convert to Sale'),
+        ('interested', 'Interested'),
+        ('lost', 'Lost'),
+        ('meeting_scheduled', 'Meeting Scheduled'),
+        ('needs_follow_up', 'Needs Follow Up'),
+        ('negotiation', 'Negotiation'),
+        ('new_lead', 'New Lead'),
+        ('not_interested', 'Not Interested'),
+        ('proposal_sent', 'Proposal Sent'),
+    ]
+    FOLLOWUP_ACTION = [('call', 'Call'), ('text', 'Text'), ('meeting', 'Meeting'), ('email', 'Email'), ('other', 'Other')]
     salutation = models.CharField(max_length=10, blank=True)
     name = models.CharField(max_length=200)
     email = models.EmailField(blank=True)
@@ -76,11 +110,16 @@ class LeadContact(models.Model):
     website = models.URLField(blank=True)
     address = models.TextField(blank=True)
     lead_source = models.CharField(max_length=100, default='none', blank=True)
-    contact_type = models.CharField(max_length=10, choices=CONTACT_TYPE, default='lead')
+    contact_type = models.CharField(max_length=10, choices=CONTACT_TYPE, default='cold')
     lead_owner = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='owned_leads')
     added_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='added_leads')
     is_converted = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
+    lead_state = models.CharField(max_length=10, choices=STATE, default='open')
+    lead_status = models.CharField(max_length=25, choices=STATUS, default='new_lead', blank=True)
+    budget = models.CharField(max_length=100, blank=True, help_text='Initial budget estimate')
+    next_followup_date = models.DateField(null=True, blank=True)
+    followup_action = models.CharField(max_length=20, choices=FOLLOWUP_ACTION, default='call', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

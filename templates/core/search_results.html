@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}Search Results{% endblock %}
+{% block page_title %}Search: "{{ q }}"{% endblock %}
+{% block content %}
+
+<div class="mb-3 text-muted" style="font-size:13px;">
+  Found <strong>{{ total }}</strong> result{{ total|pluralize }} for "<strong>{{ q }}</strong>"
+</div>
+
+{% if results.leads %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-person-lines-fill me-2"></i>Leads ({{ results.leads|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Company</th><th>Source</th><th></th></tr></thead>
+      <tbody>
+        {% for l in results.leads %}
+        <tr>
+          <td class="fw-medium">{{ l.name }}</td>
+          <td>{{ l.phone|default:"—" }}</td>
+          <td class="text-muted">{{ l.email|default:"—" }}</td>
+          <td>{{ l.company|default:"—" }}</td>
+          <td>{{ l.lead_source }}</td>
+          <td><a href="{% url 'lead_detail' l.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.clients %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-people-fill me-2"></i>Clients ({{ results.clients|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Company</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for c in results.clients %}
+        <tr>
+          <td class="fw-medium">{{ c.name }}</td>
+          <td>{{ c.phone|default:"—" }}</td>
+          <td class="text-muted">{{ c.email|default:"—" }}</td>
+          <td>{{ c.company|default:"—" }}</td>
+          <td><span class="badge {% if c.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">{{ c.get_status_display }}</span></td>
+          <td><a href="{% url 'client_detail' c.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.invoices %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-receipt me-2"></i>Invoices ({{ results.invoices|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Code</th><th>Client</th><th>Total</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for i in results.invoices %}
+        <tr>
+          <td class="fw-medium text-primary">{{ i.code }}</td>
+          <td>{{ i.client.name|default:i.client_name|default:"—" }}</td>
+          <td class="fw-medium">{{ i.total }}</td>
+          <td><span class="badge bg-{{ i.status }}">{{ i.get_status_display }}</span></td>
+          <td><a href="{% url 'invoice_detail' i.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.orders %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-bag-check me-2"></i>Orders ({{ results.orders|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Order #</th><th>Client</th><th>Total</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for o in results.orders %}
+        <tr>
+          <td class="fw-medium text-primary">{{ o.order_number }}</td>
+          <td>{{ o.client.name|default:"—" }}</td>
+          <td class="fw-medium">{{ o.total }}</td>
+          <td><span class="badge bg-{{ o.status }}">{{ o.get_status_display }}</span></td>
+          <td><a href="{% url 'order_detail' o.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.employees %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-person-badge me-2"></i>Employees ({{ results.employees|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>ID</th><th>Email</th><th>Role</th><th></th></tr></thead>
+      <tbody>
+        {% for e in results.employees %}
+        <tr>
+          <td class="fw-medium">{{ e.name }}</td>
+          <td class="text-muted">{{ e.employee_id }}</td>
+          <td class="text-muted">{{ e.email }}</td>
+          <td><span class="badge bg-light text-dark border">{{ e.get_role_display }}</span></td>
+          <td><a href="{% url 'employee_detail' e.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.tasks %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-check2-square me-2"></i>Tasks ({{ results.tasks|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Title</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for t in results.tasks %}
+        <tr>
+          <td class="fw-medium">{{ t.title }}</td>
+          <td><span class="badge {% if t.priority == 'high' %}bg-danger{% elif t.priority == 'medium' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ t.get_priority_display }}</span></td>
+          <td><span class="badge {% if t.status == 'completed' %}bg-success{% elif t.status == 'in_progress' %}bg-primary{% else %}bg-secondary{% endif %}">{{ t.get_status_display }}</span></td>
+          <td><a href="{% url 'task_detail' t.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if total == 0 %}
+<div class="crm-card">
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-search" style="font-size:48px;opacity:.3;"></i>
+    <p class="mt-2">No results found for "<strong>{{ q }}</strong>"</p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

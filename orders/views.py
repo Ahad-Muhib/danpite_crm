@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -11,12 +12,14 @@ from .models import Order
 def order_list(request):
     q = request.GET.get('q', '')
     status = request.GET.get('status', '')
-    qs = Order.objects.all()
+    qs = Order.objects.all().order_by('-id')
     if q:
         qs = qs.filter(Q(order_number__icontains=q))
     if status:
         qs = qs.filter(status=status)
-    return render(request, 'orders/orders.html', {'orders': qs, 'q': q, 'status': status})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'orders/orders.html', {'orders': page, 'q': q, 'status': status})
 
 
 @login_required

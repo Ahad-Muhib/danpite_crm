@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -35,12 +36,14 @@ def client_data_api(request):
 def invoice_list(request):
     q = request.GET.get('q', '')
     status = request.GET.get('status', '')
-    qs = Invoice.objects.all()
+    qs = Invoice.objects.all().order_by('-id')
     if q:
         qs = qs.filter(Q(code__icontains=q))
     if status:
         qs = qs.filter(status=status)
-    return render(request, 'accounts/invoices.html', {'invoices': qs, 'q': q, 'status': status})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'accounts/invoices.html', {'invoices': page, 'q': q, 'status': status})
 
 
 @login_required
@@ -186,7 +189,9 @@ def invoice_delete(request, pk):
 def payment_list(request):
     qs = Payment.objects.all().order_by('-payment_date')
     total = qs.aggregate(Sum('amount'))['amount__sum'] or 0
-    return render(request, 'accounts/payments.html', {'payments': qs, 'total': total})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'accounts/payments.html', {'payments': page, 'total': total})
 
 
 @login_required
@@ -240,7 +245,9 @@ def payment_delete(request, pk):
 def expense_list(request):
     qs = Expense.objects.all().order_by('-expense_date')
     total = qs.aggregate(Sum('amount'))['amount__sum'] or 0
-    return render(request, 'accounts/expenses.html', {'expenses': qs, 'total': total})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'accounts/expenses.html', {'expenses': page, 'total': total})
 
 
 @login_required
@@ -282,12 +289,14 @@ def expense_delete(request, pk):
 @login_required
 def bank_account_list(request):
     status = request.GET.get('status', '')
-    qs = BankAccount.objects.all()
+    qs = BankAccount.objects.all().order_by('-id')
     if status == 'active':
         qs = qs.filter(is_active=True)
     elif status == 'inactive':
         qs = qs.filter(is_active=False)
-    return render(request, 'accounts/bank_accounts.html', {'accounts': qs, 'status': status})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'accounts/bank_accounts.html', {'accounts': page, 'status': status})
 
 
 @login_required

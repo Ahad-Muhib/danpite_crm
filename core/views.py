@@ -1,8 +1,12 @@
 from django.contrib import messages
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, Avg
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from functools import wraps
 
 from clients.models import Client
 from hr.models import Employee
@@ -11,6 +15,47 @@ from orders.models import Order
 
 from .forms import CurrencySettingsForm, ProjectForm, ScheduleForm, TaskForm
 from .models import CurrencySettings, Project, Schedule, Task
+
+
+# ── Role helpers ───────────────────────────────────────────────
+# Roles: admin, manager, hr, employee  (from Employee.role choices)
+# A User without an Employee record is treated as 'staff' (full access
+# for backwards-compatibility with superusers created via createsuperuser).
+
+def get_user_role(user):
+    if not user.is_authenticated:
+        return None
+    if user.is_superuser or user.is_staff:
+        return 'admin'
+    try:
+        return user.employee_profile.role
+    except Employee.DoesNotExist:
+        return 'staff'
+
+
+def role_required(*allowed_roles):
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def _wrapped(request, *args, **kwargs):
+            role = get_user_role(request.user)
+            if role not in allowed_roles:
+                return HttpResponseForbidden('You do not have permission to access this page.')
+            return view_func(request, *args, **kwargs)
+        return _wrapped
+    return decorator
+
+
+def is_admin(user):
+    return get_user_role(user) == 'admin'
+
+
+def is_manager_or_above(user):
+    return get_user_role(user) in ('admin', 'manager')
+
+
+def is_hr_or_above(user):
+    return get_user_role(user) in ('admin', 'manager', 'hr')
 
 
 @login_required
@@ -63,6 +108,7 @@ def dashboard(request):
         'pipeline_stages': pipeline_stages,
         'pipeline_max_count': max_count,
         'source_stats': source_stats,
+        'user_role': get_user_role(request.user),
     }
 
     # Financial summary
@@ -87,11 +133,117 @@ def dashboard(request):
     return render(request, 'dashboard.html', ctx)
 
 
+# ── Global Search ──────────────────────────────────────────────
+
+@login_required
+def global_search(request):
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return redirect('dashboard')
+
+    results = {
+        'leads': LeadContact.objects.filter(
+            Q(name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q) | Q(company__icontains=q)
+        )[:10],
+        'clients': Client.objects.filter(
+            Q(name__icontains=q) | Q(email__icontains=q) | Q(company__icontains=q) | Q(phone__icontains=q)
+        )[:10],
+        'employees': Employee.objects.filter(
+            Q(name__icontains=q) | Q(email__icontains=q) | Q(employee_id__icontains=q) | Q(phone__icontains=q)
+        )[:10],
+        'tasks': Task.objects.filter(
+            Q(title__icontains=q) | Q(description__icontains=q)
+        )[:10],
+    }
+
+    try:
+        from accounts.models import Invoice, Payment, Order
+        results['invoices'] = Invoice.objects.filter(
+            Q(code__icontains=q) | Q(client_name__icontains=q) | Q(phone__icontains=q)
+        )[:10]
+        results['payments'] = Payment.objects.filter(
+            Q(reference__icontains=q)
+        )[:10]
+        results['orders'] = Order.objects.filter(
+            Q(order_number__icontains=q) | Q(client__name__icontains=q)
+        )[:10]
+    except Exception:
+        pass
+
+    total = sum(len(v) for v in results.values())
+
+    return render(request, 'core/search_results.html', {
+        'results': results,
+        'q': q,
+        'total': total,
+    })
+
+
+# ── User Management (Admin Only) ──────────────────────────────
+
+@login_required
+def user_list(request):
+    if not is_admin(request.user):
+        return HttpResponseForbidden('Only administrators can manage users.')
+    from django.contrib.auth.models import User
+    users = User.objects.select_related('employee_profile').all().order_by('-date_joined')
+    return render(request, 'core/user_list.html', {'users': users})
+
+
+@login_required
+def user_create(request):
+    if not is_admin(request.user):
+        return HttpResponseForbidden('Only administrators can create users.')
+    from django.contrib.auth.models import User
+    from django.contrib.auth.forms import UserCreationForm
+    from django import forms
+
+    class ExtendedUserCreationForm(UserCreationForm):
+        email = forms.EmailField(required=True)
+        first_name = forms.CharField(max_length=30, required=False)
+        last_name = forms.CharField(max_length=30, required=False)
+
+        class Meta(UserCreationForm.Meta):
+            model = User
+            fields = ('username', 'email', 'first_name', 'last_name')
+
+    if request.method == 'POST':
+        form = ExtendedUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f'User "{user.username}" created successfully.')
+            return redirect('user_list')
+    else:
+        form = ExtendedUserCreationForm()
+    return render(request, 'core/user_form.html', {'form': form, 'action': 'Create User'})
+
+
+@login_required
+def user_delete(request, pk):
+    if not is_admin(request.user):
+        return HttpResponseForbidden('Only administrators can delete users.')
+    from django.contrib.auth.models import User
+    user = get_object_or_404(User, pk=pk)
+    if user == request.user:
+        messages.error(request, 'You cannot delete your own account.')
+        return redirect('user_list')
+    user.delete()
+    messages.success(request, f'User "{user.username}" deleted.')
+    return redirect('user_list')
+
+
+# ── Password Reset ────────────────────────────────────────────
+# Uses Django's built-in views, configured in urls.py.
+# Templates are in templates/registration/
+
+
 @login_required
 def task_list(request):
     q = request.GET.get('q', '')
-    qs = Task.objects.filter(Q(title__icontains=q)) if q else Task.objects.all()
-    return render(request, 'core/tasks.html', {'tasks': qs, 'q': q})
+    qs = Task.objects.filter(Q(title__icontains=q)).order_by('-created_at') if q else Task.objects.all().order_by('-created_at')
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'core/tasks.html', {'tasks': page, 'q': q})
 
 
 @login_required
@@ -131,7 +283,9 @@ def task_delete(request, pk):
 @login_required
 def project_list(request):
     qs = Project.objects.all().order_by('-created_at')
-    return render(request, 'core/projects.html', {'projects': qs})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'core/projects.html', {'projects': page})
 
 
 @login_required
@@ -165,7 +319,9 @@ def project_delete(request, pk):
 @login_required
 def schedule_list(request):
     qs = Schedule.objects.all().order_by('-start_datetime')
-    return render(request, 'core/schedules.html', {'schedules': qs})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'core/schedules.html', {'schedules': page})
 
 
 @login_required

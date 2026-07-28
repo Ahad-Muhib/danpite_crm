@@ -3,138 +3,225 @@
 {% block page_title %}Lead Contacts{% endblock %}
 {% block content %}
 <div class="crm-card">
-  <div class="crm-card-header">
-    <form class="d-flex gap-2 search-form" method="get" id="lead-filter-form">
+  <div class="crm-card-header flex-wrap gap-2">
+    <form class="d-flex gap-2 search-form flex-wrap" method="get" id="lead-filter-form">
       <select name="type" id="lead-type-filter" class="form-select form-select-sm" style="width:120px;">
-        <option value="">All</option>
-        <option value="lead" {% if contact_type == 'lead' %}selected{% endif %}>Lead</option>
-        <option value="deal" {% if contact_type == 'deal' %}selected{% endif %}>Deal</option>
+        <option value="">All Types</option>
+        <option value="hot" {% if contact_type == 'hot' %}selected{% endif %}>Hot</option>
+        <option value="cold" {% if contact_type == 'cold' %}selected{% endif %}>Cold</option>
+        <option value="mid" {% if contact_type == 'mid' %}selected{% endif %}>Mid</option>
       </select>
-      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Start typing to search" style="width:240px;">
       <select name="source" class="form-select form-select-sm" style="width:160px;">
         <option value="">All Sources</option>
-        {% for option in source_options %}
-        <option value="{{ option }}" {% if source == option %}selected{% endif %}>{{ option }}</option>
+        {% for opt_key, opt_label in source_choices %}
+        <option value="{{ opt_key }}" {% if source == opt_key %}selected{% endif %}>{{ opt_label }}</option>
         {% endfor %}
       </select>
-      <button class="btn btn-sm btn-outline-secondary">Filter</button>
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search name, email, phone..." style="width:240px;">
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search me-1"></i>Filter</button>
+      {% if q or source or contact_type %}
+      <a href="{% url 'lead_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>
+      {% endif %}
     </form>
-    <form method="post" id="lead-bulk-form" class="d-flex gap-2">
-      {% csrf_token %}
-      <input type="hidden" name="bulk_action" id="bulk-action-input" value="">
-      <select name="bulk_action_select" id="bulk-action-select" class="form-select form-select-sm" style="width:150px;">
-        <option value="">Actions</option>
-        <option value="convert">Convert Selected</option>
-        <option value="delete">Delete Selected</option>
-      </select>
-      <button type="submit" class="btn btn-sm btn-outline-secondary">Apply</button>
+    <div class="d-flex gap-2">
+      <form method="post" id="lead-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" id="bulk-action-input" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
+      </form>
       <a href="{% url 'lead_import' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-upload me-1"></i>Import</a>
       <div class="dropdown d-inline">
         <button class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i>Export</button>
         <ul class="dropdown-menu">
-          <li><a class="dropdown-item" href="{% url 'lead_export' %}?format=csv"><i class="bi bi-filetype-csv me-2"></i>Export as CSV</a></li>
-          <li><a class="dropdown-item" href="{% url 'lead_export' %}?format=xlsx"><i class="bi bi-filetype-xlsx me-2"></i>Export as XLSX</a></li>
+          <li><a class="dropdown-item" href="{% url 'lead_export' %}?format=csv"><i class="bi bi-filetype-csv me-2"></i>CSV</a></li>
+          <li><a class="dropdown-item" href="{% url 'lead_export' %}?format=xlsx"><i class="bi bi-filetype-xlsx me-2"></i>XLSX</a></li>
         </ul>
       </div>
-      <a href="{% url 'lead_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Lead Contact</a>
-    </form>
+      <a href="{% url 'lead_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Lead</a>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead>
         <tr>
-          <th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-leads" aria-label="Select all leads"></th>
-          <th>Id</th>
+          <th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-leads" aria-label="Select all"></th>
+          <th>ID</th>
           <th>Contact Name</th>
-          <th>Phone Number</th>
+          <th>Phone</th>
           <th>Email</th>
-          <th>Lead Owner</th>
-          <th>Added By</th>
-          <th>Creation Time</th>
+          <th>Source</th>
+          <th>State</th>
           <th>Status</th>
+          <th>Budget</th>
+          <th>Follow-up</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for l in leads %}
         <tr>
-          <td><input type="checkbox" name="selected_leads" value="{{ l.pk }}" class="form-check-input lead-checkbox" form="lead-bulk-form" aria-label="Select lead {{ l.pk }}"></td>
-          <td>{{ l.pk }}</td>
+          <td><input type="checkbox" name="selected_leads" value="{{ l.pk }}" class="form-check-input lead-checkbox" form="lead-bulk-form"></td>
+          <td class="text-muted">{{ l.pk }}</td>
           <td>
-            <div class="d-flex align-items-center gap-2">
-              <span class="fw-medium">{{ l.name }}</span>
+            <div>
+              <span class="fw-medium">
+                {{ l.name }}
+                {% if l.is_converted %}
+                <span class="badge bg-success rounded-circle ms-1" style="font-size:10px;padding:2px 5px;" title="Converted to Client">C</span>
+                {% endif %}
+              </span>
+              {% if l.is_converted and l.converted_clients.first %}
+              <div class="text-muted" style="font-size:11px;line-height:1.2;">
+                <i class="bi bi-person-check me-1"></i>Client #{{ l.converted_clients.first.pk }}
+              </div>
+              {% endif %}
             </div>
           </td>
           <td>{{ l.phone|default:"—" }}</td>
           <td class="text-muted">{{ l.email|default:"—" }}</td>
+          <td><span class="badge bg-light text-dark border">{{ l.lead_source_label }}</span></td>
           <td>
-            {% if l.lead_owner %}
-              {% if l.lead_owner %}{{ l.lead_owner.get_full_name|default:l.lead_owner.username }}{% else %}—{% endif %}
-            {% else %}—{% endif %}
+            <select class="form-select state-select" data-pk="{{ l.pk }}" style="width:110px;font-size:13px;padding:4px 8px;">
+              <option value="open" {% if l.lead_state == 'open' %}selected{% endif %}>Open</option>
+              <option value="closed" {% if l.lead_state == 'closed' %}selected{% endif %}>Closed</option>
+            </select>
           </td>
           <td>
-            {% if l.added_by %}
-              {{ l.added_by.get_full_name|default:l.added_by.username }}
-              {% if l.added_by == request.user %}<span class="text-muted">(It's you)</span>{% endif %}
-            {% else %}—{% endif %}
+            <span class="badge
+              {% if l.lead_status == 'new_lead' %}bg-primary
+              {% elif l.lead_status == 'contacted' %}bg-info text-dark
+              {% elif l.lead_status == 'interested' %}bg-success
+              {% elif l.lead_status == 'meeting_scheduled' %}bg-warning text-dark
+              {% elif l.lead_status == 'negotiation' %}bg-dark
+              {% elif l.lead_status == 'convert_to_sale' %}bg-success
+              {% elif l.lead_status == 'lost' %}bg-danger
+              {% elif l.lead_status == 'not_interested' %}bg-secondary
+              {% else %}bg-light text-dark{% endif %}">
+              {{ l.get_lead_status_display }}
+            </span>
           </td>
-          <td class="text-muted">{{ l.created_at|date:"d-m-Y H:i" }}</td>
+          <td class="text-muted">{{ l.budget|default:"—" }}</td>
           <td>
-            <form method="post" action="{% url 'lead_toggle_active' l.pk %}" class="d-inline">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm {% if l.is_converted %}btn-success{% else %}btn-info text-dark{% endif %}" title="Click to toggle">
-                {% if l.is_converted %}Client{% else %}Active{% endif %}
+            <div class="d-flex align-items-center gap-1">
+              {% if l.next_followup_date %}
+              <span class="badge bg-primary text-white" style="font-size:11px;">{{ l.next_followup_date|date:"d M Y" }}</span>
+              {% else %}
+              <span class="text-muted" style="font-size:11px;">No date</span>
+              {% endif %}
+              <button class="btn btn-sm p-0 border-0 bg-transparent text-primary followup-btn" data-pk="{{ l.pk }}" data-date="{{ l.next_followup_date|date:'Y-m-d'|default:'' }}" title="Update follow-up" style="line-height:1;">
+                <i class="bi bi-calendar-event"></i>
               </button>
-            </form>
+            </div>
           </td>
           <td>
-            <a href="{% url 'lead_detail' l.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
-            <a href="{% url 'lead_edit' l.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'lead_detail' l.pk %}" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'lead_edit' l.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
             {% if not l.is_converted %}
-            <a href="{% url 'lead_convert' l.pk %}" class="btn btn-sm btn-outline-success btn-sm-action" title="Convert to Client" onclick="return confirm('Convert to client?')"><i class="bi bi-arrow-right-circle"></i></a>
+            <a href="{% url 'lead_convert' l.pk %}" class="btn btn-sm btn-outline-success" title="Convert to Client" onclick="return confirm('Convert to client?')"><i class="bi bi-arrow-right-circle"></i></a>
             {% endif %}
-            <a href="{% url 'lead_delete' l.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" title="Delete" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="10" class="text-center text-muted py-5">No leads found.</td></tr>
+        <tr><td colspan="11" class="text-center text-muted py-5">No leads found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  {% include 'includes/pagination.html' with page_obj=leads %}
 </div>
-<script>
-  const selectAllLeads = document.getElementById('select-all-leads');
-  const leadCheckboxes = document.querySelectorAll('.lead-checkbox');
-  const leadFilterForm = document.getElementById('lead-filter-form');
-  const leadTypeFilter = document.getElementById('lead-type-filter');
-  const bulkForm = document.getElementById('lead-bulk-form');
-  const bulkActionSelect = document.getElementById('bulk-action-select');
-  const bulkActionInput = document.getElementById('bulk-action-input');
 
-  leadTypeFilter?.addEventListener('change', () => {
-    leadFilterForm.submit();
+<!-- Follow-up Date Modal -->
+<div class="modal fade" id="followupModal" tabindex="-1" aria-labelledby="followupModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title" id="followupModalLabel"><i class="bi bi-calendar-event me-2"></i>Update Follow-up</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="date" id="followup-date-input" class="form-control">
+        <div class="form-text">Leave empty to clear the follow-up date.</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary" id="followup-save-btn"><i class="bi bi-check-lg me-1"></i>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-leads');
+  const checkboxes = document.querySelectorAll('.lead-checkbox');
+  const filterForm = document.getElementById('lead-filter-form');
+  const typeFilter = document.getElementById('lead-type-filter');
+  const bulkForm = document.getElementById('lead-bulk-form');
+  const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+
+  typeFilter?.addEventListener('change', () => filterForm.submit());
+
+  selectAll?.addEventListener('change', () => {
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
   });
 
-  selectAllLeads?.addEventListener('change', () => {
-    leadCheckboxes.forEach((checkbox) => {
-      checkbox.checked = selectAllLeads.checked;
+  bulkForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const selected = document.querySelectorAll('.lead-checkbox:checked').length;
+    if (!selected) { alert('Select at least one lead.'); return; }
+    if (!confirm('Delete selected lead contacts?')) return;
+    bulkForm.submit();
+  });
+
+  // State inline dropdown
+  document.querySelectorAll('.state-select').forEach(sel => {
+    sel.addEventListener('change', function() {
+      const pk = this.dataset.pk;
+      const val = this.value;
+      const fd = new FormData();
+      fd.append('lead_state', val);
+      fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+      fetch(`/leads/${pk}/update-state/`, {
+        method: 'POST', body: fd,
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+      }).then(r => r.json()).then(data => {
+        if (!data.ok) alert('Failed to update state.');
+      });
     });
   });
 
-  bulkForm?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const selected = document.querySelectorAll('.lead-checkbox:checked').length;
-    const action = bulkActionSelect.value;
-    if (!selected || !action) {
-      alert('Select at least one lead contact and choose an action.');
-      return;
-    }
-    if (action === 'delete' && !confirm('Delete selected lead contacts?')) {
-      return;
-    }
-    bulkActionInput.value = action;
-    bulkForm.submit();
+  // Follow-up modal
+  let currentLeadPk = null;
+  const modal = new bootstrap.Modal(document.getElementById('followupModal'));
+  const dateInput = document.getElementById('followup-date-input');
+
+  document.querySelectorAll('.followup-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      currentLeadPk = this.dataset.pk;
+      dateInput.value = this.dataset.date || '';
+      modal.show();
+    });
   });
+
+  document.getElementById('followup-save-btn').addEventListener('click', function() {
+    if (!currentLeadPk) return;
+    const fd = new FormData();
+    fd.append('next_followup_date', dateInput.value);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fetch(`/leads/${currentLeadPk}/update-followup/`, {
+      method: 'POST', body: fd,
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(r => r.json()).then(data => {
+      if (data.ok) {
+        modal.hide();
+        location.reload();
+      } else {
+        alert(data.error || 'Failed to update.');
+      }
+    });
+  });
+});
 </script>
 {% endblock %}

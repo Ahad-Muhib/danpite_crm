@@ -2,37 +2,150 @@
 {% block title %}{{ action }} Lead{% endblock %}
 {% block page_title %}{{ action }} Lead Contact{% endblock %}
 {% block content %}
-<div class="crm-card" style="max-width:860px;">
-  <div class="crm-card-header"><span class="crm-card-title">Lead Details</span></div>
-  <div class="p-4">
-    <form method="post">
-      {% csrf_token %}
+
+<!-- Quill.js CSS -->
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+
+<form method="post" id="lead-form">
+  {% csrf_token %}
+  {{ form.lead_owner }}
+
+  <!-- ═══ Box 1: Lead Details ═══ -->
+  <div class="crm-card mb-4">
+    <div class="crm-card-header">
+      <span class="crm-card-title"><i class="bi bi-person-lines-fill me-2"></i>Lead Details</span>
+    </div>
+    <div class="p-4">
       <div class="row g-3">
         <div class="col-md-2"><label class="form-label fw-medium">Salutation</label>{{ form.salutation }}</div>
         <div class="col-md-10"><label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>{{ form.name }}</div>
+
         <div class="col-md-6"><label class="form-label fw-medium">Email</label>{{ form.email }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Phone <span class="text-danger">*</span></label>{{ form.phone }}</div>
+
         <div class="col-md-6"><label class="form-label fw-medium">Company</label>{{ form.company }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Website</label>{{ form.website }}</div>
+
         <div class="col-md-6">
           <label class="form-label fw-medium">Lead Source</label>
           {{ form.lead_source }}
-          <datalist id="lead-source-options">
-            {% for option in lead_source_options %}
-            <option value="{{ option }}"></option>
-            {% endfor %}
-          </datalist>
+          <div id="custom-source-wrap" class="mt-1" style="display:none;">
+            {{ form.custom_source }}
+          </div>
         </div>
         <div class="col-md-6"><label class="form-label fw-medium">Type</label>{{ form.contact_type }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Lead Owner</label>{{ form.lead_owner }}</div>
-        <div class="col-12"><label class="form-label fw-medium">Address</label>{{ form.address }}</div>
-        <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-medium">Lead State</label>
+          {{ form.lead_state }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-medium">Lead Status</label>
+          {{ form.lead_status }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-medium">Budget</label>
+          {{ form.budget }}
+        </div>
       </div>
-      <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary">{{ action }} Lead</button>
-        <a href="{% url 'lead_list' %}" class="btn btn-outline-secondary">Cancel</a>
-      </div>
-    </form>
+    </div>
   </div>
-</div>
+
+  <!-- ═══ Box 2: Follow Up ═══ -->
+  <div class="crm-card mb-4">
+    <div class="crm-card-header">
+      <span class="crm-card-title"><i class="bi bi-calendar-check me-2"></i>Follow Up</span>
+    </div>
+    <div class="p-4">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Next Follow-up Date</label>
+          {{ form.next_followup_date }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Follow-up Action</label>
+          {{ form.followup_action }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Box 3: Address & Notes ═══ -->
+  <div class="crm-card mb-4">
+    <div class="crm-card-header">
+      <span class="crm-card-title"><i class="bi bi-geo-alt me-2"></i>Address & Notes</span>
+    </div>
+    <div class="p-4">
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-medium">Address</label>
+          {{ form.address }}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-medium">Notes</label>
+          <div id="quill-editor" style="height:200px;background:#fff;border:1px solid #dee2e6;border-radius:6px;"></div>
+          {{ form.notes }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} Lead</button>
+    <a href="{% url 'lead_list' %}" class="btn btn-outline-secondary">Cancel</a>
+  </div>
+</form>
+
+<!-- Quill.js -->
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    placeholder: 'Write notes here...',
+    modules: {
+      toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'align': [] }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['clean']
+      ]
+    }
+  });
+
+  // Tooltips
+  var tips = { 'ql-bold':'Bold (Ctrl+B)', 'ql-italic':'Italic (Ctrl+I)', 'ql-underline':'Underline (Ctrl+U)',
+    'ql-strike':'Strikethrough', 'ql-color':'Text Color', 'ql-background':'Background Color',
+    'ql-clean':'Clear Formatting' };
+  document.querySelectorAll('.ql-toolbar button').forEach(function(b) {
+    for (var k in tips) { if ((b.className||'').includes(k)) { b.setAttribute('title', tips[k]); break; } }
+  });
+  document.querySelectorAll('.ql-toolbar .ql-picker-label').forEach(function(p) {
+    var c = p.className||'';
+    if (c.includes('ql-header')) p.setAttribute('title','Heading');
+    else if (c.includes('ql-size')) p.setAttribute('title','Font Size');
+    else if (c.includes('ql-color')) p.setAttribute('title','Text Color');
+    else if (c.includes('ql-background')) p.setAttribute('title','Background Color');
+    else if (c.includes('ql-align')) p.setAttribute('title','Text Alignment');
+  });
+
+  var notesField = document.querySelector('#id_notes');
+  if (notesField && notesField.value && notesField.value !== '<br>') {
+    quill.root.innerHTML = notesField.value;
+  }
+  document.getElementById('lead-form').addEventListener('submit', function() {
+    notesField.value = quill.root.innerHTML;
+  });
+
+  // Lead source custom toggle
+  var src = document.querySelector('[name="lead_source"]');
+  var wrap = document.getElementById('custom-source-wrap');
+  function tog() { if (src && wrap) wrap.style.display = src.value === 'custom' ? 'block' : 'none'; }
+  if (src) { src.addEventListener('change', tog); tog(); }
+});
+</script>
 {% endblock %}

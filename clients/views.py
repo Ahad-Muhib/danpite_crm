@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -11,12 +12,14 @@ from .models import Client
 def client_list(request):
     q = request.GET.get('q', '')
     status = request.GET.get('status', '')
-    qs = Client.objects.all()
+    qs = Client.objects.all().order_by('-created_at')
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(email__icontains=q) | Q(company__icontains=q))
     if status:
         qs = qs.filter(status=status)
-    return render(request, 'clients/clients.html', {'clients': qs, 'q': q, 'status': status})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'clients/clients.html', {'clients': page, 'q': q, 'status': status})
 
 
 @login_required

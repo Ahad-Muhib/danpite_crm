@@ -4,22 +4,73 @@ from .models import Comment, Deal, FollowUp, LeadContact
 
 
 class LeadContactForm(forms.ModelForm):
+    custom_source = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={
+        'class': 'form-control', 'placeholder': 'Type custom source...',
+    }))
+
     class Meta:
         model = LeadContact
-        fields = ['salutation', 'name', 'email', 'phone', 'company', 'website', 'address', 'lead_source', 'contact_type', 'lead_owner', 'notes']
+        fields = ['salutation', 'name', 'email', 'phone', 'company', 'website', 'address',
+                  'lead_source', 'contact_type', 'lead_owner', 'notes',
+                  'lead_state', 'lead_status', 'budget', 'next_followup_date', 'followup_action']
         widgets = {
             'salutation': forms.Select(attrs={'class': 'form-select'}, choices=[('', '--'), ('Mr.', 'Mr.'), ('Ms.', 'Ms.'), ('Mrs.', 'Mrs.'), ('Dr.', 'Dr.')]),
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'company': forms.TextInput(attrs={'class': 'form-control'}),
-            'website': forms.URLInput(attrs={'class': 'form-control'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'lead_source': forms.TextInput(attrs={'class': 'form-control', 'list': 'lead-source-options', 'placeholder': 'Type or choose a source'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email address'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone number'}),
+            'company': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Company name'}),
+            'website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://...'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Address'}),
+            'lead_source': forms.Select(attrs={'class': 'form-select'}),
             'contact_type': forms.Select(attrs={'class': 'form-select'}),
-            'lead_owner': forms.Select(attrs={'class': 'form-select'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'lead_owner': forms.HiddenInput(),
+            'notes': forms.HiddenInput(),
+            'lead_state': forms.Select(attrs={'class': 'form-select'}),
+            'lead_status': forms.Select(attrs={'class': 'form-select'}),
+            'budget': forms.TextInput(attrs={'class': 'form-control'}),
+            'next_followup_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'followup_action': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['lead_owner'].required = False
+        self.fields['notes'].required = False
+        base_choices = [
+            ('none', '-- Select Source --'),
+            ('affiliate', 'Affiliate'),
+            ('email_marketing', 'Email Marketing'),
+            ('event', 'Event'),
+            ('existing_customer', 'Existing Customer'),
+            ('facebook', 'Facebook'),
+            ('facebook_ads', 'Facebook Ads'),
+            ('google', 'Google'),
+            ('google_ads', 'Google Ads'),
+            ('instagram', 'Instagram'),
+            ('linkedin', 'LinkedIn'),
+            ('phone_call', 'Phone Call'),
+            ('reference', 'Reference'),
+            ('sms_campaign', 'SMS Campaign'),
+            ('walk_in', 'Walk-in'),
+            ('website', 'Website'),
+        ]
+        if self.instance and self.instance.pk and self.instance.lead_source:
+            current = self.instance.lead_source
+            known = [c[0] for c in base_choices]
+            if current not in known and current != 'none':
+                base_choices.append((current, current))
+        base_choices.append(('custom', 'Other (type your own)'))
+        self.fields['lead_source'] = forms.ChoiceField(
+            choices=base_choices,
+            widget=forms.Select(attrs={'class': 'form-select'}),
+        )
+
+    def clean_lead_source(self):
+        source = self.cleaned_data.get('lead_source', 'none')
+        custom = self.data.get('custom_source', '').strip()
+        if source == 'custom' and custom:
+            return custom
+        return source
 
 
 class DealForm(forms.ModelForm):

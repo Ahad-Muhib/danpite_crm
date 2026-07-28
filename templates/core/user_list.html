@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users{% endblock %}
+{% block page_title %}Manage Users{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header">
+    <span class="crm-card-title">All Users</span>
+    <a href="{% url 'user_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Create User</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Staff</th><th>Joined</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="fw-medium">{{ u.username }}</td>
+          <td>{{ u.get_full_name|default:"—" }}</td>
+          <td class="text-muted">{{ u.email|default:"—" }}</td>
+          <td>
+            {% if u.employee_profile %}
+              <span class="badge bg-light text-dark border">{{ u.employee_profile.get_role_display }}</span>
+            {% else %}
+              <span class="badge bg-info text-dark">User</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.is_staff %}<span class="badge bg-success">Yes</span>
+            {% else %}<span class="text-muted">No</span>{% endif %}
+          </td>
+          <td class="text-muted">{{ u.date_joined|date:"d M Y" }}</td>
+          <td>
+            {% if u != request.user %}
+            <a href="{% url 'user_delete' u.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete user {{ u.username }}?')"><i class="bi bi-trash"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-5">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

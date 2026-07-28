@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, Avg, F
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -55,6 +56,9 @@ def lead_list(request):
                 converted_count += 1
             messages.success(request, f'{converted_count} lead contact(s) converted to client.')
         elif action == 'delete':
+            if not request.user.is_superuser:
+                messages.error(request, 'Only superusers can delete leads.')
+                return redirect('lead_list')
             deleted_count = selected.count()
             selected.delete()
             messages.success(request, f'{deleted_count} lead contact(s) deleted.')
@@ -65,17 +69,18 @@ def lead_list(request):
     q = request.GET.get('q', '')
     src = request.GET.get('source', '')
     contact_type = request.GET.get('type', '')
-    qs = LeadContact.objects.all().order_by('-id')
+    qs = LeadContact.objects.prefetch_related('converted_clients').all().order_by('-id')
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q) | Q(company__icontains=q))
     if src:
         qs = qs.filter(lead_source=src)
-    if contact_type in ('lead', 'deal'):
+    if contact_type in ('hot', 'cold', 'mid'):
         qs = qs.filter(contact_type=contact_type)
-    source_options = LeadContact.objects.exclude(lead_source='').values_list('lead_source', flat=True).distinct().order_by('lead_source')
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
     return render(request, 'leads/leads.html', {
-        'leads': qs, 'q': q, 'source': src,
-        'contact_type': contact_type, 'source_options': source_options,
+        'leads': page, 'q': q, 'source': src,
+        'contact_type': contact_type, 'source_choices': LeadContact.SOURCE,
     })
 
 
@@ -90,10 +95,13 @@ def lead_create(request):
     if form.is_valid():
         obj = form.save(commit=False)
         obj.added_by = request.user
+        if not obj.lead_owner:
+            obj.lead_owner = request.user
         obj.save()
         _log_activity(lead=obj, activity_type='note', title='Lead created', user=request.user)
         messages.success(request, 'Lead contact added.')
         return redirect('lead_list')
+    form.fields['lead_owner'].initial = request.user.pk
     return render(request, 'leads/lead_form.html', {
         'form': form, 'action': 'Add', 'lead_source_options': _lead_source_options(),
     })
@@ -104,13 +112,60 @@ def lead_edit(request, pk):
     obj = get_object_or_404(LeadContact, pk=pk)
     form = LeadContactForm(request.POST or None, instance=obj)
     if form.is_valid():
-        form.save()
+        obj = form.save(commit=False)
+        if not obj.lead_owner:
+            obj.lead_owner = request.user
+        obj.save()
         _log_activity(lead=obj, activity_type='note', title='Lead updated', user=request.user)
         messages.success(request, 'Lead updated.')
         return redirect('lead_list')
     return render(request, 'leads/lead_form.html', {
         'form': form, 'action': 'Edit', 'lead': obj, 'lead_source_options': _lead_source_options(),
     })
+
+
+@login_required
+@require_POST
+def lead_update_followup(request, pk):
+    lead = get_object_or_404(LeadContact, pk=pk)
+    date_val = request.POST.get('next_followup_date', '').strip()
+    if date_val:
+        from datetime import date as _date
+        try:
+            lead.next_followup_date = _date.fromisoformat(date_val)
+        except ValueError:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'ok': False, 'error': 'Invalid date'}, status=400)
+            messages.error(request, 'Invalid date format.')
+            return redirect('lead_list')
+    else:
+        lead.next_followup_date = None
+    lead.save(update_fields=['next_followup_date', 'updated_at'])
+    _log_activity(lead=lead, activity_type='followup', title=f'Follow-up updated to {lead.next_followup_date or "cleared"}', user=request.user)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True, 'date': str(lead.next_followup_date) if lead.next_followup_date else ''})
+    messages.success(request, 'Follow-up date updated.')
+    return redirect('lead_list')
+
+
+@login_required
+@require_POST
+def lead_update_state(request, pk):
+    lead = get_object_or_404(LeadContact, pk=pk)
+    new_state = request.POST.get('lead_state', '').strip()
+    if new_state not in ('open', 'closed'):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'ok': False, 'error': 'Invalid state'}, status=400)
+        messages.error(request, 'Invalid state.')
+        return redirect('lead_list')
+    old_state = lead.lead_state
+    lead.lead_state = new_state
+    lead.save(update_fields=['lead_state', 'updated_at'])
+    _log_activity(lead=lead, activity_type='status_change', title=f'State changed: {old_state} → {new_state}', user=request.user)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True, 'state': new_state})
+    messages.success(request, f'Lead state updated to {new_state.title()}.')
+    return redirect('lead_list')
 
 
 @login_required
@@ -124,16 +179,20 @@ def lead_detail(request, pk):
     comment_form = CommentForm()
     activity_form = ActivityQuickForm()
     assignment_form = LeadAssignmentForm(initial={'lead_owner': lead.lead_owner})
+    client = lead.converted_clients.first()
     return render(request, 'leads/lead_detail.html', {
         'lead': lead, 'deals': deals, 'followups': followups,
         'activities': activities, 'comments': comments, 'today': today,
         'comment_form': comment_form, 'activity_form': activity_form,
-        'assignment_form': assignment_form,
+        'assignment_form': assignment_form, 'client': client,
     })
 
 
 @login_required
 def lead_delete(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can delete leads.')
+        return redirect('lead_list')
     get_object_or_404(LeadContact, pk=pk).delete()
     messages.success(request, 'Lead deleted.')
     return redirect('lead_list')
@@ -239,7 +298,9 @@ def activity_quick_log(request, pk):
 def deal_list(request):
     today = timezone.now().date()
     qs = Deal.objects.all().order_by('-created_at')
-    return render(request, 'leads/deals.html', {'deals': qs, 'today': today})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'leads/deals.html', {'deals': page, 'today': today})
 
 
 @login_required
@@ -354,8 +415,10 @@ def followup_list(request):
         qs = qs.filter(next_followup_date__lt=today).order_by('-next_followup_date')
     else:
         qs = qs.order_by('-created_at')
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
     return render(request, 'leads/followups.html', {
-        'followups': qs, 'q': q, 'ftype': ftype,
+        'followups': page, 'q': q, 'ftype': ftype,
         'upcoming': upcoming, 'today': today,
     })
 
@@ -537,9 +600,9 @@ def lead_import(request):
                 if owner_name and owner_name != '--':
                     owner = User.objects.filter(Q(username=owner_name) | Q(first_name__icontains=owner_name)).first()
                 source = m.get('lead_source', 'other').strip().lower().replace(' ', '_') or 'other'
-                ctype = m.get('contact_type', 'lead').strip().lower() or 'lead'
-                if ctype not in ('lead', 'deal'):
-                    ctype = 'lead'
+                ctype = m.get('contact_type', 'cold').strip().lower() or 'cold'
+                if ctype not in ('hot', 'cold', 'mid'):
+                    ctype = 'cold'
                 converted_raw = m.get('is_converted', '').strip().lower()
                 is_converted = converted_raw in ('yes', 'true', '1', 'converted', 'client')
                 lead = LeadContact.objects.create(

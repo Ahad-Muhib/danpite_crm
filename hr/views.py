@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -10,11 +11,13 @@ from .models import Attendance, Designation, Employee, Leave
 @login_required
 def employee_list(request):
     q = request.GET.get('q', '')
-    qs = Employee.objects.select_related('user', 'department', 'designation').all()
+    qs = Employee.objects.select_related('user', 'department', 'designation').all().order_by('-id')
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(email__icontains=q) | Q(employee_id__icontains=q))
     designations = Designation.objects.all()
-    return render(request, 'hr/employees.html', {'employees': qs, 'q': q, 'designations': designations})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'hr/employees.html', {'employees': page, 'q': q, 'designations': designations})
 
 
 @login_required
@@ -60,7 +63,9 @@ def employee_delete(request, pk):
 @login_required
 def leave_list(request):
     qs = Leave.objects.all().order_by('-created_at')
-    return render(request, 'hr/leaves.html', {'leaves': qs})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'hr/leaves.html', {'leaves': page})
 
 
 @login_required
@@ -88,7 +93,9 @@ def leave_status(request, pk):
 @login_required
 def attendance_list(request):
     qs = Attendance.objects.all().order_by('-date')
-    return render(request, 'hr/attendance.html', {'attendances': qs})
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'hr/attendance.html', {'attendances': page})
 
 
 @login_required

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }}{% endblock %}
+{% block page_title %}{{ action }}{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:600px;">
+  <div class="crm-card-header">
+    <span class="crm-card-title">{{ action }}</span>
+  </div>
+  <div class="p-4">
+    {% if form.errors %}
+    <div class="alert alert-danger py-2 mb-3" style="font-size:13px;">
+      <i class="bi bi-exclamation-circle me-1"></i> Please correct the errors below.
+      {% for field in form %}{% for error in field.errors %}<br><strong>{{ field.label }}:</strong> {{ error }}{% endfor %}{% endfor %}
+      {% for error in form.non_field_errors %}<br>{{ error }}{% endfor %}
+    </div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label fw-medium">Username</label>
+        {{ form.username }}
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-medium">Email</label>
+        {{ form.email }}
+      </div>
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-medium">First Name</label>
+          {{ form.first_name }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Last Name</label>
+          {{ form.last_name }}
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-medium">Password</label>
+        {{ form.password1 }}
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-medium">Confirm Password</label>
+        {{ form.password2 }}
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary fw-medium"><i class="bi bi-check-lg me-1"></i> {{ action }}</button>
+        <a href="{% url 'user_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
