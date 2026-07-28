@@ -4,17 +4,44 @@ from django.db import models
 from clients.models import Client
 
 
+CURRENCY_CHOICES = [
+    ('USD', 'USD — $'),
+    ('BDT', 'BDT — ৳'),
+    ('EUR', 'EUR — €'),
+    ('GBP', 'GBP — £'),
+    ('INR', 'INR — ₹'),
+    ('JPY', 'JPY — ¥'),
+    ('CAD', 'CAD — C$'),
+    ('AUD', 'AUD — A$'),
+    ('AED', 'AED — د.إ'),
+    ('SAR', 'SAR — ر.س'),
+]
+
+CURRENCY_SYMBOLS = {
+    'USD': '$', 'BDT': '৳', 'EUR': '€', 'GBP': '£',
+    'INR': '₹', 'JPY': '¥', 'CAD': 'C$', 'AUD': 'A$',
+    'AED': 'د.إ', 'SAR': 'ر.س',
+}
+
+
 class Invoice(models.Model):
     STATUS = [('draft', 'Draft'), ('sent', 'Sent'), ('paid', 'Paid'), ('overdue', 'Overdue'), ('cancelled', 'Cancelled')]
     code = models.CharField(max_length=50, unique=True, blank=True)
+    logo = models.ImageField(upload_to='invoice_logos/', null=True, blank=True)
+    currency = models.CharField(max_length=5, choices=CURRENCY_CHOICES, default='USD')
+    bill_from = models.TextField(blank=True)
     client = models.ForeignKey(Client, null=True, blank=True, on_delete=models.SET_NULL, related_name='invoices')
     phone = models.CharField(max_length=30, blank=True)
+    ship_to = models.TextField(blank=True)
     project = models.CharField(max_length=200, blank=True)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    shipping = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     invoice_date = models.DateField()
     due_date = models.DateField(null=True, blank=True)
+    payment_terms = models.CharField(max_length=100, blank=True)
+    po_number = models.CharField(max_length=100, blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default='draft')
     received_payment = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
@@ -30,6 +57,16 @@ class Invoice(models.Model):
             last = Invoice.objects.order_by('id').last()
             self.code = f"INV-{(last.id + 1 if last else 1):04d}"
         super().save(*args, **kwargs)
+
+    @property
+    def balance_due(self):
+        from django.db.models import Sum
+        total_paid = self.payments.aggregate(s=Sum('amount'))['s'] or 0
+        return self.total - total_paid
+
+    @property
+    def is_fully_paid(self):
+        return self.balance_due <= 0
 
 
 class InvoiceItem(models.Model):

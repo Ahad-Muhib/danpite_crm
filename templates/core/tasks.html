@@ -12,7 +12,7 @@
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>#</th><th>Title</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Due Date</th><th>Actions</th></tr></thead>
+      <thead><tr><th>#</th><th>Title</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Start Date</th><th>Due Date</th><th>Actions</th></tr></thead>
       <tbody>
         {% for t in tasks %}
         <tr>
@@ -28,15 +28,17 @@
             {% elif t.status == 'in_progress' %}<span class="badge bg-primary">In Progress</span>
             {% else %}<span class="badge bg-secondary">Pending</span>{% endif %}
           </td>
-          <td>{{ t.assigned_to.get_full_name|default:t.assigned_to.username|default:"—" }}</td>
+          <td>{{ t.assigned_to.name|default:"—" }}</td>
+          <td class="text-muted">{{ t.start_date|default:"—" }}</td>
           <td class="text-muted">{{ t.due_date|default:"—" }}</td>
           <td>
+            <a href="{% url 'task_detail' t.pk %}" class="btn btn-sm btn-outline-info btn-sm-action"><i class="bi bi-eye"></i></a>
             <a href="{% url 'task_edit' t.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>
             <a href="{% url 'task_delete' t.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete this task?')"><i class="bi bi-trash"></i></a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center text-muted py-5">No tasks found.</td></tr>
+        <tr><td colspan="8" class="text-center text-muted py-5">No tasks found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

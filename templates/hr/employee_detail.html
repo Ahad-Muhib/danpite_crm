@@ -9,7 +9,6 @@
         {% if employee.avatar %}
           <img src="{{ employee.avatar.url }}" class="rounded-circle mb-3" width="70" height="70" style="object-fit:cover;">
         {% else %}
-          <div class="avatar-sm mx-auto mb-3" style="width:70px;height:70px;font-size:26px;background:#7c3aed;">{{ employee.name|slice:":1"|upper }}</div>
         {% endif %}
         <h5 class="fw-bold mb-0">{{ employee.name }}</h5>
         {% if employee.designation %}<div class="text-muted" style="font-size:13px;">{{ employee.designation.title }}</div>{% endif %}
@@ -24,6 +23,9 @@
         <li class="list-group-item d-flex gap-2"><i class="bi bi-credit-card text-muted"></i>{{ employee.employee_id }}</li>
         <li class="list-group-item d-flex gap-2"><i class="bi bi-envelope text-muted"></i>{{ employee.email }}</li>
         <li class="list-group-item d-flex gap-2"><i class="bi bi-shield text-muted"></i>{{ employee.get_role_display }}</li>
+        {% if employee.user %}
+        <li class="list-group-item d-flex gap-2"><i class="bi bi-box-arrow-in-right text-success"></i><span>Has Login — <code>{{ employee.user.username }}</code></span></li>
+        {% endif %}
         {% if employee.department %}<li class="list-group-item d-flex gap-2"><i class="bi bi-building text-muted"></i>{{ employee.department.name }}</li>{% endif %}
         {% if employee.joining_date %}<li class="list-group-item d-flex gap-2"><i class="bi bi-calendar text-muted"></i>Joined {{ employee.joining_date }}</li>{% endif %}
       </ul>

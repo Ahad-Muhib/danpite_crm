@@ -1,62 +1,180 @@
 {% extends 'base.html' %}
+{% load crm_tags %}
 {% block title %}{{ invoice.code }}{% endblock %}
 {% block page_title %}{{ invoice.code }}{% endblock %}
 {% block content %}
+<style>
+:root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff}
+.invoice-box{width:min(960px,calc(100% - 36px));margin:14px auto 40px;background:var(--paper);padding:54px;box-shadow:0 4px 24px #00000012;border-radius:10px}
+.top{display:grid;grid-template-columns:1.35fr .8fr;gap:60px}
+.logo-area{width:160px;min-height:80px;margin-bottom:20px;display:flex;align-items:center;justify-content:center}
+.logo-area img{max-width:150px;max-height:90px;object-fit:contain}
+.title{text-align:right;font-size:34px;font-weight:700;margin-bottom:6px}
+.code-line{display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.parties{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:26px}
+.label{font-weight:700;color:var(--muted);margin-bottom:3px}
+.party-text{font-size:13px;line-height:1.6;color:var(--ink)}
+.party-text .name{font-weight:600;font-size:14px}
+.details{margin-top:26px}
+.detail-row{display:grid;grid-template-columns:1fr 155px;align-items:center;font-size:14px;padding:2px 0}
+.detail-row .lbl{color:var(--muted);font-size:12px}
+.detail-row .val{text-align:right;font-weight:500}
+.balance{font-size:18px;font-weight:800;border-top:1px solid var(--line);margin-top:7px;padding-top:8px}
+.items{margin-top:34px}
+.items-head,.item-row{display:grid;grid-template-columns:minmax(250px,1fr) 90px 130px 130px;gap:6px;align-items:center}
+.items-head{background:#1f2937;color:#fff;border-radius:5px;padding:8px 10px;font-weight:700}
+.items-head div:not(:first-child){text-align:right}
+.item-row{padding:8px 10px;border-bottom:1px solid #eee;font-size:14px}
+.item-row div:not(:first-child){text-align:right}
+.item-amount{font-weight:700}
+.bottom{display:grid;grid-template-columns:1fr 360px;gap:55px;margin-top:34px}
+.note-text{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px}
+.sum-row{display:grid;grid-template-columns:1fr 155px;align-items:center;font-size:14px;padding:3px 0}
+.sum-row .val{text-align:right;font-weight:500}
+.total{border-top:2px solid var(--line);font-size:17px;font-weight:700;padding-top:6px;margin-top:5px}
+.balance-due{font-size:18px;font-weight:800;border-top:1px solid var(--line);margin-top:7px;padding-top:8px}
+.paid{color:#16a34a;font-weight:600}
+.status-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.status-draft{background:#f1f5f9;color:#64748b}
+.status-sent{background:#dbeafe;color:#2563eb}
+.status-paid{background:#dcfce7;color:#16a34a}
+.status-overdue{background:#fee2e2;color:#dc2626}
+.status-cancelled{background:#f1f5f9;color:#64748b}
+@media(max-width:760px){
+  .invoice-box{padding:24px;width:calc(100% - 20px)}
+  .top,.parties,.bottom{grid-template-columns:1fr;gap:22px}
+  .title{text-align:left}.code-line{justify-content:flex-start}
+  .items{overflow-x:auto}.items-head,.item-row{min-width:550px}
+}
+@media print{
+  .no-print{display:none!important}
+  .invoice-box{box-shadow:none;padding:0;border-radius:0;width:100%}
+}
+</style>
+
 <div class="row g-3">
   <div class="col-lg-8">
-    <div class="crm-card">
-      <div class="crm-card-header">
-        <span class="crm-card-title">Invoice Details</span>
-        {% if invoice.status == 'paid' %}<span class="badge bg-success fs-6">Paid</span>
-        {% elif invoice.status == 'overdue' %}<span class="badge bg-danger fs-6">Overdue</span>
-        {% elif invoice.status == 'sent' %}<span class="badge bg-primary fs-6">Sent</span>
-        {% else %}<span class="badge bg-secondary fs-6">{{ invoice.get_status_display }}</span>{% endif %}
-      </div>
-      <div class="p-4">
-        <div class="row g-3 mb-4">
-          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">CLIENT</div><div class="fw-medium">{{ invoice.client.name|default:"—" }}</div></div>
-          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">PHONE</div><div>{{ invoice.phone|default:"—" }}</div></div>
-          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">PROJECT</div><div>{{ invoice.project|default:"—" }}</div></div>
-          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">INVOICE DATE</div><div>{{ invoice.invoice_date }}</div></div>
-          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">DUE DATE</div><div>{{ invoice.due_date|default:"—" }}</div></div>
-          <div class="col-md-6"><div class="text-muted mb-1" style="font-size:12px;">PAYMENT</div><div>{% if invoice.received_payment %}<span class="badge bg-success">Received</span>{% else %}<span class="badge bg-secondary">Pending</span>{% endif %}</div></div>
+    <div class="invoice-box">
+      <section class="top">
+        <div>
+          {% if invoice.logo %}
+          <div class="logo-area"><img src="{{ invoice.logo.url }}" alt="Logo"></div>
+          {% endif %}
+          <div class="label">Bill From</div>
+          {% if invoice.bill_from %}
+          <div class="party-text">{{ invoice.bill_from|linebreaksbr }}</div>
+          {% else %}
+          <div class="party-text">Danpite CRM<br>Your Company Address<br>City, State ZIP<br>Country</div>
+          {% endif %}
+
+          <div class="parties">
+            <div>
+              <div class="label">Bill To</div>
+              <div class="party-text">
+                <div class="name">{{ invoice.client.name|default:"Walk-in Client" }}</div>
+                {% if invoice.client.company %}<div>{{ invoice.client.company }}</div>{% endif %}
+                {% if invoice.client.email %}<div>{{ invoice.client.email }}</div>{% endif %}
+                {% if invoice.phone %}<div>Phone: {{ invoice.phone }}</div>{% endif %}
+                {% if invoice.client.address %}<div>{{ invoice.client.address }}</div>{% endif %}
+              </div>
+            </div>
+            {% if invoice.ship_to %}
+            <div>
+              <div class="label">Ship To</div>
+              <div class="party-text">{{ invoice.ship_to|linebreaksbr }}</div>
+            </div>
+            {% endif %}
+          </div>
         </div>
-        <table class="table table-bordered mb-4">
-          <thead class="table-light"><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
-          <tbody>
-            {% for item in items %}
-            <tr><td>{{ item.description }}</td><td>{{ item.quantity }}</td><td>{{ item.unit_price }}</td><td class="fw-medium">{{ item.total }}</td></tr>
-            {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No line items.</td></tr>{% endfor %}
-          </tbody>
-        </table>
-        <div class="d-flex flex-column align-items-end gap-1" style="font-size:14px;">
-          <div class="d-flex gap-5"><span class="text-muted">Subtotal</span><span class="fw-medium">{{ invoice.total }}</span></div>
-          <div class="d-flex gap-5"><span class="text-muted">Tax</span><span>{{ invoice.tax }}%</span></div>
-          <div class="d-flex gap-5"><span class="text-muted">Discount</span><span>{{ invoice.discount }}%</span></div>
-          <hr class="w-100 my-1">
-          <div class="d-flex gap-5 fs-5 fw-bold"><span>Total</span><span>{{ invoice.total }}</span></div>
+
+        <div>
+          <div class="title">INVOICE</div>
+          <div class="code-line">
+            <span>#</span>
+            <strong style="color:var(--ink)">{{ invoice.code }}</strong>
+            <span class="status-badge status-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
+          </div>
+          <div class="details">
+            <div class="detail-row"><span class="lbl">Date</span><span class="val">{{ invoice.invoice_date }}</span></div>
+            {% if invoice.payment_terms %}<div class="detail-row"><span class="lbl">Payment Terms</span><span class="val">{{ invoice.payment_terms }}</span></div>{% endif %}
+            {% if invoice.due_date %}<div class="detail-row"><span class="lbl">Due Date</span><span class="val">{{ invoice.due_date }}</span></div>{% endif %}
+            {% if invoice.po_number %}<div class="detail-row"><span class="lbl">PO Number</span><span class="val">{{ invoice.po_number }}</span></div>{% endif %}
+            <div class="detail-row balance"><span>Balance Due</span><span>{% if invoice.currency %}{{ invoice.get_currency_display|slice:":3" }} {% endif %}{{ balance_due|currency }}</span></div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section class="items">
+        <div class="items-head">
+          <div>Description</div><div>Quantity</div><div>Rate</div><div>Amount</div>
+        </div>
+        {% for item in items %}
+        <div class="item-row">
+          <div>{{ item.description }}</div>
+          <div>{{ item.quantity }}</div>
+          <div>{{ item.unit_price|currency }}</div>
+          <div class="item-amount">{{ item.total|currency }}</div>
+        </div>
+        {% empty %}
+        <div class="item-row"><div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:20px;">No line items</div></div>
+        {% endfor %}
+      </section>
+
+      <section class="bottom">
+        <div>
+          {% if invoice.notes %}
+          <div class="label">Notes</div>
+          <div class="note-text">{{ invoice.notes }}</div>
+          {% endif %}
+        </div>
+        <div>
+          <div class="sum-row"><span>Subtotal</span><span class="val">{{ subtotal|currency }}</span></div>
+          {% if invoice.discount %}
+          <div class="sum-row"><span>Discount</span><span class="val" style="color:#dc2626;">-{{ discount_amount|currency }}</span></div>
+          {% endif %}
+          {% if invoice.tax %}
+          <div class="sum-row"><span>Tax ({{ invoice.tax }}%)</span><span class="val">+{{ tax_amount|currency }}</span></div>
+          {% endif %}
+          {% if shipping %}
+          <div class="sum-row"><span>Shipping</span><span class="val">{{ shipping|currency }}</span></div>
+          {% endif %}
+          <div class="sum-row total"><span>Total</span><span class="val">{{ total_with_tax|currency }}</span></div>
+          {% if total_paid > 0 %}
+          <div class="sum-row paid"><span>Amount Paid</span><span class="val">{{ total_paid|currency }}</span></div>
+          {% endif %}
+          {% if balance_due > 0 %}
+          <div class="sum-row balance-due"><span>Balance Due</span><span class="val">{{ balance_due|currency }}</span></div>
+          {% endif %}
+        </div>
+      </section>
     </div>
   </div>
-  <div class="col-lg-4 d-flex flex-column gap-3">
+
+  <div class="col-lg-4 d-flex flex-column gap-3 no-print">
     <div class="crm-card">
       <div class="crm-card-header"><span class="crm-card-title">Actions</span></div>
       <div class="p-3 d-flex flex-column gap-2">
-        <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-primary btn-sm">Edit Invoice</a>
-        <a href="{% url 'payment_create' %}" class="btn btn-success btn-sm">Record Payment</a>
-        <a href="{% url 'invoice_delete' invoice.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete Invoice</a>
+        <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit Invoice</a>
+        <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-outline-primary btn-sm" target="_blank"><i class="bi bi-file-earmark-pdf me-1"></i>Download PDF</a>
+        {% if invoice.status != 'paid' %}
+        <form method="post" action="{% url 'invoice_mark_paid' invoice.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-check-circle me-1"></i>Mark as Paid</button>
+        </form>
+        {% endif %}
+        <a href="{% url 'payment_create' %}" class="btn btn-outline-success btn-sm"><i class="bi bi-cash me-1"></i>Record Payment</a>
+        <a href="{% url 'invoice_delete' invoice.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')"><i class="bi bi-trash me-1"></i>Delete Invoice</a>
       </div>
     </div>
     {% if payments %}
     <div class="crm-card">
-      <div class="crm-card-header"><span class="crm-card-title">Payments</span></div>
+      <div class="crm-card-header"><span class="crm-card-title">Payment History</span></div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead><tr><th>Amount</th><th>Date</th><th>Method</th></tr></thead>
           <tbody>
             {% for p in payments %}
-            <tr><td class="fw-medium">{{ p.amount }}</td><td class="text-muted">{{ p.payment_date }}</td><td>{{ p.get_method_display }}</td></tr>
+            <tr><td class="fw-medium">{{ p.amount|currency }}</td><td class="text-muted">{{ p.payment_date }}</td><td>{{ p.get_method_display }}</td></tr>
             {% endfor %}
           </tbody>
         </table>

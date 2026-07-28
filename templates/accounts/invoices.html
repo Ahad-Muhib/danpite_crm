@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load crm_tags %}
 {% block title %}Invoices{% endblock %}
 {% block page_title %}Invoices{% endblock %}
 {% block content %}
@@ -27,7 +28,7 @@
           <td>{{ inv.client.name|default:"—" }}</td>
           <td class="text-muted">{{ inv.phone|default:"—" }}</td>
           <td class="text-muted">{{ inv.project|default:"—" }}</td>
-          <td class="fw-medium">{{ inv.total }}</td>
+          <td class="fw-medium">{{ inv.total|currency }}</td>
           <td class="text-muted">{{ inv.invoice_date }}</td>
           <td>
             {% if inv.status == 'paid' %}<span class="badge bg-success">Paid</span>
@@ -37,6 +38,7 @@
           </td>
           <td>
             <a href="{% url 'invoice_detail' inv.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'invoice_pdf' inv.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action" target="_blank" title="Download PDF"><i class="bi bi-file-earmark-pdf"></i></a>
             <a href="{% url 'invoice_edit' inv.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>
             <a href="{% url 'invoice_delete' inv.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
           </td>

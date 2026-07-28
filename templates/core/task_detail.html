@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}{{ task.title }}{% endblock %}
+{% block page_title %}{{ task.title }}{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:860px;">
+  <div class="crm-card-header">
+    <span class="crm-card-title">{{ task.title }}</span>
+    {% if task.status == 'completed' %}<span class="badge bg-success fs-6">Completed</span>
+    {% elif task.status == 'in_progress' %}<span class="badge bg-primary fs-6">In Progress</span>
+    {% else %}<span class="badge bg-secondary fs-6">Pending</span>{% endif %}
+  </div>
+  <div class="p-4">
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">PRIORITY</div>
+        <div>
+          {% if task.priority == 'high' %}<span class="badge bg-danger">High</span>
+          {% elif task.priority == 'medium' %}<span class="badge bg-warning text-dark">Medium</span>
+          {% else %}<span class="badge bg-secondary">Low</span>{% endif %}
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">ASSIGNED TO</div>
+        <div class="fw-medium">{{ task.assigned_to.name|default:"—" }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">STATUS</div>
+        <div class="fw-medium">{{ task.get_status_display }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">START DATE</div>
+        <div>{{ task.start_date|default:"—" }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">DUE DATE</div>
+        <div>{{ task.due_date|default:"—" }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">CREATED</div>
+        <div>{{ task.created_at|date:"M d, Y" }}</div>
+      </div>
+    </div>
+    {% if task.description %}
+    <div class="mb-4">
+      <div class="text-muted mb-1" style="font-size:12px;">DESCRIPTION</div>
+      <div>{{ task.description|linebreaks }}</div>
+    </div>
+    {% endif %}
+    <div class="d-flex gap-2 mt-2">
+      <a href="{% url 'task_edit' task.pk %}" class="btn btn-primary btn-sm">Edit Task</a>
+      <a href="{% url 'task_delete' task.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this task?')">Delete</a>
+      <a href="{% url 'task_list' %}" class="btn btn-outline-secondary btn-sm">&larr; Back</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

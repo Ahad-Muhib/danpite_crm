@@ -17,7 +17,7 @@
       <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">ORDER DATE</div><div>{{ order.order_date }}</div></div>
       <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">DELIVERY DATE</div><div>{{ order.delivery_date|default:"—" }}</div></div>
       <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">TOTAL</div><div class="fw-bold fs-5">{{ order.total }}</div></div>
-      <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">ASSIGNED TO</div><div>{{ order.assigned_to.get_full_name|default:order.assigned_to.username|default:"—" }}</div></div>
+      <div class="col-md-4"><div class="text-muted mb-1" style="font-size:12px;">ASSIGNED TO</div><div>{{ order.assigned_to|default:"—" }}</div></div>
     </div>
     {% if order.notes %}<div class="mb-4"><div class="text-muted mb-1" style="font-size:12px;">NOTES</div><div>{{ order.notes }}</div></div>{% endif %}
     <table class="table table-bordered">

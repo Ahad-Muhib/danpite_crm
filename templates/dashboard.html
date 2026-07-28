@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load crm_tags %}
 {% block title %}Dashboard — Danpite CRM{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
@@ -57,7 +58,7 @@
         <div class="avatar-sm" style="background:#10b981;width:44px;height:44px;font-size:18px;"><i class="bi bi-currency-dollar"></i></div>
         <div>
           <div class="text-muted" style="font-size:11px;">PIPELINE VALUE</div>
-          <div class="fw-bold" style="font-size:20px;">${{ pipeline_value|floatformat:0 }}</div>
+          <div class="fw-bold" style="font-size:20px;">{{ pipeline_value|currency }}</div>
         </div>
       </div>
     </div>
@@ -90,7 +91,44 @@
         <div class="avatar-sm" style="background:#8b5cf6;width:44px;height:44px;font-size:18px;"><i class="bi bi-cash-stack"></i></div>
         <div>
           <div class="text-muted" style="font-size:11px;">AVG DEAL SIZE</div>
-          <div class="fw-bold" style="font-size:20px;">${{ avg_deal_value|floatformat:0 }}</div>
+          <div class="fw-bold" style="font-size:20px;">{{ avg_deal_value|currency }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Financial Summary -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-4">
+    <div class="crm-card p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-sm" style="background:#059669;width:44px;height:44px;font-size:18px;"><i class="bi bi-wallet2"></i></div>
+        <div>
+          <div class="text-muted" style="font-size:11px;">TOTAL REVENUE</div>
+          <div class="fw-bold" style="font-size:20px;">{{ total_revenue|currency }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="crm-card p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-sm" style="background:#dc2626;width:44px;height:44px;font-size:18px;"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+          <div class="text-muted" style="font-size:11px;">OUTSTANDING</div>
+          <div class="fw-bold" style="font-size:20px;">{{ outstanding_amount|currency }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-4">
+    <div class="crm-card p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-sm" style="background:#ea580c;width:44px;height:44px;font-size:18px;"><i class="bi bi-receipt"></i></div>
+        <div>
+          <div class="text-muted" style="font-size:11px;">MONTHLY EXPENSES</div>
+          <div class="fw-bold" style="font-size:20px;">{{ monthly_expenses|currency }}</div>
         </div>
       </div>
     </div>
@@ -114,7 +152,7 @@
             <div style="height:100%;width:{% widthratio stage_count pipeline_max_count 100 %}%;background:{% if stage_key == 'won' %}#10b981{% elif stage_key == 'lost' %}#ef4444{% else %}#3b82f6{% endif %};border-radius:4px;transition:width .5s;"></div>
             {% endif %}
           </div>
-          <div style="width:80px;text-align:right;font-size:12px;" class="fw-medium">{{ stage_count }} <span class="text-muted">/ ${{ stage_value|floatformat:0 }}</span></div>
+          <div style="width:80px;text-align:right;font-size:12px;" class="fw-medium">{{ stage_count }} <span class="text-muted">/ {{ stage_value|currency }}</span></div>
         </div>
         {% endfor %}
       </div>

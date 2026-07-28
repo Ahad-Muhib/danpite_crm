@@ -2,14 +2,15 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum, Count, Avg
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from clients.models import Client
 from hr.models import Employee
 from leads.models import Deal, LeadContact
 from orders.models import Order
 
-from .forms import ProjectForm, ScheduleForm, TaskForm
-from .models import Project, Schedule, Task
+from .forms import CurrencySettingsForm, ProjectForm, ScheduleForm, TaskForm
+from .models import CurrencySettings, Project, Schedule, Task
 
 
 @login_required
@@ -63,6 +64,26 @@ def dashboard(request):
         'pipeline_max_count': max_count,
         'source_stats': source_stats,
     }
+
+    # Financial summary
+    try:
+        from accounts.models import Invoice, Payment, Expense
+        total_revenue = Payment.objects.aggregate(s=Sum('amount'))['s'] or 0
+        outstanding = Invoice.objects.exclude(status__in=['paid', 'cancelled']).aggregate(s=Sum('total'))['s'] or 0
+        total_paid_invoices = Payment.objects.aggregate(s=Sum('amount'))['s'] or 0
+        outstanding = max(outstanding - total_paid_invoices, 0)
+        now = timezone.now()
+        monthly_expenses = Expense.objects.filter(
+            expense_date__year=now.year, expense_date__month=now.month
+        ).aggregate(s=Sum('amount'))['s'] or 0
+        ctx.update({
+            'total_revenue': total_revenue,
+            'outstanding_amount': outstanding,
+            'monthly_expenses': monthly_expenses,
+        })
+    except Exception:
+        pass
+
     return render(request, 'dashboard.html', ctx)
 
 
@@ -71,6 +92,12 @@ def task_list(request):
     q = request.GET.get('q', '')
     qs = Task.objects.filter(Q(title__icontains=q)) if q else Task.objects.all()
     return render(request, 'core/tasks.html', {'tasks': qs, 'q': q})
+
+
+@login_required
+def task_detail(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+    return render(request, 'core/task_detail.html', {'task': task})
 
 
 @login_required
@@ -169,3 +196,14 @@ def schedule_delete(request, pk):
     get_object_or_404(Schedule, pk=pk).delete()
     messages.success(request, 'Schedule deleted.')
     return redirect('schedule_list')
+
+
+@login_required
+def currency_settings(request):
+    obj = CurrencySettings.load()
+    form = CurrencySettingsForm(request.POST or None, instance=obj)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Currency settings updated.')
+        return redirect('currency_settings')
+    return render(request, 'core/currency_settings.html', {'form': form})

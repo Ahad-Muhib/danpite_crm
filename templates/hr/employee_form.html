@@ -23,6 +23,13 @@
         <div class="col-12">
           <div class="form-check">{{ form.is_new_hire }}<label class="form-check-label ms-2">Mark as New Hire</label></div>
         </div>
+        {% if form.create_login %}
+        <div class="col-12">
+          <hr>
+          <div class="form-check">{{ form.create_login }}<label class="form-check-label ms-2">Create Login Account</label></div>
+          {% if form.create_login.help_text %}<div class="form-text">{{ form.create_login.help_text }}</div>{% endif %}
+        </div>
+        {% endif %}
       </div>
       <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-primary">{{ action }} Employee</button>

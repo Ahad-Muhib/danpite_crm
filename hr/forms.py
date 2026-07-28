@@ -1,9 +1,19 @@
 from django import forms
+from django.contrib.auth.models import User
+from django.utils.crypto import get_random_string
 
 from .models import Attendance, Employee, Leave
 
 
 class EmployeeForm(forms.ModelForm):
+    create_login = forms.BooleanField(
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Create Login Account',
+        help_text='Generate login credentials for this employee (Admin/Manager roles only).',
+    )
+
     class Meta:
         model = Employee
         fields = ['name', 'email', 'phone', 'role', 'designation', 'department', 'reporting_to', 'status', 'joining_date', 'salary', 'address', 'avatar', 'is_new_hire']
@@ -22,6 +32,42 @@ class EmployeeForm(forms.ModelForm):
             'avatar': forms.FileInput(attrs={'class': 'form-control'}),
             'is_new_hire': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get('instance')
+        super().__init__(*args, **kwargs)
+        if instance and instance.user:
+            self.fields['create_login'].initial = True
+            self.fields['create_login'].widget.attrs['disabled'] = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        role = cleaned_data.get('role')
+        create_login = cleaned_data.get('create_login')
+        if create_login and role not in ('admin', 'manager'):
+            raise forms.ValidationError('Login accounts can only be created for Admin or Manager roles.')
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=commit)
+        if commit:
+            create_login = self.cleaned_data.get('create_login')
+            if create_login and not instance.user and instance.role in ('admin', 'manager'):
+                username = instance.email
+                if User.objects.filter(username=username).exists():
+                    username = f"{instance.email.split('@')[0]}_{instance.employee_id}"
+                raw_password = get_random_string(length=10)
+                user = User.objects.create_user(
+                    username=username,
+                    email=instance.email,
+                    password=raw_password,
+                    first_name=instance.name.split()[0] if instance.name else '',
+                    last_name=' '.join(instance.name.split()[1:]) if instance.name and len(instance.name.split()) > 1 else '',
+                )
+                instance.user = user
+                instance.save()
+                instance._raw_password = raw_password
+        return instance
 
 
 class LeaveForm(forms.ModelForm):

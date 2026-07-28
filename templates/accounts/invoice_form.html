@@ -1,226 +1,313 @@
 {% extends 'base.html' %}
+{% load crm_tags %}
 {% block title %}{{ action }} Invoice{% endblock %}
 {% block page_title %}{{ action }} Invoice{% endblock %}
 {% block content %}
-<div class="crm-card">
-  <div class="crm-card-header"><span class="crm-card-title">Invoice Details</span></div>
-  <div class="p-4">
-    <form method="post" id="invoice-form">
-      {% csrf_token %}
-      <div class="row g-3 mb-4">
-        <!-- Client Dropdown + Add Button -->
-        <div class="col-md-5">
-          <label class="form-label fw-medium">Select Client</label>
-          <div class="input-group">
-            {{ form.client }}
-            <a href="{% url 'client_create' %}" target="_blank" class="btn btn-outline-success" title="Add new client"><i class="bi bi-plus-lg"></i></a>
-          </div>
-        </div>
-        <div class="col-md-5">
-          <label class="form-label fw-medium">Or Enter New Client Name</label>
-          {{ form.client_name }}
-        </div>
-        <div class="col-md-2 d-flex align-items-end">
-          <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="clear-client-btn">Clear</button>
-        </div>
-        <!-- Auto-filled info (read-only display) -->
-        <div class="col-12" id="client-info-bar" style="display:none;">
-          <div class="alert alert-light py-2 px-3 mb-0 d-flex gap-4 flex-wrap" style="font-size:12px;border:1px solid #e2e8f0;">
-            <span><i class="bi bi-person me-1"></i><strong id="info-name"></strong></span>
-            <span><i class="bi bi-building me-1"></i><span id="info-company"></span></span>
-            <span><i class="bi bi-envelope me-1"></i><span id="info-email"></span></span>
-            <span><i class="bi bi-geo-alt me-1"></i><span id="info-address"></span></span>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-medium">Phone <span class="text-danger">*</span></label>
-          {{ form.phone }}
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-medium">Project</label>
-          {{ form.project }}
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-medium">Invoice Date <span class="text-danger">*</span></label>
-          {{ form.invoice_date }}
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-medium">Due Date</label>
-          {{ form.due_date }}
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-medium">Status</label>
-          {{ form.status }}
-        </div>
-      </div>
+<style>
+:root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff}
+*{box-sizing:border-box}
+.field{width:100%;border:1px solid transparent;border-radius:4px;padding:7px 8px;background:transparent;font:inherit;color:inherit}
+.field:hover,.field:focus{border-color:var(--line);outline:none}
+textarea.field{resize:vertical}
+select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor:pointer}
+.top{display:grid;grid-template-columns:1.35fr .8fr;gap:60px}
+.logo-upload{width:160px;min-height:100px;border:1px dashed var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:20px;position:relative;overflow:hidden;background:#fff;cursor:pointer}
+.logo-upload:hover{border-color:#9ca3af;background:#fafafa}
+.logo-upload img{display:none;max-width:150px;max-height:90px;object-fit:contain;padding:5px}
+.logo-placeholder{text-align:center;padding:16px;font-size:13px}
+.logo-upload input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.logo-remove{display:none;background:transparent;color:#6b7280;border:0;padding:0 0 12px;font-size:12px;font-weight:600;cursor:pointer}
+.title{text-align:right;font-size:34px;font-weight:700;margin-bottom:6px}
+.number{display:flex;justify-content:flex-end;align-items:center;gap:4px}
+.parties{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:26px}
+.label{font-weight:700;color:var(--muted);margin-bottom:3px}
+.details{margin-top:26px}
+.detail-row{display:grid;grid-template-columns:1fr 155px;align-items:center}
+.detail-row input:last-child{text-align:right}
+.balance{font-size:18px;font-weight:800;border-top:1px solid var(--line);margin-top:7px;padding-top:8px}
+.items{margin-top:34px}
+.items-head,.item{display:grid;grid-template-columns:minmax(250px,1fr) 90px 130px 130px 32px;gap:6px;align-items:center}
+.items-head{background:#1f2937;color:#fff;border-radius:5px;padding:3px 5px;font-weight:700}
+.items-head div:not(:first-child){text-align:right}
+.item{padding:7px 5px;border-bottom:1px solid #eee}
+.item input{text-align:right;border:1px solid var(--line);border-radius:4px;padding:5px 7px;font:inherit;font-size:13px}
+.item input:first-child{text-align:left;width:100%}
+.amount{text-align:right;font-weight:700}
+.remove{background:transparent;color:#9ca3af;padding:5px;font-size:18px;cursor:pointer;border:0}
+.add{margin-top:10px;background:transparent;color:#374151;border:1px solid var(--line);font-weight:600;padding:8px 14px;border-radius:5px;cursor:pointer;font-size:13px}
+.add:hover{background:var(--soft)}
+.bottom{display:grid;grid-template-columns:1fr 360px;gap:55px;margin-top:34px}
+.notes textarea.field{border:1px solid var(--line);min-height:72px;margin-bottom:18px}
+.sum-row{display:grid;grid-template-columns:1fr 155px;align-items:center}
+.sum-row input{border:1px solid var(--line);border-radius:4px;padding:5px 8px;font:inherit;font-size:13px;text-align:right}
+.sum-row input:focus{outline:none;border-color:#0d6efd}
+.total{border-top:2px solid var(--line);font-size:17px;font-weight:700;padding-top:6px;margin-top:5px}
+.money{padding:7px 8px}
+@media(max-width:760px){
+  .top,.parties,.bottom{grid-template-columns:1fr;gap:22px}
+  .title{text-align:left}.number{justify-content:flex-start}
+  .items{overflow-x:auto}.items-head,.item{min-width:690px}
+}
+</style>
 
-      {{ formset.management_form }}
+<div class="inv-wrap" style="width:min(960px,calc(100% - 36px));margin:14px auto 40px;background:var(--paper);padding:54px;box-shadow:0 4px 24px #00000012;border-radius:10px;">
+  <form method="post" id="invoice-form" enctype="multipart/form-data">
+    {% csrf_token %}
 
-      <div class="table-responsive mb-3">
-        <table class="table table-bordered mb-0" id="items-table">
-          <thead class="table-light">
-            <tr>
-              <th style="width:35%">Description</th>
-              <th style="width:15%">Quantity</th>
-              <th style="width:15%">Unit Price</th>
-              <th style="width:15%">Tax</th>
-              <th style="width:15%">Amount</th>
-              <th style="width:5%"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item_form in formset %}
-            <tr class="item-row">
-              <td>{{ item_form.description }}{{ item_form.id }}</td>
-              <td>{{ item_form.quantity }}</td>
-              <td>{{ item_form.unit_price }}</td>
-              <td><input type="number" class="form-control item-tax" step="0.01" value="0"></td>
-              <td>{{ item_form.total }}</td>
-              <td class="text-center">{{ item_form.DELETE }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="6" class="text-end">
-                <button type="button" class="btn btn-sm btn-outline-primary" id="add-item"><i class="bi bi-plus-lg me-1"></i>Add Row</button>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+    {% if form.non_field_errors or formset.non_form_errors or form.errors or formset.errors %}
+    <div style="margin-bottom:16px;padding:12px 16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;color:#991b1b;font-size:13px;">
+      <strong>Please fix the following errors:</strong>
+      {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+      {% for e in formset.non_form_errors %}<div>{{ e }}</div>{% endfor %}
+      {% for field, errors in form.errors.items %}{% for e in errors %}<div>{{ field }}: {{ e }}</div>{% endfor %}{% endfor %}
+      {% for i, err_dict in formset.errors.items %}{% if err_dict %}{% for field, errors in err_dict.items %}{% for e in errors %}<div>Row {{ i|add:1 }} - {{ field }}: {{ e }}</div>{% endfor %}{% endfor %}{% endif %}{% endfor %}
+    </div>
+    {% endif %}
 
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label fw-medium">Notes</label>
-          {{ form.notes }}
-          <div class="form-check mt-3">
-            {{ form.received_payment }}
-            <label class="form-check-label ms-2">Received Payment</label>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between mb-2">
-                <span>Subtotal</span>
-                <strong id="subtotal">0.00</strong>
-              </div>
-              <div class="d-flex justify-content-between mb-2">
-                <span>Discount (%)</span>
-                {{ form.discount }}
-              </div>
-              <div class="d-flex justify-content-between mb-2">
-                <span>Tax (%)</span>
-                {{ form.tax }}
-              </div>
-              <hr>
-              <div class="d-flex justify-content-between">
-                <span class="fw-bold">Total</span>
-                {{ form.total }}
+    <section class="top">
+      <div>
+        <label class="logo-upload" id="logoUploadBox" title="Click to upload your logo">
+          {% if form.instance and form.instance.logo %}
+          <img id="logoPreview" src="{{ form.instance.logo.url }}" alt="Company logo" style="display:block;">
+          {% else %}
+          <img id="logoPreview" alt="Company logo">
+          {% endif %}
+          <span class="logo-placeholder" id="logoPlaceholder">+ Add Your Logo<br><small>PNG, JPG, SVG</small></span>
+          {{ form.logo }}
+        </label>
+        <button class="logo-remove" id="removeLogo" type="button">Remove logo</button>
+
+        <div class="label">Bill From</div>
+        {{ form.bill_from }}
+
+        <div class="parties">
+          <div>
+            <div class="label">Bill To</div>
+            <div style="margin-bottom:8px;">
+              <div class="input-group input-group-sm">
+                {{ form.client }}
+                <a href="{% url 'client_create' %}" target="_blank" class="btn btn-outline-success" title="Add new client"><i class="bi bi-plus-lg"></i></a>
               </div>
             </div>
+            <div style="margin-bottom:8px;">{{ form.client_name }}</div>
+            <div id="client-info-bar" style="display:none;margin-bottom:8px;">
+              <div class="d-flex gap-3 flex-wrap" style="font-size:12px;color:var(--muted);">
+                <span><i class="bi bi-person me-1"></i><strong id="info-name" style="color:var(--ink);"></strong></span>
+                <span><i class="bi bi-building me-1"></i><span id="info-company"></span></span>
+                <span><i class="bi bi-envelope me-1"></i><span id="info-email"></span></span>
+                <span><i class="bi bi-geo-alt me-1"></i><span id="info-address"></span></span>
+              </div>
+            </div>
+            <div>{{ form.phone }}</div>
+          </div>
+          <div>
+            <div class="label">Ship To</div>
+            {{ form.ship_to }}
           </div>
         </div>
       </div>
 
-      <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary">{{ action }} Invoice</button>
-        <button type="submit" name="save_as_draft" value="true" class="btn btn-outline-primary">Save as Draft</button>
-        <a href="{% url 'invoice_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      <div>
+        <div class="title">INVOICE</div>
+        <div class="number"><span></span><span style="font-weight:600;color:var(--ink);font-size:15px;">{% if invoice %}{{ invoice.code }}{% else %}{% endif %}</span></div>
+        <div class="details">
+          <div class="detail-row"><span>Date</span>{{ form.invoice_date }}</div>
+          <div class="detail-row"><span>Payment Terms</span>{{ form.payment_terms }}</div>
+          <div class="detail-row"><span>Due Date</span>{{ form.due_date }}</div>
+          <div class="detail-row"><span>PO Number</span>{{ form.po_number }}</div>
+          <div class="detail-row balance"><span>Balance Due</span><span id="balanceTop" class="money">$0.00</span></div>
+        </div>
       </div>
-    </form>
-  </div>
+    </section>
+
+    <section class="items">
+      <div class="items-head">
+        <div>Description</div><div>Quantity</div><div>Rate</div><div>Amount</div><div></div>
+      </div>
+      {{ formset.management_form }}
+      <div id="rows">
+        {% for item_form in formset %}
+        <div class="item" data-prefix="{{ item_form.prefix }}">
+          {{ item_form.id }}
+          <input type="text" class="field desc" name="{{ item_form.prefix }}-description" value="{{ item_form.description.value|default:'' }}" placeholder="Description of item/service...">
+          <input type="number" class="field qty" name="{{ item_form.prefix }}-quantity" min="0" step="any" value="{{ item_form.quantity.value|default:'1' }}">
+          <input type="number" class="field rate" name="{{ item_form.prefix }}-unit_price" min="0" step="0.01" value="{{ item_form.unit_price.value|default:'0' }}">
+          <div class="amount">$0.00</div>
+          <button class="remove" type="button" title="Remove">&times;</button>
+          <input type="hidden" name="{{ item_form.prefix }}-DELETE" class="del-check">
+        </div>
+        {% endfor %}
+      </div>
+      <button class="add" type="button" id="addItemBtn">+ Line Item</button>
+    </section>
+
+    <section class="bottom">
+      <div class="notes">
+        <div class="label">Notes</div>
+        {{ form.notes }}
+        <div class="label">Terms</div>
+        <textarea class="field" rows="2" placeholder="Terms and conditions, payment methods, delivery schedule" id="id_terms"></textarea>
+      </div>
+
+      <div>
+        <div class="sum-row"><span>Subtotal</span><span id="subtotal" class="money">$0.00</span></div>
+        <div class="sum-row"><span>Discount</span>{{ form.discount }}</div>
+        <div class="sum-row"><span>Tax (%)</span>{{ form.tax }}</div>
+        <div class="sum-row"><span>Shipping</span>{{ form.shipping }}</div>
+        <div class="sum-row total"><span>Total</span><span id="total" class="money">$0.00</span></div>
+        <div class="sum-row"><span>Amount Paid</span>{{ form.amount_paid }}</div>
+        <div class="sum-row balance"><span>Balance Due</span><span id="balance" class="money">$0.00</span></div>
+      </div>
+    </section>
+
+    {{ form.currency }}
+    <div style="display:flex;gap:10px;margin-top:24px;justify-content:flex-end;">
+      <button type="submit" class="btn btn-primary" style="border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:#111827;color:#fff;font-weight:700;">{{ action }} Invoice</button>
+      <button type="submit" name="save_as_draft" value="true" style="border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:#6b7280;color:#fff;font-weight:700;">Save as Draft</button>
+      <a href="{% url 'invoice_list' %}" style="border:1px solid var(--line);border-radius:6px;padding:10px 16px;text-decoration:none;color:#374151;font-weight:600;">Cancel</a>
+    </div>
+  </form>
 </div>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // ── Client auto-fill ──
-    const clientSelect = document.getElementById('id_client_select');
-    const clientNameInput = document.getElementById('id_client_name');
-    const phoneInput = document.getElementById('id_phone');
-    const infoBar = document.getElementById('client-info-bar');
+const CURRENCY_SYMBOLS = {USD:'$',BDT:'৳',EUR:'€',GBP:'£',INR:'₹',JPY:'¥',CAD:'C$',AUD:'A$',AED:'د.إ',SAR:'ر.س'};
+let selectedCurrency = '{{ invoice.currency|default:"USD" }}';
+const money = n => {
+  const sym = CURRENCY_SYMBOLS[selectedCurrency] || '$';
+  return sym + (Number(n)||0).toFixed(2);
+};
 
-    clientSelect?.addEventListener('change', function() {
-        const clientId = this.value;
-        if (!clientId) {
-            infoBar.style.display = 'none';
-            return;
-        }
-        fetch(`/accounts/client-data/?id=${clientId}`)
-            .then(r => r.json())
-            .then(data => {
-                if (data.phone && !phoneInput.value.trim()) {
-                    phoneInput.value = data.phone;
-                } else if (data.phone) {
-                    phoneInput.value = data.phone;
-                }
-                document.getElementById('info-name').textContent = data.name || '';
-                document.getElementById('info-company').textContent = data.company || '';
-                document.getElementById('info-email').textContent = data.email || '';
-                document.getElementById('info-address').textContent = data.address || '';
-                infoBar.style.display = 'flex';
-                // Hide manual name input when dropdown is used
-                clientNameInput.value = '';
-            });
-    });
+function recalcRow(row){
+  const q = parseFloat(row.querySelector('.qty')?.value)||0;
+  const r = parseFloat(row.querySelector('.rate')?.value)||0;
+  const el = row.querySelector('.amount');
+  if(el) el.textContent = money(q*r);
+}
 
-    // Clear client selection
-    document.getElementById('clear-client-btn')?.addEventListener('click', function() {
-        clientSelect.value = '';
-        clientNameInput.value = '';
-        infoBar.style.display = 'none';
-    });
+function calculate(){
+  let subtotal=0;
+  document.querySelectorAll('.item').forEach(row=>{
+    if(row.querySelector('.del-check')?.value==='on') return;
+    const q = parseFloat(row.querySelector('.qty')?.value)||0;
+    const r = parseFloat(row.querySelector('.rate')?.value)||0;
+    subtotal += q*r;
+  });
+  const discount = parseFloat(document.getElementById('id_discount')?.value)||0;
+  const taxRate = parseFloat(document.getElementById('id_tax')?.value)||0;
+  const shipping = parseFloat(document.getElementById('id_shipping')?.value)||0;
+  const paid = parseFloat(document.getElementById('id_amount_paid')?.value)||0;
+  const taxable = Math.max(0, subtotal - discount);
+  const total = taxable + (taxable * taxRate / 100) + shipping;
+  const balance = total - paid;
+  document.getElementById('subtotal').textContent = money(subtotal);
+  document.getElementById('total').textContent = money(total);
+  document.getElementById('balance').textContent = money(balance);
+  document.getElementById('balanceTop').textContent = money(balance);
+  document.getElementById('id_total').value = total.toFixed(2);
+}
 
-    // ── Line items ──
-    const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
-    const itemsTable = document.getElementById('items-table');
-    const tbody = itemsTable.querySelector('tbody');
+document.addEventListener('DOMContentLoaded', function(){
+  const rows = document.getElementById('rows');
+  const totalForms = document.getElementById('id_items-TOTAL_FORMS');
 
-    document.getElementById('add-item')?.addEventListener('click', function() {
-        const rowCount = tbody.rows.length;
-        const lastRow = tbody.rows[tbody.rows.length - 1];
-        const newRow = lastRow.cloneNode(true);
-        newRow.querySelectorAll('input, select').forEach(input => {
-            input.name = input.name.replace(/\d+/, rowCount);
-            input.id = input.id.replace(/\d+/, rowCount);
-            if (input.type !== 'hidden') {
-                input.value = '';
-            }
-        });
-        tbody.appendChild(newRow);
-        totalFormsInput.value = rowCount + 1;
-    });
-
-    tbody.addEventListener('input', function(e) {
-        if (e.target.name?.includes('-quantity') || e.target.name?.includes('-unit_price')) {
-            calculateTotals();
-        }
-    });
-
-    tbody.addEventListener('click', function(e) {
-        if (e.target.name?.includes('-DELETE')) {
-            setTimeout(calculateTotals, 100);
-        }
-    });
-
-    function calculateTotals() {
-        let subtotal = 0;
-        tbody.querySelectorAll('.item-row').forEach(row => {
-            const deleteCheck = row.querySelector('[name$="-DELETE"]');
-            if (deleteCheck && deleteCheck.checked) return;
-            const qty = parseFloat(row.querySelector('[name$="-quantity"]')?.value) || 0;
-            const price = parseFloat(row.querySelector('[name$="-unit_price"]')?.value) || 0;
-            const tax = parseFloat(row.querySelector('.item-tax')?.value) || 0;
-            const amount = qty * price;
-            const taxAmount = amount * (tax / 100);
-            const total = amount + taxAmount;
-            const totalInput = row.querySelector('[name$="-total"]');
-            if (totalInput) totalInput.value = total.toFixed(2);
-            subtotal += total;
-        });
-        document.getElementById('subtotal').textContent = subtotal.toFixed(2);
-        document.getElementById('id_total').value = subtotal.toFixed(2);
+  rows.addEventListener('input', function(e){
+    if(e.target.classList.contains('qty')||e.target.classList.contains('rate')){
+      recalcRow(e.target.closest('.item'));
+      calculate();
     }
+  });
+
+  rows.addEventListener('click', function(e){
+    if(e.target.classList.contains('remove')){
+      const row = e.target.closest('.item');
+      const del = row.querySelector('.del-check');
+      if(del && row.dataset.prefix){
+        del.value = 'on';
+        row.style.display = 'none';
+      } else {
+        row.remove();
+      }
+      calculate();
+    }
+  });
+
+  document.getElementById('addItemBtn')?.addEventListener('click', function(){
+    const idx = parseInt(totalForms.value);
+    const p = 'items-' + idx;
+    const row = document.createElement('div');
+    row.className = 'item';
+    row.dataset.prefix = p;
+    row.innerHTML =
+      '<input type="hidden" name="'+p+'-id" value="">' +
+      '<input type="text" class="field desc" name="'+p+'-description" placeholder="Description of item/service...">' +
+      '<input type="number" class="field qty" name="'+p+'-quantity" min="0" step="any" value="1">' +
+      '<input type="number" class="field rate" name="'+p+'-unit_price" min="0" step="0.01" value="0">' +
+      '<div class="amount">$0.00</div>' +
+      '<button class="remove" type="button" title="Remove">&times;</button>' +
+      '<input type="hidden" name="'+p+'-DELETE" class="del-check">';
+    rows.appendChild(row);
+    totalForms.value = idx + 1;
+    calculate();
+  });
+
+  ['id_discount','id_tax','id_shipping','id_amount_paid'].forEach(function(id){
+    document.getElementById(id)?.addEventListener('input', calculate);
+  });
+
+  document.getElementById('id_currency')?.addEventListener('change', function(){
+    selectedCurrency = this.value;
+    document.querySelectorAll('.item').forEach(recalcRow);
+    calculate();
+  });
+
+  const logoInput = document.getElementById('id_logo');
+  const logoPreview = document.getElementById('logoPreview');
+  const logoPlaceholder = document.getElementById('logoPlaceholder');
+  const removeLogo = document.getElementById('removeLogo');
+  if(logoInput){
+    logoInput.addEventListener('change', function(){
+      const file = this.files && this.files[0];
+      if(!file) return;
+      if(!file.type.startsWith('image/')){ alert('Please choose an image file.'); this.value=''; return; }
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        logoPreview.src = ev.target.result;
+        logoPreview.style.display = 'block';
+        logoPlaceholder.style.display = 'none';
+        removeLogo.style.display = 'inline-block';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  if(removeLogo){
+    removeLogo.addEventListener('click', function(){
+      logoInput.value = '';
+      logoPreview.removeAttribute('src');
+      logoPreview.style.display = 'none';
+      logoPlaceholder.style.display = 'block';
+      removeLogo.style.display = 'none';
+    });
+  }
+  if(logoPreview && logoPreview.src){ removeLogo.style.display = 'inline-block'; logoPlaceholder.style.display = 'none'; }
+
+  document.getElementById('id_client_select')?.addEventListener('change', function(){
+    const clientId = this.value;
+    const infoBar = document.getElementById('client-info-bar');
+    if(!clientId){ infoBar.style.display='none'; return; }
+    fetch('/accounts/client-data/?id='+clientId)
+      .then(function(r){return r.json()})
+      .then(function(data){
+        document.getElementById('id_phone').value = data.phone||'';
+        document.getElementById('info-name').textContent = data.name||'';
+        document.getElementById('info-company').textContent = data.company||'';
+        document.getElementById('info-email').textContent = data.email||'';
+        document.getElementById('info-address').textContent = data.address||'';
+        infoBar.style.display = 'block';
+        document.getElementById('id_client_name').value = '';
+      });
+  });
+
+  calculate();
 });
 </script>
 {% endblock %}

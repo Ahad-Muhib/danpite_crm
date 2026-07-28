@@ -9,9 +9,10 @@
       {% csrf_token %}
       <div class="row g-3">
         <div class="col-12"><label class="form-label fw-medium">Title <span class="text-danger">*</span></label>{{ form.title }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Priority</label>{{ form.priority }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Status</label>{{ form.status }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Assigned To</label>{{ form.assigned_to }}</div>
+        <div class="col-md-4"><label class="form-label fw-medium">Priority</label>{{ form.priority }}</div>
+        <div class="col-md-4"><label class="form-label fw-medium">Status</label>{{ form.status }}</div>
+        <div class="col-md-4"><label class="form-label fw-medium">Assigned To</label>{{ form.assigned_to }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Start Date</label>{{ form.start_date }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Due Date</label>{{ form.due_date }}</div>
         <div class="col-12"><label class="form-label fw-medium">Description</label>{{ form.description }}</div>
       </div>

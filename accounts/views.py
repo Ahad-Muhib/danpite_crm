@@ -1,13 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 
 from clients.models import Client
 
 from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm
 from .models import BankAccount, Expense, Invoice, Payment
+from orders.models import Order, OrderItem
+from datetime import date
 
 
 @login_required
@@ -42,13 +45,20 @@ def invoice_list(request):
 
 @login_required
 def invoice_create(request):
-    form = InvoiceForm(request.POST or None)
+    form = InvoiceForm(request.POST or None, request.FILES or None)
     formset = InvoiceItemFormSet(request.POST or None)
     if request.method == 'POST':
         save_as_draft = 'save_as_draft' in request.POST
         if form.is_valid() and formset.is_valid():
             obj = form.save(commit=False)
             obj.created_by = request.user
+            for f in ('tax', 'discount', 'shipping', 'total'):
+                if not getattr(obj, f, None):
+                    setattr(obj, f, 0)
+            if not obj.status:
+                obj.status = 'draft'
+            if not obj.currency:
+                obj.currency = 'USD'
             client = form.cleaned_data.get('client')
             client_name = form.cleaned_data.get('client_name', '').strip()
             if client:
@@ -63,7 +73,28 @@ def invoice_create(request):
             obj.save()
             formset.instance = obj
             formset.save()
+            amount_paid = form.cleaned_data.get('amount_paid') or 0
+            if float(amount_paid) > 0:
+                Payment.objects.create(
+                    invoice=obj, client=obj.client, amount=amount_paid,
+                    payment_date=date.today(), method='cash',
+                    reference=f'Invoice {obj.code}', created_by=request.user,
+                )
             messages.success(request, 'Invoice created.')
+            order = Order.objects.create(
+                client=obj.client,
+                status='processing' if obj.status == 'sent' else 'pending',
+                total=obj.total,
+                notes=f'Auto-created from {obj.code}',
+                assigned_to=request.user,
+            )
+            for item in obj.items.all():
+                OrderItem.objects.create(
+                    order=order,
+                    product_name=item.description,
+                    quantity=int(item.quantity),
+                    unit_price=item.unit_price,
+                )
             return redirect('invoice_list')
     return render(request, 'accounts/invoice_form.html', {'form': form, 'formset': formset, 'action': 'Create'})
 
@@ -71,12 +102,15 @@ def invoice_create(request):
 @login_required
 def invoice_edit(request, pk):
     obj = get_object_or_404(Invoice, pk=pk)
-    form = InvoiceForm(request.POST or None, instance=obj)
+    form = InvoiceForm(request.POST or None, request.FILES or None, instance=obj)
     formset = InvoiceItemFormSet(request.POST or None, instance=obj)
     if request.method == 'POST':
         save_as_draft = 'save_as_draft' in request.POST
         if form.is_valid() and formset.is_valid():
             obj = form.save(commit=False)
+            for f in ('tax', 'discount', 'shipping', 'total'):
+                if not getattr(obj, f, None):
+                    setattr(obj, f, 0)
             client = form.cleaned_data.get('client')
             client_name = form.cleaned_data.get('client_name', '').strip()
             if client:
@@ -91,6 +125,27 @@ def invoice_edit(request, pk):
             obj.save()
             formset.instance = obj
             formset.save()
+            new_amount = float(form.cleaned_data.get('amount_paid') or 0)
+            from django.db.models import Sum
+            current_paid = obj.payments.aggregate(s=Sum('amount'))['s'] or 0
+            diff = new_amount - float(current_paid)
+            if diff > 0:
+                Payment.objects.create(
+                    invoice=obj, client=obj.client, amount=diff,
+                    payment_date=date.today(), method='cash',
+                    reference=f'Invoice {obj.code}', created_by=request.user,
+                )
+            elif diff < 0:
+                for p in obj.payments.order_by('-created_at'):
+                    if diff >= 0:
+                        break
+                    if p.amount <= abs(diff):
+                        diff += float(p.amount)
+                        p.delete()
+                    else:
+                        p.amount += diff
+                        p.save()
+                        diff = 0
             messages.success(request, 'Invoice updated.')
             return redirect('invoice_list')
     return render(request, 'accounts/invoice_form.html', {'form': form, 'formset': formset, 'action': 'Edit', 'invoice': obj})
@@ -101,7 +156,23 @@ def invoice_detail(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
     items = invoice.items.all()
     payments = invoice.payments.all()
-    return render(request, 'accounts/invoice_detail.html', {'invoice': invoice, 'items': items, 'payments': payments})
+    total_paid = payments.aggregate(s=Sum('amount'))['s'] or 0
+    subtotal = items.aggregate(s=Sum('total'))['s'] or 0
+    discount_pct = float(invoice.discount or 0)
+    tax_pct = float(invoice.tax or 0)
+    shipping = float(invoice.shipping or 0)
+    discount_amount = float(subtotal) * (discount_pct / 100)
+    after_discount = float(subtotal) - discount_amount
+    tax_amount = after_discount * (tax_pct / 100)
+    total_with_tax = after_discount + tax_amount + shipping
+    balance_due = total_with_tax - float(total_paid)
+    return render(request, 'accounts/invoice_detail.html', {
+        'invoice': invoice, 'items': items, 'payments': payments,
+        'balance_due': balance_due, 'subtotal': subtotal,
+        'discount_amount': discount_amount, 'tax_amount': tax_amount,
+        'total_with_tax': total_with_tax, 'total_paid': total_paid,
+        'shipping': shipping,
+    })
 
 
 @login_required
@@ -261,3 +332,43 @@ def bank_account_delete(request, pk):
     get_object_or_404(BankAccount, pk=pk).delete()
     messages.success(request, 'Bank account deleted.')
     return redirect('bank_account_list')
+
+
+@login_required
+def invoice_pdf(request, pk):
+    from weasyprint import HTML
+    from django.db.models import Sum
+    invoice = get_object_or_404(Invoice, pk=pk)
+    items = invoice.items.all()
+    subtotal = items.aggregate(s=Sum('total'))['s'] or 0
+    discount_pct = float(invoice.discount or 0)
+    tax_pct = float(invoice.tax or 0)
+    shipping = float(invoice.shipping or 0)
+    discount_amount = float(subtotal) * (discount_pct / 100)
+    after_discount = float(subtotal) - discount_amount
+    tax_amount = after_discount * (tax_pct / 100)
+    total_with_tax = after_discount + tax_amount + shipping
+    total_paid = invoice.payments.aggregate(s=Sum('amount'))['s'] or 0
+    balance_due = total_with_tax - float(total_paid)
+    html_string = render_to_string('accounts/invoice_pdf.html', {
+        'invoice': invoice, 'items': items,
+        'subtotal': subtotal, 'discount_amount': discount_amount,
+        'tax_amount': tax_amount, 'total_with_tax': total_with_tax,
+        'total_paid': total_paid, 'balance_due': balance_due,
+        'shipping': shipping,
+    })
+    pdf = HTML(string=html_string).write_pdf()
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{invoice.code}.pdf"'
+    return response
+
+
+@login_required
+def invoice_mark_paid(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    if request.method == 'POST':
+        invoice.status = 'paid'
+        invoice.received_payment = True
+        invoice.save()
+        messages.success(request, f'{invoice.code} marked as paid.')
+    return redirect('invoice_detail', pk=pk)

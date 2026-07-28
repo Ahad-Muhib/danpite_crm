@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load crm_tags %}
 {% block title %}Payments{% endblock %}
 {% block page_title %}Payments{% endblock %}
 {% block content %}
@@ -6,7 +7,7 @@
   <div class="crm-card-header">
     <div>
       <span class="crm-card-title">All Payments</span>
-      <div class="text-muted mt-1" style="font-size:13px;">Total collected: <strong class="text-success">{{ total }}</strong></div>
+      <div class="text-muted mt-1" style="font-size:13px;">Total collected: <strong class="text-success">{{ total|currency }}</strong></div>
     </div>
     <a href="{% url 'payment_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Record Payment</a>
   </div>
@@ -19,7 +20,7 @@
           <td class="text-muted">{{ p.pk }}</td>
           <td>{{ p.client.name|default:"—" }}</td>
           <td>{% if p.invoice %}<a href="{% url 'invoice_detail' p.invoice.pk %}" class="text-primary text-decoration-none">{{ p.invoice.code }}</a>{% else %}—{% endif %}</td>
-          <td class="fw-medium text-success">{{ p.amount }}</td>
+          <td class="fw-medium text-success">{{ p.amount|currency }}</td>
           <td class="text-muted">{{ p.payment_date }}</td>
           <td><span class="badge bg-light text-dark border">{{ p.get_method_display }}</span></td>
           <td class="text-muted">{{ p.reference|default:"—" }}</td>

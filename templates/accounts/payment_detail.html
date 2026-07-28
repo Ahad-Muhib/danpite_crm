@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load crm_tags %}
 {% block title %}Payment #{{ payment.pk }}{% endblock %}
 {% block page_title %}Payment Details{% endblock %}
 {% block content %}
@@ -22,7 +23,7 @@
       </div>
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Amount</label>
-        <div class="fw-medium text-success">{{ payment.amount }}</div>
+        <div class="fw-medium text-success">{{ payment.amount|currency }}</div>
       </div>
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Payment Date</label>

@@ -10,7 +10,7 @@ from .models import Attendance, Designation, Employee, Leave
 @login_required
 def employee_list(request):
     q = request.GET.get('q', '')
-    qs = Employee.objects.all()
+    qs = Employee.objects.select_related('user', 'department', 'designation').all()
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(email__icontains=q) | Q(employee_id__icontains=q))
     designations = Designation.objects.all()
@@ -21,8 +21,12 @@ def employee_list(request):
 def employee_create(request):
     form = EmployeeForm(request.POST or None, request.FILES or None)
     if form.is_valid():
-        form.save()
-        messages.success(request, 'Employee added.')
+        emp = form.save()
+        raw_password = getattr(emp, '_raw_password', None)
+        if raw_password:
+            messages.success(request, f'Employee added. Login credentials — Username: {emp.user.username} | Password: {raw_password}')
+        else:
+            messages.success(request, 'Employee added.')
         return redirect('employee_list')
     return render(request, 'hr/employee_form.html', {'form': form, 'action': 'Add'})
 
