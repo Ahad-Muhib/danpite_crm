@@ -5,7 +5,7 @@ from django.forms import inlineformset_factory
 
 from clients.models import Client
 
-from .models import BankAccount, Expense, Invoice, InvoiceItem, Payment, CURRENCY_CHOICES
+from .models import BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, CURRENCY_CHOICES
 
 
 class InvoiceForm(forms.ModelForm):
@@ -101,19 +101,19 @@ InvoiceItemFormSet = inlineformset_factory(
 
 
 class PaymentForm(forms.ModelForm):
-    client_name = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Type client name...'}), label='Client')
+    client_name = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_client_name', 'placeholder': 'Type client name...', 'autocomplete': 'off'}), label='Client')
 
     class Meta:
         model = Payment
         fields = ['invoice', 'account', 'amount', 'payment_date', 'method', 'reference', 'notes']
         widgets = {
-            'invoice': forms.Select(attrs={'class': 'form-select'}),
-            'account': forms.Select(attrs={'class': 'form-select'}),
-            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+            'invoice': forms.HiddenInput(attrs={'id': 'id_invoice'}),
+            'account': forms.HiddenInput(attrs={'id': 'id_account'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01', 'style': 'text-align:right'}),
             'payment_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'method': forms.Select(attrs={'class': 'form-select'}),
-            'reference': forms.TextInput(attrs={'class': 'form-control'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'method': forms.Select(attrs={'class': 'form-select', 'id': 'id_method'}),
+            'reference': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Transaction ID / Ref'}),
+            'notes': forms.HiddenInput(attrs={'id': 'id_notes'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -121,6 +121,7 @@ class PaymentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if instance and instance.client:
             self.fields['client_name'].initial = instance.client.name
+        self.fields['payment_date'].initial = date.today()
 
 
 class ExpenseForm(forms.ModelForm):
@@ -128,14 +129,22 @@ class ExpenseForm(forms.ModelForm):
         model = Expense
         fields = ['title', 'category', 'amount', 'expense_date', 'bank_account', 'description', 'receipt']
         widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Expense title...'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
-            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01', 'style': 'text-align:right'}),
             'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'bank_account': forms.Select(attrs={'class': 'form-select'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'bank_account': forms.HiddenInput(attrs={'id': 'id_bank_account'}),
+            'description': forms.HiddenInput(attrs={'id': 'id_description'}),
             'receipt': forms.FileInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['expense_date'].initial = date.today()
+        self.fields['description'].label = 'Notes'
+        cats = ExpenseCategory.objects.all()
+        if cats:
+            self.fields['category'].choices = [(c.name, c.name) for c in cats]
 
 
 class BankAccountForm(forms.ModelForm):

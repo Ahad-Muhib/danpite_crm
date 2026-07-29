@@ -10,7 +10,7 @@ from core.models import log_action
 from clients.models import Client
 
 from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm
-from .models import BankAccount, Expense, Invoice, Payment
+from .models import BankAccount, Expense, ExpenseCategory, Invoice, Payment
 from orders.models import Order, OrderItem
 from datetime import date
 
@@ -387,6 +387,9 @@ def payment_create(request):
     if client_name and not request.method == 'POST':
         initial['client_name'] = client_name
     form = PaymentForm(request.POST or None, initial=initial or None)
+    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    invoices = Invoice.objects.all().order_by('-created_at')[:100]
+    clients = Client.objects.all().order_by('name')
     if form.is_valid():
         obj = form.save(commit=False)
         obj.created_by = request.user
@@ -401,7 +404,9 @@ def payment_create(request):
         log_action(request, 'create', 'Payment', obj, description=f'{obj.amount} — {cname} — {obj.payment_date}')
         messages.success(request, 'Payment recorded.')
         return redirect('payment_list')
-    return render(request, 'accounts/payment_form.html', {'form': form, 'action': 'Record'})
+    return render(request, 'accounts/payment_form.html', {
+        'form': form, 'action': 'Record', 'accounts': accounts, 'invoices': invoices, 'clients': clients,
+    })
 
 
 @login_required
@@ -433,7 +438,12 @@ def payment_edit(request, pk):
         log_action(request, 'update', 'Payment', obj, description=f'{obj.amount} — {cname} — {obj.payment_date}')
         messages.success(request, 'Payment updated.')
         return redirect('payment_list')
-    return render(request, 'accounts/payment_form.html', {'form': form, 'action': 'Edit'})
+    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    invoices = Invoice.objects.all().order_by('-created_at')[:100]
+    clients = Client.objects.all().order_by('name')
+    return render(request, 'accounts/payment_form.html', {
+        'form': form, 'action': 'Edit', 'accounts': accounts, 'invoices': invoices, 'clients': clients,
+    })
 
 
 @login_required
@@ -454,16 +464,46 @@ def payment_delete(request, pk):
 
 @login_required
 def expense_list(request):
-    qs = Expense.objects.all().order_by('-expense_date')
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_expenses')
+        if not selected_ids:
+            messages.error(request, 'Select at least one expense first.')
+            return redirect('expense_list')
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can delete expenses.')
+            return redirect('expense_list')
+        for obj in Expense.objects.filter(pk__in=selected_ids):
+            log_action(request, 'delete', 'Expense', obj, description=f'{obj.title} — {obj.amount}')
+            obj.delete()
+        messages.success(request, f'{len(selected_ids)} expense(s) deleted.')
+        return redirect('expense_list')
+    q = request.GET.get('q', '')
+    category = request.GET.get('category', '')
+    sort = request.GET.get('sort', 'date')
+    dir = request.GET.get('dir', 'desc')
+    sort_map = {'id': 'id', 'title': 'title', 'category': 'category', 'amount': 'amount', 'date': 'expense_date', 'created': 'created_at'}
+    order = sort_map.get(sort, 'expense_date')
+    if dir == 'desc':
+        order = '-' + order
+    qs = Expense.objects.all().order_by(order)
+    if q:
+        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+    if category:
+        qs = qs.filter(category=category)
     total = qs.aggregate(Sum('amount'))['amount__sum'] or 0
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get('page'))
-    return render(request, 'accounts/expenses.html', {'expenses': page, 'total': total})
+    return render(request, 'accounts/expenses.html', {'expenses': page, 'total': total, 'q': q, 'category': category, 'sort': sort, 'dir': dir})
 
 
 @login_required
 def expense_create(request):
+    if not ExpenseCategory.objects.exists():
+        defaults = ['Office Supplies', 'Travel', 'Marketing', 'Utilities', 'Salary', 'Rent', 'Equipment', 'Other']
+        for name in defaults:
+            ExpenseCategory.objects.get_or_create(name=name)
     form = ExpenseForm(request.POST or None, request.FILES or None)
+    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
     if form.is_valid():
         obj = form.save(commit=False)
         obj.created_by = request.user
@@ -471,7 +511,7 @@ def expense_create(request):
         log_action(request, 'create', 'Expense', obj)
         messages.success(request, 'Expense recorded.')
         return redirect('expense_list')
-    return render(request, 'accounts/expense_form.html', {'form': form, 'action': 'Add'})
+    return render(request, 'accounts/expense_form.html', {'form': form, 'action': 'Add', 'accounts': accounts})
 
 
 @login_required
@@ -484,12 +524,13 @@ def expense_detail(request, pk):
 def expense_edit(request, pk):
     obj = get_object_or_404(Expense, pk=pk)
     form = ExpenseForm(request.POST or None, request.FILES or None, instance=obj)
+    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
     if form.is_valid():
         obj = form.save()
         log_action(request, 'update', 'Expense', obj)
         messages.success(request, 'Expense updated.')
         return redirect('expense_list')
-    return render(request, 'accounts/expense_form.html', {'form': form, 'action': 'Edit'})
+    return render(request, 'accounts/expense_form.html', {'form': form, 'action': 'Edit', 'accounts': accounts})
 
 
 @login_required
@@ -502,6 +543,17 @@ def expense_delete(request, pk):
     obj.delete()
     messages.success(request, 'Expense deleted.')
     return redirect('expense_list')
+
+
+@login_required
+def add_expense_category(request):
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'ok': False, 'error': 'Category name is required.'})
+    cat, created = ExpenseCategory.objects.get_or_create(name=name)
+    if not created:
+        return JsonResponse({'ok': False, 'error': 'Category already exists.'})
+    return JsonResponse({'ok': True, 'name': cat.name})
 
 
 @login_required

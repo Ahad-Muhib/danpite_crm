@@ -4,37 +4,99 @@
 {% block page_title %}Expenses{% endblock %}
 {% block content %}
 <div class="crm-card">
-  <div class="crm-card-header">
+  <div class="crm-card-header flex-wrap gap-2">
     <div>
       <span class="crm-card-title">All Expenses</span>
       <div class="text-muted mt-1" style="font-size:13px;">Total: <strong class="text-danger">{{ total|currency }}</strong></div>
     </div>
-    <a href="{% url 'expense_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Expense</a>
+    <form class="d-flex gap-2 search-form flex-wrap" method="get">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search title..." style="width:200px;">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="dir" value="{{ dir }}">
+      <select name="category" class="form-select form-select-sm" style="width:150px;">
+        <option value="">All Categories</option>
+        <option value="office" {% if category == 'office' %}selected{% endif %}>Office Supplies</option>
+        <option value="travel" {% if category == 'travel' %}selected{% endif %}>Travel</option>
+        <option value="marketing" {% if category == 'marketing' %}selected{% endif %}>Marketing</option>
+        <option value="utilities" {% if category == 'utilities' %}selected{% endif %}>Utilities</option>
+        <option value="salary" {% if category == 'salary' %}selected{% endif %}>Salary</option>
+        <option value="rent" {% if category == 'rent' %}selected{% endif %}>Rent</option>
+        <option value="equipment" {% if category == 'equipment' %}selected{% endif %}>Equipment</option>
+        <option value="other" {% if category == 'other' %}selected{% endif %}>Other</option>
+      </select>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search me-1"></i>Search</button>
+      {% if q or category %}
+      <a href="{% url 'expense_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>
+      {% endif %}
+    </form>
+    <div class="d-flex gap-2">
+      <form method="post" id="expense-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
+      </form>
+      <a href="{% url 'expense_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Expense</a>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Title</th><th>Category</th><th>Amount</th><th>Date</th><th>Bank Account</th><th>Added By</th><th>Actions</th></tr></thead>
+      <thead>
+        <tr>
+          {% if request.user.is_superuser %}<th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-expenses" aria-label="Select all"></th>{% endif %}
+          <th><a href="?sort=id&dir={% if sort == 'id' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit"># {% if sort == 'id' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=title&dir={% if sort == 'title' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit">Title {% if sort == 'title' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=category&dir={% if sort == 'category' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit">Category {% if sort == 'category' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=amount&dir={% if sort == 'amount' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit">Amount {% if sort == 'amount' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=date&dir={% if sort == 'date' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit">Date {% if sort == 'date' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th>Bank Account</th>
+          <th>Added By</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for e in expenses %}
         <tr>
+          {% if request.user.is_superuser %}<td><input type="checkbox" name="selected_expenses" value="{{ e.pk }}" class="form-check-input expense-checkbox" form="expense-bulk-form"></td>{% endif %}
+          <td class="text-muted">{{ e.pk }}</td>
           <td class="fw-medium">{{ e.title }}</td>
           <td><span class="badge bg-light text-dark border">{{ e.get_category_display }}</span></td>
           <td class="fw-medium text-danger">{{ e.amount|currency }}</td>
-          <td class="text-muted">{{ e.expense_date }}</td>
+          <td class="text-muted" style="white-space:nowrap;">{{ e.expense_date }}</td>
           <td>{% if e.bank_account %}{{ e.bank_account.display_name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
           <td>{{ e.created_by.username|default:"—" }}</td>
           <td>
-            <a href="{% url 'expense_detail' e.pk %}" class="btn btn-sm btn-outline-info btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
-            <a href="{% url 'expense_edit' e.pk %}" class="btn btn-sm btn-outline-warning btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'expense_delete' e.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')" title="Delete"><i class="bi bi-trash"></i></a>
+            <a href="{% url 'expense_detail' e.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'expense_edit' e.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center text-muted py-5">No expenses recorded.</td></tr>
+        <tr><td colspan="{% if request.user.is_superuser %}10{% else %}9{% endif %}" class="text-center text-muted py-5">No expenses recorded.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% include 'includes/pagination.html' with page_obj=expenses %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-expenses');
+  const checkboxes = document.querySelectorAll('.expense-checkbox');
+  const bulkForm = document.getElementById('expense-bulk-form');
+
+  selectAll?.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+  });
+
+  bulkForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var selected = document.querySelectorAll('.expense-checkbox:checked').length;
+    if (!selected) { alert('Select at least one expense.'); return; }
+    if (!confirm('Delete selected expenses?')) return;
+    bulkForm.submit();
+  });
+});
+</script>
 {% endblock %}

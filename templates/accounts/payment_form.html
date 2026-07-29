@@ -2,20 +2,64 @@
 {% block title %}{{ action|default:"Record" }} Payment{% endblock %}
 {% block page_title %}{{ action|default:"Record" }} Payment{% endblock %}
 {% block content %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+<style>
+.acct-dropdown{position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.acct-dropdown-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #f3f4f6}
+.acct-dropdown-item:last-child{border-bottom:0}
+.acct-dropdown-item:hover{background:#f0fdf4}
+.acct-dropdown-item .acct-num{font-weight:600;font-size:13px}
+.acct-dropdown-item .acct-detail{font-size:11px;color:#6b7280}
+.ql-editor{min-height:150px}
+</style>
 <div class="crm-card">
   <div class="crm-card-header"><span class="crm-card-title">Payment Details</span></div>
   <div class="p-4">
-    <form method="post">
+    <form method="post" id="payment-form">
       {% csrf_token %}
       <div class="row g-3">
-        <div class="col-md-6"><label class="form-label fw-medium">Invoice</label>{{ form.invoice }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Client</label>{{ form.client_name }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Amount <span class="text-danger">*</span></label>{{ form.amount }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Payment Date <span class="text-danger">*</span></label>{{ form.payment_date }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Method</label>{{ form.method }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Account</label>{{ form.account }}</div>
+        <!-- Invoice -->
+        <div class="col-md-6" style="position:relative;">
+          <label class="form-label fw-medium">Invoice</label>
+          <div class="d-flex gap-2">
+            <input type="text" id="invoice-search" class="form-control" placeholder="Type invoice code..." autocomplete="off" value="{% if form.instance.invoice %}{{ form.instance.invoice.code }}{% endif %}">
+            {{ form.invoice }}
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.open('{% url "invoice_create" %}', '_blank')" title="Create Invoice"><i class="bi bi-plus-lg"></i></button>
+          </div>
+          <div id="invoice-dropdown" class="acct-dropdown" style="display:none;"></div>
+          <div id="invoice-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+            <div style="font-size:13px;font-weight:600;" id="inv-info-code"></div>
+            <div style="font-size:12px;color:#374151;" id="inv-info-client"></div>
+            <div style="font-size:12px;color:#6b7280;" id="inv-info-amount"></div>
+          </div>
+        </div>
+        <!-- Client -->
+        <div class="col-md-6" style="position:relative;">
+          <label class="form-label fw-medium">Client</label>
+          {{ form.client_name }}
+          <div id="client-dropdown" class="acct-dropdown" style="display:none;"></div>
+        </div>
+        <!-- Amount -->
+        <div class="col-md-4"><label class="form-label fw-medium">Amount <span class="text-danger">*</span></label>{{ form.amount }}</div>
+        <!-- Payment Date -->
+        <div class="col-md-4"><label class="form-label fw-medium">Payment Date <span class="text-danger">*</span></label>{{ form.payment_date }}</div>
+        <!-- Method -->
+        <div class="col-md-4"><label class="form-label fw-medium">Method</label>{{ form.method }}</div>
+        <!-- Bank Account (shown based on method) -->
+        <div class="col-md-6" id="account-section" style="display:none;position:relative;">
+          <label class="form-label fw-medium">Account</label>
+          <input type="text" id="account-search" class="form-control" placeholder="Type account name or number..." autocomplete="off" value="{% if form.instance.account %}{{ form.instance.account.display_name }}{% endif %}">
+          {{ form.account }}
+          <div id="acct-dropdown" class="acct-dropdown" style="display:none;"></div>
+          <div id="account-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+            <div style="font-size:13px;font-weight:600;" id="acct-info-name"></div>
+            <div style="font-size:12px;color:#6b7280;" id="acct-info-detail"></div>
+          </div>
+        </div>
+        <!-- Reference -->
         <div class="col-md-6"><label class="form-label fw-medium">Reference</label>{{ form.reference }}</div>
-        <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
+        <!-- Notes (Quill) -->
+        <div class="col-12"><label class="form-label fw-medium">Notes</label><div id="quill-editor" style="height:200px;background:#fff;border:1px solid #dee2e6;border-radius:6px;"></div>{{ form.notes }}</div>
       </div>
       <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-danger">{{ action|default:"Record" }} Payment</button>
@@ -24,4 +68,260 @@
     </form>
   </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<script>
+const accounts = [
+  {% for a in accounts %}
+  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ a.get_category_display|escapejs }}", method: "{{ a.category|escapejs }}", number: "{% firstof a.account_number a.mobile_number a.card_number ''|escapejs %}"},
+  {% endfor %}
+];
+const invoicesData = [
+  {% for inv in invoices %}
+  {pk: {{ inv.pk }}, code: "{{ inv.code|escapejs }}", client: "{% if inv.client %}{{ inv.client.name|escapejs }}{% else %}{{ inv.bill_to_name|escapejs }}{% endif %}", total: "{{ inv.total }}", due: "{{ inv.balance_due|escapejs }}"},
+  {% endfor %}
+];
+const clientsData = [
+  {% for c in clients %}
+  {pk: {{ c.pk }}, name: "{{ c.name|escapejs }}"},
+  {% endfor %}
+];
+
+// ── Invoice autocomplete ──
+const invSearch = document.getElementById('invoice-search');
+const invPk = document.getElementById('id_invoice');
+const invDropdown = document.getElementById('invoice-dropdown');
+const invInfo = document.getElementById('invoice-info');
+const invCode = document.getElementById('inv-info-code');
+const invClient = document.getElementById('inv-info-client');
+const invAmount = document.getElementById('inv-info-amount');
+
+var selectedInvoicePk = invPk.value || '';
+
+function filterInvoices(q) {
+  q = q.toLowerCase();
+  return invoicesData.filter(function(inv) {
+    return inv.code.toLowerCase().includes(q) || inv.client.toLowerCase().includes(q);
+  });
+}
+
+function renderInvDropdown(results) {
+  invDropdown.innerHTML = '';
+  if (!results.length) { invDropdown.style.display = 'none'; return; }
+  results.forEach(function(inv) {
+    var item = document.createElement('div');
+    item.className = 'acct-dropdown-item';
+    item.innerHTML = '<div class="acct-num">' + escHtml(inv.code) + '</div><div class="acct-detail">' + escHtml(inv.client) + ' — ৳' + inv.total + '</div>';
+    item.addEventListener('click', function() { selectInvoice(inv); });
+    invDropdown.appendChild(item);
+  });
+  invDropdown.style.display = 'block';
+}
+
+function selectInvoice(inv) {
+  selectedInvoicePk = inv.pk;
+  invPk.value = inv.pk;
+  invSearch.value = inv.code;
+  invDropdown.style.display = 'none';
+  invCode.textContent = inv.code;
+  invClient.textContent = inv.client;
+  invAmount.textContent = 'Total: ৳' + inv.total + ' | Due: ৳' + inv.due;
+  invInfo.style.display = 'block';
+}
+
+invSearch.addEventListener('input', function() {
+  var val = this.value.trim();
+  if (!val) { invDropdown.style.display = 'none'; invInfo.style.display = 'none'; invPk.value = ''; selectedInvoicePk = ''; return; }
+  renderInvDropdown(filterInvoices(val));
+});
+invSearch.addEventListener('blur', function() { setTimeout(function() { invDropdown.style.display = 'none'; }, 200); });
+invSearch.addEventListener('focus', function() {
+  var val = this.value.trim();
+  if (val) renderInvDropdown(filterInvoices(val));
+});
+
+// ── Client autocomplete ──
+const clientInput = document.getElementById('id_client_name');
+const clientDropdown = document.getElementById('client-dropdown');
+
+function filterClients(q) {
+  q = q.toLowerCase();
+  return clientsData.filter(function(c) { return c.name.toLowerCase().includes(q); });
+}
+
+function renderClientDropdown(results) {
+  clientDropdown.innerHTML = '';
+  if (!results.length) { clientDropdown.style.display = 'none'; return; }
+  results.forEach(function(c) {
+    var item = document.createElement('div');
+    item.className = 'acct-dropdown-item';
+    item.textContent = c.name;
+    item.addEventListener('click', function() {
+      clientInput.value = c.name;
+      clientDropdown.style.display = 'none';
+    });
+    clientDropdown.appendChild(item);
+  });
+  clientDropdown.style.display = 'block';
+}
+
+clientInput.addEventListener('input', function() {
+  var val = this.value.trim();
+  if (!val) { clientDropdown.style.display = 'none'; return; }
+  renderClientDropdown(filterClients(val));
+});
+clientInput.addEventListener('blur', function() { setTimeout(function() { clientDropdown.style.display = 'none'; }, 200); });
+clientInput.addEventListener('focus', function() {
+  var val = this.value.trim();
+  if (val) renderClientDropdown(filterClients(val));
+});
+
+// ── Method → Account cascading ──
+const methodSelect = document.getElementById('id_method');
+const accountSection = document.getElementById('account-section');
+const acctSearch = document.getElementById('account-search');
+const acctPk = document.getElementById('id_account');
+const acctDropdown = document.getElementById('acct-dropdown');
+const acctInfoBox = document.getElementById('account-info');
+const acctInfoName = document.getElementById('acct-info-name');
+const acctInfoDetail = document.getElementById('acct-info-detail');
+
+var selectedAcctPk = acctPk.value || '';
+
+function methodNeedsAccount(method) {
+  return ['bank', 'bkash', 'nagad', 'rocket', 'card'].includes(method);
+}
+
+function filterAccountsByMethod(method, query) {
+  var q = query.toLowerCase();
+  return accounts.filter(function(a) {
+    if (a.method !== method) return false;
+    return a.display.toLowerCase().includes(q) || a.number.toLowerCase().includes(q);
+  });
+}
+
+function renderAcctDropdown(results) {
+  acctDropdown.innerHTML = '';
+  if (!results.length) { acctDropdown.style.display = 'none'; return; }
+  results.forEach(function(a) {
+    var item = document.createElement('div');
+    item.className = 'acct-dropdown-item';
+    item.innerHTML = '<div class="acct-num">' + escHtml(a.display) + '</div><div class="acct-detail">' + escHtml(a.category) + ' · ' + escHtml(a.number) + '</div>';
+    item.addEventListener('click', function() { selectAccount(a); });
+    acctDropdown.appendChild(item);
+  });
+  acctDropdown.style.display = 'block';
+}
+
+function selectAccount(a) {
+  selectedAcctPk = a.pk;
+  acctPk.value = a.pk;
+  acctSearch.value = a.display;
+  acctDropdown.style.display = 'none';
+  acctInfoName.textContent = a.display;
+  acctInfoDetail.textContent = a.category + ' — ' + a.number;
+  acctInfoBox.style.display = 'block';
+}
+
+function toggleAccountSection() {
+  var method = methodSelect.value;
+  if (methodNeedsAccount(method)) {
+    accountSection.style.display = 'block';
+    acctSearch.value = '';
+    acctPk.value = '';
+    acctInfoBox.style.display = 'none';
+    selectedAcctPk = '';
+    if (accounts.length) {
+      var filtered = accounts.filter(function(a) { return a.method === method; });
+      if (filtered.length) {
+        renderAcctDropdown(filtered);
+      } else {
+        acctSearch.placeholder = 'No accounts for ' + method;
+      }
+    }
+  } else {
+    accountSection.style.display = 'none';
+    acctPk.value = '';
+  }
+}
+
+methodSelect.addEventListener('change', toggleAccountSection);
+
+acctSearch.addEventListener('input', function() {
+  var method = methodSelect.value;
+  if (!methodNeedsAccount(method)) return;
+  var val = this.value.trim();
+  if (!val) { acctDropdown.style.display = 'none'; acctInfoBox.style.display = 'none'; acctPk.value = ''; selectedAcctPk = ''; return; }
+  renderAcctDropdown(filterAccountsByMethod(method, val));
+});
+acctSearch.addEventListener('blur', function() { setTimeout(function() { acctDropdown.style.display = 'none'; }, 200); });
+acctSearch.addEventListener('focus', function() {
+  var method = methodSelect.value;
+  if (!methodNeedsAccount(method)) return;
+  var val = this.value.trim();
+  if (val) renderAcctDropdown(filterAccountsByMethod(method, val));
+});
+
+// ── Init account section on load ──
+{% if form.instance.account %}
+(function() {
+  var a = accounts.find(function(x) { return x.pk == {{ form.instance.account.pk|default:0 }}; });
+  if (a) {
+    methodSelect.value = a.method;
+    toggleAccountSection();
+    selectAccount(a);
+  }
+})();
+{% endif %}
+
+// ── Quill ──
+var quill = new Quill('#quill-editor', {
+  theme: 'snow',
+  placeholder: 'Write notes...',
+  modules: {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'align': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['clean']
+    ]
+  }
+});
+var tips = { 'ql-bold':'Bold', 'ql-italic':'Italic', 'ql-underline':'Underline',
+  'ql-strike':'Strikethrough', 'ql-color':'Text Color', 'ql-background':'Background Color',
+  'ql-clean':'Clear Formatting' };
+document.querySelectorAll('.ql-toolbar button').forEach(function(b) {
+  for (var k in tips) { if ((b.className||'').includes(k)) { b.setAttribute('title', tips[k]); break; } }
+});
+document.querySelectorAll('.ql-toolbar .ql-picker-label').forEach(function(p) {
+  var c = p.className||'';
+  if (c.includes('ql-header')) p.setAttribute('title','Heading');
+  else if (c.includes('ql-size')) p.setAttribute('title','Font Size');
+  else if (c.includes('ql-color')) p.setAttribute('title','Text Color');
+  else if (c.includes('ql-background')) p.setAttribute('title','Background Color');
+  else if (c.includes('ql-align')) p.setAttribute('title','Text Alignment');
+});
+var notesField = document.getElementById('id_notes');
+if (notesField && notesField.value && notesField.value !== '<br>') {
+  quill.root.innerHTML = notesField.value;
+}
+document.getElementById('payment-form').addEventListener('submit', function() {
+  notesField.value = quill.root.innerHTML;
+});
+
+// ── Shared ──
+function escHtml(str) {
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#invoice-search') && !e.target.closest('#invoice-dropdown')) invDropdown.style.display = 'none';
+  if (!e.target.closest('#id_client_name') && !e.target.closest('#client-dropdown')) clientDropdown.style.display = 'none';
+  if (!e.target.closest('#account-search') && !e.target.closest('#acct-dropdown')) acctDropdown.style.display = 'none';
+});
+</script>
 {% endblock %}

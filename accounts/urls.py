@@ -24,6 +24,7 @@ urlpatterns = [
     path('accounts/expenses/<int:pk>/', views.expense_detail, name='expense_detail'),
     path('accounts/expenses/<int:pk>/edit/', views.expense_edit, name='expense_edit'),
     path('accounts/expenses/<int:pk>/delete/', views.expense_delete, name='expense_delete'),
+    path('accounts/expenses/add-category/', views.add_expense_category, name='add_expense_category'),
     path('accounts/bank/', views.bank_account_list, name='bank_account_list'),
     path('accounts/bank/new/', views.bank_account_create, name='bank_account_create'),
     path('accounts/bank/<int:pk>/', views.bank_account_detail, name='bank_account_detail'),
