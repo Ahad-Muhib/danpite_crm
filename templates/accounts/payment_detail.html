@@ -5,9 +5,9 @@
 {% block content %}
 <div class="crm-card" style="max-width:680px;">
   <div class="crm-card-header">
-    <span class="crm-card-title">Payment #{{ payment.pk }}</span>
+      <span class="crm-card-title">Payment #{{ payment.pk }}{% if payment.updated_by %} <span class="badge bg-danger" title="Edited by {{ payment.updated_by.username }}" style="font-size:10px;">E</span>{% endif %}</span>
     <div class="d-flex gap-2">
-      <a href="{% url 'payment_edit' payment.pk %}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil me-1"></i>Edit</a>
+      <a href="{% url 'payment_edit' payment.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Edit</a>
       <a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-secondary">Back to List</a>
     </div>
   </div>
@@ -23,11 +23,11 @@
       </div>
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Amount</label>
-        <div class="fw-medium text-success">{{ payment.amount|currency }}</div>
+        <div class="fw-medium">{{ payment.amount|currency }}</div>
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-medium text-muted">Payment Date</label>
-        <div>{{ payment.payment_date }}</div>
+        <label class="form-label fw-medium text-muted">Created</label>
+        <div>{{ payment.created_at|date:"d M Y H:i" }}</div>
       </div>
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Method</label>
@@ -45,10 +45,16 @@
         <label class="form-label fw-medium text-muted">Created By</label>
         <div>{{ payment.created_by.username|default:"—" }}</div>
       </div>
+      {% if payment.updated_by %}
       <div class="col-md-6">
-        <label class="form-label fw-medium text-muted">Created At</label>
-        <div>{{ payment.created_at|date:"d M Y H:i" }}</div>
+        <label class="form-label fw-medium text-muted">Edited By</label>
+        <div class="text-danger fw-medium">{{ payment.updated_by.username }}</div>
       </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Edited At</label>
+        <div class="text-danger">{{ payment.updated_at|date:"d M Y H:i" }}</div>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

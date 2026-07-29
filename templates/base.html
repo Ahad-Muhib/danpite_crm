@@ -14,10 +14,9 @@
 
 <!-- ── Sidebar ────────────────────────────────────────── -->
 <nav id="sidebar">
-  <div class="sidebar-brand">
+  <a href="{% url 'dashboard' %}" class="sidebar-brand text-decoration-none">
     <i class="bi bi-grid-3x3-gap-fill text-primary"></i> Danpite CRM
-  </div>
-
+  </a>
   <div class="nav-label">Main Menu</div>
   <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
     <i class="bi bi-speedometer2 nav-icon"></i> Dashboard
@@ -27,21 +26,32 @@
 
   <!-- Leads -->
   <a class="nav-link" data-bs-toggle="collapse" href="#leadsMenu" role="button"
-     aria-expanded="{% if 'lead' in request.path or 'deal' in request.path or 'followup' in request.path or 'kanban' in request.path %}true{% else %}false{% endif %}">
+     aria-expanded="{% if 'lead' in request.path %}true{% else %}false{% endif %}">
     <i class="bi bi-person-lines-fill nav-icon"></i> Leads
     <i class="bi bi-chevron-right arrow"></i>
   </a>
-  <div class="collapse submenu {% if 'lead' in request.path or 'deal' in request.path or 'followup' in request.path or 'kanban' in request.path %}show{% endif %}" id="leadsMenu">
+  <div class="collapse submenu {% if 'lead' in request.path %}show{% endif %}" id="leadsMenu">
     <a href="{% url 'lead_list' %}"  class="nav-link {% if request.resolver_match.url_name == 'lead_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Lead Contacts</a>
-    <a href="{% url 'deal_list' %}"  class="nav-link {% if request.resolver_match.url_name == 'deal_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Deals</a>
-    <a href="{% url 'deal_kanban' %}" class="nav-link {% if request.resolver_match.url_name == 'deal_kanban' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Pipeline Board</a>
-    <a href="{% url 'followup_list' %}" class="nav-link {% if 'followup' in request.path %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Follow Ups</a>
     <a href="{% url 'lead_import' %}" class="nav-link {% if request.resolver_match.url_name == 'lead_import' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Import Leads</a>
   </div>
 
+  <!-- Clients -->
   <a href="{% url 'client_list' %}" class="nav-link {% if 'client' in request.path %}active{% endif %}">
     <i class="bi bi-people-fill nav-icon"></i> Clients
   </a>
+
+  <!-- Sales -->
+  <a class="nav-link" data-bs-toggle="collapse" href="#accMenu" role="button"
+     aria-expanded="{% if '/accounts/' in request.path %}true{% else %}false{% endif %}">
+    <i class="bi bi-wallet2 nav-icon"></i> Sales
+    <i class="bi bi-chevron-right arrow"></i>
+  </a>
+  <div class="collapse submenu {% if '/accounts/' in request.path %}show{% endif %}" id="accMenu">
+    <a href="{% url 'invoice_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'invoice_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Invoices</a>
+    <a href="{% url 'payment_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Payments</a>
+    <a href="{% url 'expense_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Expenses</a>
+    <a href="{% url 'bank_account_list' %}" class="nav-link {% if request.resolver_match.url_name == 'bank_account_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Bank Accounts</a>
+  </div>
 
   <!-- HR -->
   <a class="nav-link" data-bs-toggle="collapse" href="#hrMenu" role="button"
@@ -53,19 +63,6 @@
     <a href="{% url 'employee_list' %}"   class="nav-link {% if request.resolver_match.url_name == 'employee_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Employees</a>
     <a href="{% url 'leave_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'leave_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Leaves</a>
     <a href="{% url 'attendance_list' %}" class="nav-link {% if request.resolver_match.url_name == 'attendance_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Attendance</a>
-  </div>
-
-  <!-- Accounts -->
-  <a class="nav-link" data-bs-toggle="collapse" href="#accMenu" role="button"
-     aria-expanded="{% if '/accounts/' in request.path %}true{% else %}false{% endif %}">
-    <i class="bi bi-wallet2 nav-icon"></i> Accounts
-    <i class="bi bi-chevron-right arrow"></i>
-  </a>
-  <div class="collapse submenu {% if '/accounts/' in request.path %}show{% endif %}" id="accMenu">
-    <a href="{% url 'invoice_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'invoice_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Invoices</a>
-    <a href="{% url 'payment_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Payments</a>
-    <a href="{% url 'expense_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Expenses</a>
-    <a href="{% url 'bank_account_list' %}" class="nav-link {% if request.resolver_match.url_name == 'bank_account_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Bank Accounts</a>
   </div>
 
   <a href="{% url 'order_list' %}" class="nav-link {% if 'order' in request.path %}active{% endif %}">
@@ -88,11 +85,16 @@
     <i class="bi bi-currency-exchange nav-icon"></i> Currency
   </a>
   {% if user_role == 'admin' %}
-  <a href="{% url 'user_list' %}" class="nav-link {% if 'user' in request.path %}active{% endif %}">
+  <a href="{% url 'user_list' %}" class="nav-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
     <i class="bi bi-people-gear nav-icon"></i> User Management
   </a>
+  <a href="{% url 'activity_logs' %}" class="nav-link {% if request.resolver_match.url_name == 'activity_logs' %}active{% endif %}">
+    <i class="bi bi-clock-history nav-icon"></i> Activity Logs
+  </a>
   {% endif %}
+  {% if request.user.is_superuser %}
   <a href="/admin/" class="nav-link"><i class="bi bi-shield-lock nav-icon"></i> Admin Panel</a>
+  {% endif %}
   <form method="post" action="{% url 'logout' %}" style="margin:0;">
     {% csrf_token %}
     <button type="submit" class="nav-link w-100 border-0 bg-transparent text-start" style="cursor:pointer;">

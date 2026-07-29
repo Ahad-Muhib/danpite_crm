@@ -7,94 +7,58 @@
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
   <div class="col-sm-6 col-xl-2">
+    <a href="{% url 'task_list' %}" class="text-decoration-none">
     <div class="stat-card" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">
       <div class="stat-label">Tasks</div>
       <div class="stat-value">{{ task_count }}</div>
       <div class="stat-icon"><i class="bi bi-check2-square"></i></div>
     </div>
+    </a>
   </div>
   <div class="col-sm-6 col-xl-2">
+    <a href="{% url 'project_list' %}" class="text-decoration-none">
     <div class="stat-card" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);">
       <div class="stat-label">Projects</div>
       <div class="stat-value">{{ project_count }}</div>
       <div class="stat-icon"><i class="bi bi-kanban"></i></div>
     </div>
+    </a>
   </div>
   <div class="col-sm-6 col-xl-2">
+    <a href="{% url 'client_list' %}" class="text-decoration-none">
     <div class="stat-card" style="background:linear-gradient(135deg,#06b6d4,#0891b2);">
       <div class="stat-label">Clients</div>
       <div class="stat-value">{{ client_count }}</div>
       <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
     </div>
+    </a>
   </div>
   <div class="col-sm-6 col-xl-2">
+    <a href="{% url 'lead_list' %}" class="text-decoration-none">
     <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
       <div class="stat-label">Leads</div>
       <div class="stat-value">{{ lead_count }}</div>
       <div class="stat-icon"><i class="bi bi-person-lines-fill"></i></div>
     </div>
+    </a>
   </div>
   <div class="col-sm-6 col-xl-2">
+    <a href="{% url 'employee_list' %}" class="text-decoration-none">
     <div class="stat-card" style="background:linear-gradient(135deg,#10b981,#059669);">
       <div class="stat-label">Employees</div>
       <div class="stat-value">{{ employee_count }}</div>
       <div class="stat-icon"><i class="bi bi-person-badge"></i></div>
     </div>
+    </a>
   </div>
   <div class="col-sm-6 col-xl-2">
+    <a href="{% url 'order_list' %}" class="text-decoration-none">
     <div class="stat-card" style="background:linear-gradient(135deg,#ef4444,#dc2626);">
       <div class="stat-label">Orders</div>
       <div class="stat-value">{{ order_count }}</div>
       <div class="stat-icon"><i class="bi bi-bag-check"></i></div>
     </div>
-  </div>
-</div>
-
-<!-- Pipeline Stats (Feature 4) -->
-<div class="row g-3 mb-4">
-  <div class="col-sm-6 col-xl-3">
-    <div class="crm-card p-3">
-      <div class="d-flex align-items-center gap-3">
-        <div class="avatar-sm" style="background:#10b981;width:44px;height:44px;font-size:18px;"><i class="bi bi-currency-dollar"></i></div>
-        <div>
-          <div class="text-muted" style="font-size:11px;">PIPELINE VALUE</div>
-          <div class="fw-bold" style="font-size:20px;">{{ pipeline_value|currency }}</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="crm-card p-3">
-      <div class="d-flex align-items-center gap-3">
-        <div class="avatar-sm" style="background:#3b82f6;width:44px;height:44px;font-size:18px;"><i class="bi bi-graph-up"></i></div>
-        <div>
-          <div class="text-muted" style="font-size:11px;">ACTIVE DEALS</div>
-          <div class="fw-bold" style="font-size:20px;">{{ active_deal_count }}</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="crm-card p-3">
-      <div class="d-flex align-items-center gap-3">
-        <div class="avatar-sm" style="background:#f59e0b;width:44px;height:44px;font-size:18px;"><i class="bi bi-trophy"></i></div>
-        <div>
-          <div class="text-muted" style="font-size:11px;">WIN RATE</div>
-          <div class="fw-bold" style="font-size:20px;">{{ win_rate }}%</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="crm-card p-3">
-      <div class="d-flex align-items-center gap-3">
-        <div class="avatar-sm" style="background:#8b5cf6;width:44px;height:44px;font-size:18px;"><i class="bi bi-cash-stack"></i></div>
-        <div>
-          <div class="text-muted" style="font-size:11px;">AVG DEAL SIZE</div>
-          <div class="fw-bold" style="font-size:20px;">{{ avg_deal_value|currency }}</div>
-        </div>
-      </div>
-    </div>
+    </a>
   </div>
 </div>
 
@@ -135,33 +99,10 @@
   </div>
 </div>
 
-<!-- Pipeline Bar -->
+<!-- Lead Source Analytics -->
 <div class="row g-3 mb-4">
-  <div class="col-lg-8">
-    <div class="crm-card h-100">
-      <div class="crm-card-header">
-        <span class="crm-card-title">Pipeline by Stage</span>
-        <a href="{% url 'deal_kanban' %}" class="btn btn-sm btn-outline-primary">Kanban View</a>
-      </div>
-      <div class="p-3">
-        {% for stage_key, stage_label, stage_count, stage_value in pipeline_stages %}
-        <div class="d-flex align-items-center gap-3 mb-2">
-          <div style="width:110px;font-size:12px;" class="text-muted">{{ stage_label }}</div>
-          <div class="flex-grow-1" style="height:24px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
-            {% if pipeline_max_count > 0 %}
-            <div style="height:100%;width:{% widthratio stage_count pipeline_max_count 100 %}%;background:{% if stage_key == 'won' %}#10b981{% elif stage_key == 'lost' %}#ef4444{% else %}#3b82f6{% endif %};border-radius:4px;transition:width .5s;"></div>
-            {% endif %}
-          </div>
-          <div style="width:80px;text-align:right;font-size:12px;" class="fw-medium">{{ stage_count }} <span class="text-muted">/ {{ stage_value|currency }}</span></div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-
-  <!-- Lead Source Analytics (Feature 3) -->
-  <div class="col-lg-4">
-    <div class="crm-card h-100">
+  <div class="col-lg-12">
+    <div class="crm-card">
       <div class="crm-card-header">
         <span class="crm-card-title">Leads by Source</span>
       </div>

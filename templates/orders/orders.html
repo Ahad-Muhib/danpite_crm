@@ -6,6 +6,8 @@
   <div class="crm-card-header">
     <form class="d-flex gap-2 search-form" method="get">
       <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search order #..." style="width:180px;">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="dir" value="{{ dir }}">
       <select name="status" class="form-select form-select-sm" style="width:150px;">
         <option value="">All Status</option>
         <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
@@ -16,14 +18,24 @@
       </select>
       <button class="btn btn-sm btn-outline-secondary">Filter</button>
     </form>
-    <a href="{% url 'order_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Create Order</a>
+    <div class="d-flex gap-2">
+      <form method="post" id="order-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
+      </form>
+      <a href="{% url 'order_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Create Order</a>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Order #</th><th>Client</th><th>Total</th><th>Order Date</th><th>Delivery</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead><tr>{% if request.user.is_superuser %}<th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-orders" aria-label="Select all"></th>{% endif %}<th>Order #</th><th>Client</th><th>Total</th><th>Order Date</th><th>Delivery</th><th>Status</th><th>Actions</th></tr></thead>
       <tbody>
         {% for o in orders %}
         <tr>
+          {% if request.user.is_superuser %}<td><input type="checkbox" name="selected_orders" value="{{ o.pk }}" class="form-check-input order-checkbox" form="order-bulk-form"></td>{% endif %}
           <td class="fw-medium text-primary">{{ o.order_number }}</td>
           <td>{{ o.client.name|default:"—" }}</td>
           <td class="fw-medium">{{ o.total }}</td>
@@ -39,15 +51,32 @@
           <td>
             <a href="{% url 'order_detail' o.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-eye"></i></a>
             <a href="{% url 'order_edit' o.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'order_delete' o.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center text-muted py-5">No orders found.</td></tr>
+        <tr><td colspan="{% if request.user.is_superuser %}8{% else %}7{% endif %}" class="text-center text-muted py-5">No orders found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% include 'includes/pagination.html' with page_obj=orders %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-orders');
+  const checkboxes = document.querySelectorAll('.order-checkbox');
+  const bulkForm = document.getElementById('order-bulk-form');
+  selectAll?.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+  });
+  bulkForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var selected = document.querySelectorAll('.order-checkbox:checked').length;
+    if (!selected) { alert('Select at least one order.'); return; }
+    if (!confirm('Delete selected orders?')) return;
+    bulkForm.submit();
+  });
+});
+</script>
 {% endblock %}

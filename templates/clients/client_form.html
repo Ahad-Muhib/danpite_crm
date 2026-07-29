@@ -2,30 +2,163 @@
 {% block title %}{{ action }} Client{% endblock %}
 {% block page_title %}{{ action }} Client{% endblock %}
 {% block content %}
-<div class="crm-card" style="max-width:860px;">
-  <div class="crm-card-header"><span class="crm-card-title">Client Details</span></div>
-  <div class="p-4">
-    <form method="post">
-      {% csrf_token %}
+
+<!-- Quill.js CSS -->
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+
+<form method="post" id="client-form">
+  {% csrf_token %}
+
+  <!-- ═══ Box 1: Client Details ═══ -->
+  <div class="crm-card mb-4">
+    <div class="crm-card-header">
+      <span class="crm-card-title"><i class="bi bi-people-fill me-2"></i>Client Details</span>
+    </div>
+    <div class="p-4">
       <div class="row g-3">
-        <div class="col-12"><label class="form-label fw-medium">Name <span class="text-danger">*</span></label>{{ form.name }}</div>
+        <div class="col-md-2"><label class="form-label fw-medium">Salutation</label>{{ form.salutation }}</div>
+        <div class="col-md-10"><label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>{{ form.name }}</div>
+
         <div class="col-md-6"><label class="form-label fw-medium">Email</label>{{ form.email }}</div>
-        <div class="col-md-3"><label class="form-label fw-medium">Phone</label>{{ form.phone }}</div>
-        <div class="col-md-3"><label class="form-label fw-medium">Mobile</label>{{ form.mobile }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Phone</label>{{ form.phone }}</div>
+
+        <div class="col-md-6"><label class="form-label fw-medium">Mobile</label>{{ form.mobile }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Company</label>{{ form.company }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Page</label>{{ form.page }}</div>
+
         <div class="col-md-6"><label class="form-label fw-medium">Website</label>{{ form.website }}</div>
-        <div class="col-md-4"><label class="form-label fw-medium">Category</label>{{ form.category }}</div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Category</label>
+          <div class="d-flex gap-2">
+            {{ form.category }}
+            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#categoryModal" title="Add Category"><i class="bi bi-plus-lg"></i></button>
+          </div>
+        </div>
+
         <div class="col-md-4"><label class="form-label fw-medium">Sub Category</label>{{ form.sub_category }}</div>
-        <div class="col-md-4"><label class="form-label fw-medium">Status</label>{{ form.status }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Account Manager</label>{{ form.account_manager }}</div>
-        <div class="col-12"><label class="form-label fw-medium">Address</label>{{ form.address }}</div>
-        <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
+
+        <div class="col-md-4"><label class="form-label fw-medium">State</label>{{ form.status }}</div>
+        <div class="col-md-4"></div>
       </div>
-      <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary">{{ action }} Client</button>
-        <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </div>
+
+  <!-- ═══ Box 2: Address & Notes ═══ -->
+  <div class="crm-card mb-4">
+    <div class="crm-card-header">
+      <span class="crm-card-title"><i class="bi bi-geo-alt me-2"></i>Address & Notes</span>
+    </div>
+    <div class="p-4">
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-medium">Address</label>
+          {{ form.address }}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-medium">Notes</label>
+          <div id="quill-editor" style="height:200px;background:#fff;border:1px solid #dee2e6;border-radius:6px;"></div>
+          {{ form.notes }}
+        </div>
       </div>
-    </form>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} Client</button>
+    <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">Cancel</a>
+  </div>
+</form>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Add Category</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="new-category-input" class="form-control" placeholder="Category name">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary" id="save-category-btn"><i class="bi bi-check-lg me-1"></i>Add</button>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Quill.js -->
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    placeholder: 'Write notes here...',
+    modules: {
+      toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'align': [] }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['clean']
+      ]
+    }
+  });
+
+  var tips = { 'ql-bold':'Bold (Ctrl+B)', 'ql-italic':'Italic (Ctrl+I)', 'ql-underline':'Underline (Ctrl+U)',
+    'ql-strike':'Strikethrough', 'ql-color':'Text Color', 'ql-background':'Background Color',
+    'ql-clean':'Clear Formatting' };
+  document.querySelectorAll('.ql-toolbar button').forEach(function(b) {
+    for (var k in tips) { if ((b.className||'').includes(k)) { b.setAttribute('title', tips[k]); break; } }
+  });
+  document.querySelectorAll('.ql-toolbar .ql-picker-label').forEach(function(p) {
+    var c = p.className||'';
+    if (c.includes('ql-header')) p.setAttribute('title','Heading');
+    else if (c.includes('ql-size')) p.setAttribute('title','Font Size');
+    else if (c.includes('ql-color')) p.setAttribute('title','Text Color');
+    else if (c.includes('ql-background')) p.setAttribute('title','Background Color');
+    else if (c.includes('ql-align')) p.setAttribute('title','Text Alignment');
+  });
+
+  var notesField = document.querySelector('#id_notes');
+  if (notesField && notesField.value && notesField.value !== '<br>') {
+    quill.root.innerHTML = notesField.value;
+  }
+  document.getElementById('client-form').addEventListener('submit', function() {
+    notesField.value = quill.root.innerHTML;
+  });
+
+  // Add category modal
+  document.getElementById('save-category-btn')?.addEventListener('click', function() {
+    var input = document.getElementById('new-category-input');
+    var name = input.value.trim();
+    if (!name) { alert('Enter a category name.'); return; }
+    var fd = new FormData();
+    fd.append('name', name);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fetch('{% url "add_client_category" %}', {
+      method: 'POST', body: fd,
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.ok) {
+        var sel = document.querySelector('[name="category"]');
+        var opt = document.createElement('option');
+        opt.value = data.name;
+        opt.text = data.name;
+        sel.appendChild(opt);
+        sel.value = data.name;
+        input.value = '';
+        bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
+      } else {
+        alert(data.error);
+      }
+    });
+  });
+});
+</script>
 {% endblock %}

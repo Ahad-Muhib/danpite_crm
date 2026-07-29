@@ -101,6 +101,34 @@ class Project(models.Model):
         return self.name
 
 
+class Log(models.Model):
+    ACTION = [('create', 'Create'), ('update', 'Update'), ('delete', 'Delete')]
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='global_logs')
+    action = models.CharField(max_length=10, choices=ACTION)
+    model_name = models.CharField(max_length=100)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    object_repr = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.get_action_display()}] {self.model_name} #{self.object_id} by {self.user}"
+
+
+def log_action(request, action, model_name, obj, description=''):
+    Log.objects.create(
+        user=request.user,
+        action=action,
+        model_name=model_name,
+        object_id=obj.pk,
+        object_repr=str(obj)[:200],
+        description=description,
+    )
+
+
 class Schedule(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)

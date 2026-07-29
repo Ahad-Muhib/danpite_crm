@@ -18,7 +18,8 @@ from .forms import (
     ActivityQuickForm, CommentForm, DealForm, FollowUpForm,
     LeadAssignmentForm, LeadContactForm,
 )
-from .models import Activity, Comment, Deal, FollowUp, LeadContact
+from core.models import log_action
+from .models import Activity, Comment, Deal, FollowUp, LeadContact, LeadSource
 
 
 def _log_activity(lead=None, deal=None, activity_type='note', title='', description='', user=None, meta=None):
@@ -60,6 +61,8 @@ def lead_list(request):
                 messages.error(request, 'Only superusers can delete leads.')
                 return redirect('lead_list')
             deleted_count = selected.count()
+            for lead in selected:
+                log_action(request, 'delete', 'LeadContact', lead)
             selected.delete()
             messages.success(request, f'{deleted_count} lead contact(s) deleted.')
         else:
@@ -69,7 +72,17 @@ def lead_list(request):
     q = request.GET.get('q', '')
     src = request.GET.get('source', '')
     contact_type = request.GET.get('type', '')
-    qs = LeadContact.objects.prefetch_related('converted_clients').all().order_by('-id')
+    sort_by = request.GET.get('sort', 'id')
+    sort_order = request.GET.get('order', 'desc')
+
+    valid_sorts = {'id': 'id', 'name': 'name', 'lead_source': 'lead_source', 'contact_type': 'contact_type', 'next_followup_date': 'next_followup_date'}
+    sort_field = valid_sorts.get(sort_by, 'id')
+    if sort_order == 'asc':
+        order_field = sort_field
+    else:
+        order_field = f'-{sort_field}'
+
+    qs = LeadContact.objects.prefetch_related('converted_clients').all().order_by(order_field)
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q) | Q(company__icontains=q))
     if src:
@@ -81,6 +94,7 @@ def lead_list(request):
     return render(request, 'leads/leads.html', {
         'leads': page, 'q': q, 'source': src,
         'contact_type': contact_type, 'source_choices': LeadContact.SOURCE,
+        'sort_by': sort_by, 'sort_order': sort_order,
     })
 
 
@@ -98,6 +112,7 @@ def lead_create(request):
         if not obj.lead_owner:
             obj.lead_owner = request.user
         obj.save()
+        log_action(request, 'create', 'LeadContact', obj)
         _log_activity(lead=obj, activity_type='note', title='Lead created', user=request.user)
         messages.success(request, 'Lead contact added.')
         return redirect('lead_list')
@@ -116,6 +131,7 @@ def lead_edit(request, pk):
         if not obj.lead_owner:
             obj.lead_owner = request.user
         obj.save()
+        log_action(request, 'update', 'LeadContact', obj)
         _log_activity(lead=obj, activity_type='note', title='Lead updated', user=request.user)
         messages.success(request, 'Lead updated.')
         return redirect('lead_list')
@@ -193,7 +209,9 @@ def lead_delete(request, pk):
     if not request.user.is_superuser:
         messages.error(request, 'Only superusers can delete leads.')
         return redirect('lead_list')
-    get_object_or_404(LeadContact, pk=pk).delete()
+    obj = get_object_or_404(LeadContact, pk=pk)
+    log_action(request, 'delete', 'LeadContact', obj)
+    obj.delete()
     messages.success(request, 'Lead deleted.')
     return redirect('lead_list')
 
@@ -230,6 +248,7 @@ def lead_convert(request, pk):
     )
     lead.is_converted = True
     lead.save()
+    log_action(request, 'update', 'LeadContact', lead, description='Converted to client')
     _log_activity(lead=lead, activity_type='conversion', title='Converted to client', user=request.user)
     messages.success(request, f'{lead.name} converted to client.')
     return redirect('lead_list')
@@ -270,8 +289,13 @@ def comment_add(request, pk):
 @login_required
 @require_POST
 def comment_delete(request, pk, comment_pk):
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can delete comments.')
+        return redirect('lead_detail', pk=pk)
     lead = get_object_or_404(LeadContact, pk=pk)
-    get_object_or_404(Comment, pk=comment_pk, lead=lead).delete()
+    obj = get_object_or_404(Comment, pk=comment_pk, lead=lead)
+    log_action(request, 'delete', 'Comment', obj)
+    obj.delete()
     messages.success(request, 'Comment deleted.')
     return redirect('lead_detail', pk=pk)
 
@@ -372,6 +396,7 @@ def deal_create(request):
     form = DealForm(request.POST or None)
     if form.is_valid():
         deal = form.save()
+        log_action(request, 'create', 'Deal', deal)
         _log_activity(deal=deal, lead=deal.lead_contact, activity_type='deal_update', title=f'Deal created: {deal.deal_name}', user=request.user)
         messages.success(request, 'Deal created.')
         return redirect('deal_list')
@@ -384,6 +409,7 @@ def deal_edit(request, pk):
     form = DealForm(request.POST or None, instance=obj)
     if form.is_valid():
         form.save()
+        log_action(request, 'update', 'Deal', obj)
         messages.success(request, 'Deal updated.')
         return redirect('deal_list')
     return render(request, 'leads/deal_form.html', {'form': form, 'action': 'Edit', 'leads': LeadContact.objects.all().order_by('name')})
@@ -391,7 +417,12 @@ def deal_edit(request, pk):
 
 @login_required
 def deal_delete(request, pk):
-    get_object_or_404(Deal, pk=pk).delete()
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can delete deals.')
+        return redirect('deal_list')
+    obj = get_object_or_404(Deal, pk=pk)
+    log_action(request, 'delete', 'Deal', obj)
+    obj.delete()
     messages.success(request, 'Deal deleted.')
     return redirect('deal_list')
 
@@ -437,6 +468,7 @@ def followup_create(request):
         obj = form.save(commit=False)
         obj.created_by = request.user
         obj.save()
+        log_action(request, 'create', 'FollowUp', obj)
         _log_activity(lead=obj.lead, deal=obj.deal, activity_type='followup',
                       title=f'Follow-up: {obj.subject}', user=request.user)
         if obj.is_recurring and obj.next_followup_date:
@@ -479,8 +511,12 @@ def followup_complete(request, pk):
 
 @login_required
 def followup_delete(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can delete follow-ups.')
+        return redirect('followup_list')
     obj = get_object_or_404(FollowUp, pk=pk)
     lead_pk = obj.lead_id
+    log_action(request, 'delete', 'FollowUp', obj)
     obj.delete()
     messages.success(request, 'Follow-up deleted.')
     if lead_pk:
@@ -620,3 +656,15 @@ def lead_import(request):
             messages.error(request, f'Import error: {e}')
         return redirect('lead_list')
     return render(request, 'leads/lead_import.html')
+
+
+@login_required
+@require_POST
+def add_lead_source(request):
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'ok': False, 'error': 'Source name is required.'})
+    src, created = LeadSource.objects.get_or_create(name=name)
+    if not created:
+        return JsonResponse({'ok': False, 'error': 'Source already exists.'})
+    return JsonResponse({'ok': True, 'name': src.name})

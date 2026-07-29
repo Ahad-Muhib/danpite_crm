@@ -16,11 +16,14 @@ urlpatterns = [
     path('tasks/<int:pk>/delete/', views.task_delete, name='task_delete'),
     path('projects/', views.project_list, name='project_list'),
     path('projects/new/', views.project_create, name='project_create'),
+    path('projects/<int:pk>/', views.project_detail, name='project_detail'),
     path('projects/<int:pk>/edit/', views.project_edit, name='project_edit'),
     path('projects/<int:pk>/delete/', views.project_delete, name='project_delete'),
     path('schedules/', views.schedule_list, name='schedule_list'),
     path('schedules/new/', views.schedule_create, name='schedule_create'),
+    path('schedules/<int:pk>/', views.schedule_detail, name='schedule_detail'),
     path('schedules/<int:pk>/edit/', views.schedule_edit, name='schedule_edit'),
     path('schedules/<int:pk>/delete/', views.schedule_delete, name='schedule_delete'),
+    path('activity-logs/', views.activity_logs, name='activity_logs'),
 ]
 

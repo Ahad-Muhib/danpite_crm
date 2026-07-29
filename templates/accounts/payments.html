@@ -4,38 +4,97 @@
 {% block page_title %}Payments{% endblock %}
 {% block content %}
 <div class="crm-card">
-  <div class="crm-card-header">
+  <div class="crm-card-header flex-wrap gap-2">
     <div>
       <span class="crm-card-title">All Payments</span>
-      <div class="text-muted mt-1" style="font-size:13px;">Total collected: <strong class="text-success">{{ total|currency }}</strong></div>
+      <div class="text-muted mt-1" style="font-size:13px;">Total collected: <strong>{{ total|currency }}</strong></div>
     </div>
-    <a href="{% url 'payment_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Record Payment</a>
+    <form class="d-flex gap-2 search-form flex-wrap" method="get">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search client, invoice, reference..." style="width:200px;">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="dir" value="{{ dir }}">
+      <select name="method" class="form-select form-select-sm" style="width:140px;">
+        <option value="">All Methods</option>
+        <option value="cash" {% if method == 'cash' %}selected{% endif %}>Cash</option>
+        <option value="bkash" {% if method == 'bkash' %}selected{% endif %}>bKash</option>
+        <option value="nagad" {% if method == 'nagad' %}selected{% endif %}>Nagad</option>
+        <option value="rocket" {% if method == 'rocket' %}selected{% endif %}>Rocket</option>
+        <option value="bank" {% if method == 'bank' %}selected{% endif %}>Bank</option>
+        <option value="check" {% if method == 'check' %}selected{% endif %}>Check</option>
+        <option value="card" {% if method == 'card' %}selected{% endif %}>Card</option>
+        <option value="other" {% if method == 'other' %}selected{% endif %}>Other</option>
+      </select>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search me-1"></i>Search</button>
+      {% if q or method %}
+      <a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>
+      {% endif %}
+    </form>
+    <div class="d-flex gap-2">
+      <form method="post" id="payment-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
+      </form>
+      <a href="{% url 'payment_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Record Payment</a>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>#</th><th>Client</th><th>Invoice</th><th>Amount</th><th>Date</th><th>Method</th><th>Reference</th><th>Actions</th></tr></thead>
+      <thead>
+        <tr>
+          {% if request.user.is_superuser %}<th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-payments" aria-label="Select all"></th>{% endif %}
+          <th><a href="?sort=id&dir={% if sort == 'id' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if method %}&method={{ method }}{% endif %}" class="text-decoration-none text-inherit"># {% if sort == 'id' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=name&dir={% if sort == 'name' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if method %}&method={{ method }}{% endif %}" class="text-decoration-none text-inherit">Client {% if sort == 'name' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th>Invoice</th>
+          <th><a href="?sort=amount&dir={% if sort == 'amount' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if method %}&method={{ method }}{% endif %}" class="text-decoration-none text-inherit">Amount {% if sort == 'amount' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=date&dir={% if sort == 'date' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if method %}&method={{ method }}{% endif %}" class="text-decoration-none text-inherit">Date {% if sort == 'date' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th>Method</th><th>Reference</th><th>Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for p in payments %}
         <tr>
-          <td class="text-muted">{{ p.pk }}</td>
+          {% if request.user.is_superuser %}<td><input type="checkbox" name="selected_payments" value="{{ p.pk }}" class="form-check-input payment-checkbox" form="payment-bulk-form"></td>{% endif %}
+          <td class="text-muted">{{ p.pk }}{% if p.updated_by %} <span class="badge bg-danger" title="Edited by {{ p.updated_by.username }}" style="font-size:9px;">E</span>{% endif %}</td>
           <td>{{ p.client.name|default:"—" }}</td>
           <td>{% if p.invoice %}<a href="{% url 'invoice_detail' p.invoice.pk %}" class="text-primary text-decoration-none">{{ p.invoice.code }}</a>{% else %}—{% endif %}</td>
-          <td class="fw-medium text-success">{{ p.amount|currency }}</td>
-          <td class="text-muted">{{ p.payment_date }}</td>
+          <td class="fw-medium">{{ p.amount|currency }}</td>
+          <td class="text-muted" style="white-space:nowrap;">{{ p.created_at|date:"d M Y H:i" }}</td>
           <td><span class="badge bg-light text-dark border">{{ p.get_method_display }}</span></td>
           <td class="text-muted">{{ p.reference|default:"—" }}</td>
           <td>
-            <a href="{% url 'payment_detail' p.pk %}" class="btn btn-sm btn-outline-info btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
-            <a href="{% url 'payment_edit' p.pk %}" class="btn btn-sm btn-outline-warning btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'payment_delete' p.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')" title="Delete"><i class="bi bi-trash"></i></a>
+            <a href="{% url 'payment_detail' p.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'payment_edit' p.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" class="text-center text-muted py-5">No payments recorded.</td></tr>
+        <tr><td colspan="{% if request.user.is_superuser %}10{% else %}9{% endif %}" class="text-center text-muted py-5">No payments recorded.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% include 'includes/pagination.html' with page_obj=payments %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-payments');
+  const checkboxes = document.querySelectorAll('.payment-checkbox');
+  const bulkForm = document.getElementById('payment-bulk-form');
+
+  selectAll?.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+  });
+
+  bulkForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var selected = document.querySelectorAll('.payment-checkbox:checked').length;
+    if (!selected) { alert('Select at least one payment.'); return; }
+    if (!confirm('Delete selected payments?')) return;
+    bulkForm.submit();
+  });
+});
+</script>
 {% endblock %}

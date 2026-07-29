@@ -8,14 +8,24 @@
       <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search tasks..." style="width:220px;">
       <button class="btn btn-sm btn-outline-secondary">Search</button>
     </form>
-    <a href="{% url 'task_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Task</a>
+    <div class="d-flex gap-2">
+      <form method="post" id="task-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
+      </form>
+      <a href="{% url 'task_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Task</a>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>#</th><th>Title</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Start Date</th><th>Due Date</th><th>Actions</th></tr></thead>
+      <thead><tr>{% if request.user.is_superuser %}<th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-tasks" aria-label="Select all"></th>{% endif %}<th>#</th><th>Title</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Start Date</th><th>Due Date</th><th>Actions</th></tr></thead>
       <tbody>
         {% for t in tasks %}
         <tr>
+          {% if request.user.is_superuser %}<td><input type="checkbox" name="selected_tasks" value="{{ t.pk }}" class="form-check-input task-checkbox" form="task-bulk-form"></td>{% endif %}
           <td class="text-muted">{{ t.pk }}</td>
           <td class="fw-medium">{{ t.title }}</td>
           <td>
@@ -34,15 +44,32 @@
           <td>
             <a href="{% url 'task_detail' t.pk %}" class="btn btn-sm btn-outline-info btn-sm-action"><i class="bi bi-eye"></i></a>
             <a href="{% url 'task_edit' t.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'task_delete' t.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete this task?')"><i class="bi bi-trash"></i></a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" class="text-center text-muted py-5">No tasks found.</td></tr>
+        <tr><td colspan="{% if request.user.is_superuser %}9{% else %}8{% endif %}" class="text-center text-muted py-5">No tasks found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% include 'includes/pagination.html' with page_obj=tasks %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-tasks');
+  const checkboxes = document.querySelectorAll('.task-checkbox');
+  const bulkForm = document.getElementById('task-bulk-form');
+  selectAll?.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+  });
+  bulkForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var selected = document.querySelectorAll('.task-checkbox:checked').length;
+    if (!selected) { alert('Select at least one task.'); return; }
+    if (!confirm('Delete selected tasks?')) return;
+    bulkForm.submit();
+  });
+});
+</script>
 {% endblock %}

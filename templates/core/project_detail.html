@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block page_title %}{{ project.name }}{% endblock %}
+{% block content %}
+<div class="crm-card" style="max-width:860px;">
+  <div class="crm-card-header">
+    <span class="crm-card-title">{{ project.name }}</span>
+    {% if project.status == 'completed' %}<span class="badge bg-success fs-6">Completed</span>
+    {% elif project.status == 'in_progress' %}<span class="badge bg-primary fs-6">In Progress</span>
+    {% elif project.status == 'on_hold' %}<span class="badge bg-warning text-dark fs-6">On Hold</span>
+    {% else %}<span class="badge bg-secondary fs-6">Not Started</span>{% endif %}
+  </div>
+  <div class="p-4">
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">MANAGER</div>
+        <div class="fw-medium">{{ project.manager.get_full_name|default:project.manager.username|default:"—" }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">STATUS</div>
+        <div class="fw-medium">{{ project.get_status_display }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">CREATED</div>
+        <div>{{ project.created_at|date:"M d, Y" }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">START DATE</div>
+        <div>{{ project.start_date|default:"—" }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-muted mb-1" style="font-size:12px;">END DATE</div>
+        <div>{{ project.end_date|default:"—" }}</div>
+      </div>
+    </div>
+    {% if project.description %}
+    <div class="mb-4">
+      <div class="text-muted mb-1" style="font-size:12px;">DESCRIPTION</div>
+      <div>{{ project.description|linebreaks }}</div>
+    </div>
+    {% endif %}
+    <div class="d-flex gap-2 mt-2">
+      <a href="{% url 'project_edit' project.pk %}" class="btn btn-primary btn-sm">Edit Project</a>
+      <a href="{% url 'project_list' %}" class="btn btn-outline-secondary btn-sm">&larr; Back</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

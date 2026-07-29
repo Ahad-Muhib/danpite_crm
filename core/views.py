@@ -14,7 +14,7 @@ from leads.models import Deal, LeadContact
 from orders.models import Order
 
 from .forms import CurrencySettingsForm, ProjectForm, ScheduleForm, TaskForm
-from .models import CurrencySettings, Project, Schedule, Task
+from .models import CurrencySettings, Log, Project, Schedule, Task, log_action
 
 
 # ── Role helpers ───────────────────────────────────────────────
@@ -56,6 +56,20 @@ def is_manager_or_above(user):
 
 def is_hr_or_above(user):
     return get_user_role(user) in ('admin', 'manager', 'hr')
+
+
+
+
+
+def superuser_required(view_func):
+    @wraps(view_func)
+    @login_required
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can perform this action.')
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 
 @login_required
@@ -211,6 +225,7 @@ def user_create(request):
         form = ExtendedUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            log_action(request, 'create', 'User', user)
             messages.success(request, f'User "{user.username}" created successfully.')
             return redirect('user_list')
     else:
@@ -222,11 +237,11 @@ def user_create(request):
 def user_delete(request, pk):
     if not is_admin(request.user):
         return HttpResponseForbidden('Only administrators can delete users.')
-    from django.contrib.auth.models import User
     user = get_object_or_404(User, pk=pk)
     if user == request.user:
         messages.error(request, 'You cannot delete your own account.')
         return redirect('user_list')
+    log_action(request, 'delete', 'User', user)
     user.delete()
     messages.success(request, f'User "{user.username}" deleted.')
     return redirect('user_list')
@@ -239,6 +254,19 @@ def user_delete(request, pk):
 
 @login_required
 def task_list(request):
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_tasks')
+        if not selected_ids:
+            messages.error(request, 'Select at least one task first.')
+            return redirect('task_list')
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can delete tasks.')
+            return redirect('task_list')
+        for t in Task.objects.filter(pk__in=selected_ids):
+            log_action(request, 'delete', 'Task', t, description=t.title)
+            t.delete()
+        messages.success(request, f'{len(selected_ids)} task(s) deleted.')
+        return redirect('task_list')
     q = request.GET.get('q', '')
     qs = Task.objects.filter(Q(title__icontains=q)).order_by('-created_at') if q else Task.objects.all().order_by('-created_at')
     paginator = Paginator(qs, 25)
@@ -256,7 +284,8 @@ def task_detail(request, pk):
 def task_create(request):
     form = TaskForm(request.POST or None)
     if form.is_valid():
-        form.save()
+        obj = form.save()
+        log_action(request, 'create', 'Task', obj)
         messages.success(request, 'Task created.')
         return redirect('task_list')
     return render(request, 'core/task_form.html', {'form': form, 'action': 'Create'})
@@ -268,6 +297,7 @@ def task_edit(request, pk):
     form = TaskForm(request.POST or None, instance=obj)
     if form.is_valid():
         form.save()
+        log_action(request, 'update', 'Task', obj)
         messages.success(request, 'Task updated.')
         return redirect('task_list')
     return render(request, 'core/task_form.html', {'form': form, 'action': 'Edit'})
@@ -275,24 +305,49 @@ def task_edit(request, pk):
 
 @login_required
 def task_delete(request, pk):
-    get_object_or_404(Task, pk=pk).delete()
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can delete tasks.')
+        return redirect('task_list')
+    obj = get_object_or_404(Task, pk=pk)
+    log_action(request, 'delete', 'Task', obj)
+    obj.delete()
     messages.success(request, 'Task deleted.')
     return redirect('task_list')
 
 
 @login_required
 def project_list(request):
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_projects')
+        if not selected_ids:
+            messages.error(request, 'Select at least one project first.')
+            return redirect('project_list')
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can delete projects.')
+            return redirect('project_list')
+        for p in Project.objects.filter(pk__in=selected_ids):
+            log_action(request, 'delete', 'Project', p, description=p.name)
+            p.delete()
+        messages.success(request, f'{len(selected_ids)} project(s) deleted.')
+        return redirect('project_list')
+    q = request.GET.get('q', '')
+    status = request.GET.get('status', '')
     qs = Project.objects.all().order_by('-created_at')
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(description__icontains=q))
+    if status:
+        qs = qs.filter(status=status)
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get('page'))
-    return render(request, 'core/projects.html', {'projects': page})
+    return render(request, 'core/projects.html', {'projects': page, 'q': q, 'status': status})
 
 
 @login_required
 def project_create(request):
     form = ProjectForm(request.POST or None)
     if form.is_valid():
-        form.save()
+        obj = form.save()
+        log_action(request, 'create', 'Project', obj)
         messages.success(request, 'Project created.')
         return redirect('project_list')
     return render(request, 'core/project_form.html', {'form': form, 'action': 'Create'})
@@ -304,20 +359,52 @@ def project_edit(request, pk):
     form = ProjectForm(request.POST or None, instance=obj)
     if form.is_valid():
         form.save()
+        log_action(request, 'update', 'Project', obj)
         messages.success(request, 'Project updated.')
         return redirect('project_list')
     return render(request, 'core/project_form.html', {'form': form, 'action': 'Edit'})
 
 
 @login_required
+def project_detail(request, pk):
+    obj = get_object_or_404(Project, pk=pk)
+    return render(request, 'core/project_detail.html', {'project': obj})
+
+
+@login_required
 def project_delete(request, pk):
-    get_object_or_404(Project, pk=pk).delete()
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can delete projects.')
+        return redirect('project_list')
+    obj = get_object_or_404(Project, pk=pk)
+    log_action(request, 'delete', 'Project', obj)
+    obj.delete()
     messages.success(request, 'Project deleted.')
     return redirect('project_list')
 
 
 @login_required
+@login_required
+def schedule_detail(request, pk):
+    obj = get_object_or_404(Schedule, pk=pk)
+    return render(request, 'core/schedule_detail.html', {'schedule': obj})
+
+
+@login_required
 def schedule_list(request):
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_schedules')
+        if not selected_ids:
+            messages.error(request, 'Select at least one schedule first.')
+            return redirect('schedule_list')
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can delete schedules.')
+            return redirect('schedule_list')
+        for s in Schedule.objects.filter(pk__in=selected_ids):
+            log_action(request, 'delete', 'Schedule', s, description=s.title)
+            s.delete()
+        messages.success(request, f'{len(selected_ids)} schedule(s) deleted.')
+        return redirect('schedule_list')
     qs = Schedule.objects.all().order_by('-start_datetime')
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get('page'))
@@ -331,6 +418,7 @@ def schedule_create(request):
         obj = form.save(commit=False)
         obj.created_by = request.user
         obj.save()
+        log_action(request, 'create', 'Schedule', obj)
         messages.success(request, 'Schedule created.')
         return redirect('schedule_list')
     return render(request, 'core/schedule_form.html', {'form': form, 'action': 'Create'})
@@ -342,6 +430,7 @@ def schedule_edit(request, pk):
     form = ScheduleForm(request.POST or None, instance=obj)
     if form.is_valid():
         form.save()
+        log_action(request, 'update', 'Schedule', obj)
         messages.success(request, 'Schedule updated.')
         return redirect('schedule_list')
     return render(request, 'core/schedule_form.html', {'form': form, 'action': 'Edit'})
@@ -349,7 +438,12 @@ def schedule_edit(request, pk):
 
 @login_required
 def schedule_delete(request, pk):
-    get_object_or_404(Schedule, pk=pk).delete()
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can delete schedules.')
+        return redirect('schedule_list')
+    obj = get_object_or_404(Schedule, pk=pk)
+    log_action(request, 'delete', 'Schedule', obj)
+    obj.delete()
     messages.success(request, 'Schedule deleted.')
     return redirect('schedule_list')
 
@@ -363,3 +457,20 @@ def currency_settings(request):
         messages.success(request, 'Currency settings updated.')
         return redirect('currency_settings')
     return render(request, 'core/currency_settings.html', {'form': form})
+
+
+@login_required
+def activity_logs(request):
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can view activity logs.')
+        return redirect('dashboard')
+    q = request.GET.get('q', '')
+    action = request.GET.get('action', '')
+    qs = Log.objects.select_related('user').all()
+    if q:
+        qs = qs.filter(Q(model_name__icontains=q) | Q(object_repr__icontains=q) | Q(description__icontains=q))
+    if action:
+        qs = qs.filter(action=action)
+    paginator = Paginator(qs, 50)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'core/activity_logs.html', {'logs': page, 'q': q, 'action': action})

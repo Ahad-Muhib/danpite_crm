@@ -11,13 +11,27 @@ body { background: #f0f4f8; font-size: 14px; }
 
 #sidebar {
   width: var(--sidebar-width);
-  min-height: 100vh;
+  height: 100vh;
   background: var(--sidebar-bg);
   position: fixed;
   top: 0; left: 0;
   z-index: 100;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #4a5a6a transparent;
   transition: width 0.2s;
+}
+
+#sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+#sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+#sidebar::-webkit-scrollbar-thumb {
+  background: #4a5a6a;
+  border-radius: 4px;
 }
 
 #sidebar .sidebar-brand {
@@ -30,6 +44,13 @@ body { background: #f0f4f8; font-size: 14px; }
   display: flex;
   align-items: center;
   gap: 10px;
+  text-decoration: none;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+#sidebar .sidebar-brand:hover {
+  color: #fff;
 }
 
 #sidebar .nav-label {
@@ -169,3 +190,9 @@ body { background: #f0f4f8; font-size: 14px; }
 .page-title { font-size: 20px; font-weight: 700; color: #1e293b; }
 .btn-sm-action { padding: 4px 10px; font-size: 12px; }
 .search-form .form-control, .search-form .form-select { font-size: 13px; }
+.text-inherit { color: inherit; }
+.text-inherit:hover { color: inherit; }
+
+.th-dropdown { display: inline-flex; align-items: center; gap: 2px; }
+.dropdown-btn { border: none; background: none; color: #64748b; font-size: 13px; line-height: 1; cursor: pointer; }
+.dropdown-btn:hover { color: #1e293b; }

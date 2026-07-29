@@ -31,7 +31,6 @@
         {% if not lead.is_converted %}
         <a href="{% url 'lead_convert' lead.pk %}" class="btn btn-outline-success btn-sm" onclick="return confirm('Convert to client?')">Convert to Client</a>
         {% endif %}
-        <a href="{% url 'lead_delete' lead.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete</a>
       </div>
     </div>
 
@@ -160,7 +159,7 @@
                 <span class="text-muted" style="font-size:11px;">{{ c.created_at|timesince }} ago</span>
               </div>
               <div style="font-size:13px;">{{ c.body|linebreaks }}</div>
-              {% if c.created_by == request.user %}
+              {% if c.created_by == request.user and request.user.is_superuser %}
               <form method="post" action="{% url 'comment_delete' lead.pk c.pk %}" class="d-inline mt-1">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-link btn-sm text-danger p-0" onclick="return confirm('Delete comment?')" style="font-size:11px;">Delete</button>

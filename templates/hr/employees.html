@@ -3,36 +3,45 @@
 {% block page_title %}Employees{% endblock %}
 {% block content %}
 <div class="crm-card">
-  <div class="crm-card-header">
+  <div class="crm-card-header flex-wrap gap-2">
     <form class="d-flex gap-2 search-form" method="get">
       <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search employees..." style="width:200px;">
-      <button class="btn btn-sm btn-outline-secondary">Search</button>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search me-1"></i>Search</button>
+      {% if q %}
+      <a href="{% url 'employee_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>
+      {% endif %}
     </form>
-    <a href="{% url 'employee_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Employee</a>
+    <div class="d-flex gap-2">
+      <form method="post" id="employee-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
+      </form>
+      {% if request.user.is_superuser %}
+      <a href="{% url 'employee_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Employee</a>
+      {% endif %}
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Employee</th><th>ID</th><th>Email</th><th>Role</th><th>Department</th><th>Login</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead>
+        <tr>
+          {% if request.user.is_superuser %}<th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-employees" aria-label="Select all"></th>{% endif %}
+          <th>Employee</th><th>ID</th><th>Email</th><th>Role</th><th>Login</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for e in employees %}
         <tr>
+          {% if request.user.is_superuser %}<td><input type="checkbox" name="selected_employees" value="{{ e.pk }}" class="form-check-input employee-checkbox" form="employee-bulk-form"></td>{% endif %}
           <td>
-            <div class="d-flex align-items-center gap-2">
-              {% if e.avatar %}
-                <img src="{{ e.avatar.url }}" class="rounded-circle" width="32" height="32" style="object-fit:cover;">
-              {% else %}
-                <div class="avatar-sm" style="background:#7c3aed;">{{ e.name|slice:":1"|upper }}</div>
-              {% endif %}
-              <div>
-                <div class="fw-medium">{{ e.name }}</div>
-                {% if e.designation %}<small class="text-muted">{{ e.designation.title }}</small>{% endif %}
-              </div>
-            </div>
+            <div class="fw-medium">{{ e.name }}</div>
           </td>
           <td class="text-muted">{{ e.employee_id }}</td>
           <td class="text-muted">{{ e.email }}</td>
           <td><span class="badge bg-light text-dark border">{{ e.get_role_display }}</span></td>
-          <td>{{ e.department.name|default:"—" }}</td>
           <td>
             {% if e.user %}<span class="badge bg-info text-dark"><i class="bi bi-box-arrow-in-right me-1"></i>Login</span>
             {% else %}<span class="text-muted" style="font-size:12px;">—</span>{% endif %}
@@ -44,16 +53,37 @@
           </td>
           <td>
             <a href="{% url 'employee_detail' e.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-eye"></i></a>
+            {% if request.user.is_superuser %}
             <a href="{% url 'employee_edit' e.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'employee_delete' e.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
+            {% endif %}
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" class="text-center text-muted py-5">No employees found.</td></tr>
+        <tr><td colspan="{% if request.user.is_superuser %}8{% else %}7{% endif %}" class="text-center text-muted py-5">No employees found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% include 'includes/pagination.html' with page_obj=employees %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-employees');
+  const checkboxes = document.querySelectorAll('.employee-checkbox');
+  const bulkForm = document.getElementById('employee-bulk-form');
+
+  selectAll?.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+  });
+
+  bulkForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var selected = document.querySelectorAll('.employee-checkbox:checked').length;
+    if (!selected) { alert('Select at least one employee.'); return; }
+    if (!confirm('Delete selected employees?')) return;
+    bulkForm.submit();
+  });
+});
+</script>
 {% endblock %}

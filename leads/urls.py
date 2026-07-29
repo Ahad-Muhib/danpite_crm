@@ -28,4 +28,5 @@ urlpatterns = [
     path('deals/new/', views.deal_create, name='deal_create'),
     path('deals/<int:pk>/edit/', views.deal_edit, name='deal_edit'),
     path('deals/<int:pk>/delete/', views.deal_delete, name='deal_delete'),
+    path('leads/add-source/', views.add_lead_source, name='add_lead_source'),
 ]

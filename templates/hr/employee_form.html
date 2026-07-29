@@ -2,24 +2,65 @@
 {% block title %}{{ action }} Employee{% endblock %}
 {% block page_title %}{{ action }} Employee{% endblock %}
 {% block content %}
-<div class="crm-card" style="max-width:860px;">
-  <div class="crm-card-header"><span class="crm-card-title">Employee Details</span></div>
-  <div class="p-4">
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const cb = document.getElementById('{{ form.create_login.id_for_label }}');
+  const pw = document.querySelector('.login-password-field');
+  if (cb && pw) {
+    cb.addEventListener('change', function() {
+      pw.style.display = this.checked ? 'block' : 'none';
+    });
+  }
+
+  document.getElementById('save-role-btn')?.addEventListener('click', function() {
+    var input = document.getElementById('new-role-input');
+    var name = input.value.trim();
+    if (!name) { alert('Enter a role name.'); return; }
+    var fd = new FormData();
+    fd.append('name', name);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fetch('{% url "add_employee_role" %}', {
+      method: 'POST', body: fd,
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.ok) {
+        var sel = document.querySelector('[name="role"]');
+        var opt = document.createElement('option');
+        opt.value = data.name;
+        opt.text = data.name;
+        sel.appendChild(opt);
+        sel.value = data.name;
+        input.value = '';
+        bootstrap.Modal.getInstance(document.getElementById('roleModal')).hide();
+      } else {
+        alert(data.error);
+      }
+    });
+  });
+});
+</script>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="crm-card mb-4">
+    <div class="crm-card-header"><span class="crm-card-title"><i class="bi bi-person-badge me-2"></i>Employee Details</span></div>
+    <div class="p-4">
       <div class="row g-3">
         <div class="col-md-8"><label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>{{ form.name }}</div>
         <div class="col-md-4"><label class="form-label fw-medium">Avatar</label>{{ form.avatar }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Email <span class="text-danger">*</span></label>{{ form.email }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Phone</label>{{ form.phone }}</div>
-        <div class="col-md-4"><label class="form-label fw-medium">Role</label>{{ form.role }}</div>
-        <div class="col-md-4"><label class="form-label fw-medium">Designation</label>{{ form.designation }}</div>
-        <div class="col-md-4"><label class="form-label fw-medium">Department</label>{{ form.department }}</div>
-        <div class="col-md-4"><label class="form-label fw-medium">Reporting To</label>{{ form.reporting_to }}</div>
-        <div class="col-md-4"><label class="form-label fw-medium">Status</label>{{ form.status }}</div>
-        <div class="col-md-4"><label class="form-label fw-medium">Joining Date</label>{{ form.joining_date }}</div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Role</label>
+          <div class="d-flex gap-2">
+            {{ form.role }}
+            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#roleModal" title="Add Role"><i class="bi bi-plus-lg"></i></button>
+          </div>
+        </div>
+        <div class="col-md-6"><label class="form-label fw-medium">Status</label>{{ form.status }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Joining Date</label>{{ form.joining_date }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Salary</label>{{ form.salary }}</div>
         <div class="col-12"><label class="form-label fw-medium">Address</label>{{ form.address }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
         <div class="col-12">
           <div class="form-check">{{ form.is_new_hire }}<label class="form-check-label ms-2">Mark as New Hire</label></div>
         </div>
@@ -27,15 +68,38 @@
         <div class="col-12">
           <hr>
           <div class="form-check">{{ form.create_login }}<label class="form-check-label ms-2">Create Login Account</label></div>
-          {% if form.create_login.help_text %}<div class="form-text">{{ form.create_login.help_text }}</div>{% endif %}
+        </div>
+        <div class="col-md-6 login-password-field" style="display:none;">
+          <label class="form-label fw-medium">{{ form.login_password.label }}</label>
+          {{ form.login_password }}
+          {% if form.login_password.help_text %}<div class="form-text">{{ form.login_password.help_text }}</div>{% endif %}
         </div>
         {% endif %}
       </div>
-      <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary">{{ action }} Employee</button>
-        <a href="{% url 'employee_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} Employee</button>
+    <a href="{% url 'employee_list' %}" class="btn btn-outline-secondary">Cancel</a>
+  </div>
+</form>
+
+<!-- Add Role Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Add Role</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-    </form>
+      <div class="modal-body">
+        <input type="text" id="new-role-input" class="form-control" placeholder="Role name">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary" id="save-role-btn"><i class="bi bi-check-lg me-1"></i>Add</button>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

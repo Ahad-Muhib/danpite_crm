@@ -20,6 +20,17 @@ class Designation(models.Model):
         return self.title
 
 
+class EmployeeRole(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Employee(models.Model):
     ROLE = [('employee', 'Employee'), ('manager', 'Manager'), ('hr', 'HR'), ('admin', 'Administrator')]
     STATUS = [('active', 'Active'), ('inactive', 'Inactive'), ('on_leave', 'On Leave')]
@@ -28,7 +39,7 @@ class Employee(models.Model):
     name = models.CharField(max_length=200)
     email = models.EmailField()
     phone = models.CharField(max_length=30, blank=True)
-    role = models.CharField(max_length=20, choices=ROLE, default='employee')
+    role = models.CharField(max_length=100, choices=ROLE, default='employee')
     designation = models.ForeignKey(Designation, null=True, blank=True, on_delete=models.SET_NULL)
     department = models.ForeignKey(Department, null=True, blank=True, on_delete=models.SET_NULL)
     reporting_to = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='reports')
@@ -36,6 +47,7 @@ class Employee(models.Model):
     joining_date = models.DateField(null=True, blank=True)
     salary = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     address = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     is_new_hire = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

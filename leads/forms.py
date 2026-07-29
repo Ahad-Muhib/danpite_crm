@@ -1,13 +1,9 @@
 from django import forms
 
-from .models import Comment, Deal, FollowUp, LeadContact
+from .models import Comment, Deal, FollowUp, LeadContact, LeadSource
 
 
 class LeadContactForm(forms.ModelForm):
-    custom_source = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={
-        'class': 'form-control', 'placeholder': 'Type custom source...',
-    }))
-
     class Meta:
         model = LeadContact
         fields = ['salutation', 'name', 'email', 'phone', 'company', 'website', 'address',
@@ -36,8 +32,8 @@ class LeadContactForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['lead_owner'].required = False
         self.fields['notes'].required = False
-        base_choices = [
-            ('none', '-- Select Source --'),
+        base_choices = [('none', '-- Select Source --')]
+        hardcoded = [
             ('affiliate', 'Affiliate'),
             ('email_marketing', 'Email Marketing'),
             ('event', 'Event'),
@@ -54,23 +50,13 @@ class LeadContactForm(forms.ModelForm):
             ('walk_in', 'Walk-in'),
             ('website', 'Website'),
         ]
-        if self.instance and self.instance.pk and self.instance.lead_source:
-            current = self.instance.lead_source
-            known = [c[0] for c in base_choices]
-            if current not in known and current != 'none':
-                base_choices.append((current, current))
-        base_choices.append(('custom', 'Other (type your own)'))
+        base_choices.extend(hardcoded)
+        for s in LeadSource.objects.all():
+            base_choices.append((s.name, s.name))
         self.fields['lead_source'] = forms.ChoiceField(
             choices=base_choices,
             widget=forms.Select(attrs={'class': 'form-select'}),
         )
-
-    def clean_lead_source(self):
-        source = self.cleaned_data.get('lead_source', 'none')
-        custom = self.data.get('custom_source', '').strip()
-        if source == 'custom' and custom:
-            return custom
-        return source
 
 
 class DealForm(forms.ModelForm):

@@ -3,6 +3,8 @@
 {% block title %}{{ action }} Invoice{% endblock %}
 {% block page_title %}{{ action }} Invoice{% endblock %}
 {% block content %}
+<!-- Quill CSS -->
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 <style>
 :root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff}
 *{box-sizing:border-box}
@@ -38,6 +40,7 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
 .add:hover{background:var(--soft)}
 .bottom{display:grid;grid-template-columns:1fr 360px;gap:55px;margin-top:34px}
 .notes textarea.field{border:1px solid var(--line);min-height:72px;margin-bottom:18px}
+.ql-editor{min-height:150px}
 .sum-row{display:grid;grid-template-columns:1fr 155px;align-items:center}
 .sum-row input{border:1px solid var(--line);border-radius:4px;padding:5px 8px;font:inherit;font-size:13px;text-align:right}
 .sum-row input:focus{outline:none;border-color:#0d6efd}
@@ -78,25 +81,22 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
         <button class="logo-remove" id="removeLogo" type="button">Remove logo</button>
 
         <div class="label">Bill From</div>
-        {{ form.bill_from }}
+        <div style="margin-bottom:6px;">{{ form.bill_from_company }}</div>
+        <div style="margin-bottom:6px;">{{ form.bill_from_address }}</div>
+        <div style="margin-bottom:6px;">{{ form.bill_from_phone }}</div>
 
         <div class="parties">
           <div>
             <div class="label">Bill To</div>
             <div style="margin-bottom:8px;">
               <div class="input-group input-group-sm">
-                {{ form.client }}
-                <a href="{% url 'client_create' %}" target="_blank" class="btn btn-outline-success" title="Add new client"><i class="bi bi-plus-lg"></i></a>
+                {{ form.bill_to_name }}
+                <button type="button" class="btn btn-outline-success" id="add-bill-to-btn" title="Add client"><i class="bi bi-plus-lg"></i></button>
               </div>
-            </div>
-            <div style="margin-bottom:8px;">{{ form.client_name }}</div>
-            <div id="client-info-bar" style="display:none;margin-bottom:8px;">
-              <div class="d-flex gap-3 flex-wrap" style="font-size:12px;color:var(--muted);">
-                <span><i class="bi bi-person me-1"></i><strong id="info-name" style="color:var(--ink);"></strong></span>
-                <span><i class="bi bi-building me-1"></i><span id="info-company"></span></span>
-                <span><i class="bi bi-envelope me-1"></i><span id="info-email"></span></span>
-                <span><i class="bi bi-geo-alt me-1"></i><span id="info-address"></span></span>
-              </div>
+              <datalist id="client-list">
+                {% for c in clients %}
+                <option value="{{ c.name }}">{% endfor %}
+              </datalist>
             </div>
             <div>{{ form.phone }}</div>
           </div>
@@ -112,10 +112,7 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
         <div class="number"><span></span><span style="font-weight:600;color:var(--ink);font-size:15px;">{% if invoice %}{{ invoice.code }}{% else %}{% endif %}</span></div>
         <div class="details">
           <div class="detail-row"><span>Date</span>{{ form.invoice_date }}</div>
-          <div class="detail-row"><span>Payment Terms</span>{{ form.payment_terms }}</div>
-          <div class="detail-row"><span>Due Date</span>{{ form.due_date }}</div>
-          <div class="detail-row"><span>PO Number</span>{{ form.po_number }}</div>
-          <div class="detail-row balance"><span>Balance Due</span><span id="balanceTop" class="money">$0.00</span></div>
+          <div class="detail-row"><span>Delivery Date</span>{{ form.delivery_date }}</div>
         </div>
       </div>
     </section>
@@ -132,7 +129,7 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
           <input type="text" class="field desc" name="{{ item_form.prefix }}-description" value="{{ item_form.description.value|default:'' }}" placeholder="Description of item/service...">
           <input type="number" class="field qty" name="{{ item_form.prefix }}-quantity" min="0" step="any" value="{{ item_form.quantity.value|default:'1' }}">
           <input type="number" class="field rate" name="{{ item_form.prefix }}-unit_price" min="0" step="0.01" value="{{ item_form.unit_price.value|default:'0' }}">
-          <div class="amount">$0.00</div>
+          <div class="amount">৳0.00</div>
           <button class="remove" type="button" title="Remove">&times;</button>
           <input type="hidden" name="{{ item_form.prefix }}-DELETE" class="del-check">
         </div>
@@ -142,21 +139,22 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
     </section>
 
     <section class="bottom">
-      <div class="notes">
-        <div class="label">Notes</div>
+      <div>
+        <div class="label">Terms & Conditions</div>
+        {{ form.terms }}
+        <div class="label" style="margin-top:16px;">Notes</div>
+        <div id="quill-editor-notes" style="height:200px;background:#fff;border:1px solid #dee2e6;border-radius:6px;"></div>
         {{ form.notes }}
-        <div class="label">Terms</div>
-        <textarea class="field" rows="2" placeholder="Terms and conditions, payment methods, delivery schedule" id="id_terms"></textarea>
       </div>
 
       <div>
-        <div class="sum-row"><span>Subtotal</span><span id="subtotal" class="money">$0.00</span></div>
+        <div class="sum-row"><span>Subtotal</span><span id="subtotal" class="money">৳0.00</span></div>
         <div class="sum-row"><span>Discount</span>{{ form.discount }}</div>
         <div class="sum-row"><span>Tax (%)</span>{{ form.tax }}</div>
         <div class="sum-row"><span>Shipping</span>{{ form.shipping }}</div>
-        <div class="sum-row total"><span>Total</span><span id="total" class="money">$0.00</span></div>
+        <div class="sum-row total"><span>Total</span><span id="total" class="money">৳0.00</span></div>
         <div class="sum-row"><span>Amount Paid</span>{{ form.amount_paid }}</div>
-        <div class="sum-row balance"><span>Balance Due</span><span id="balance" class="money">$0.00</span></div>
+        <div class="sum-row balance"><span>Balance Due</span><span id="balance" class="money">৳0.00</span></div>
       </div>
     </section>
 
@@ -169,11 +167,13 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
   </form>
 </div>
 
+<!-- Quill JS -->
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 <script>
 const CURRENCY_SYMBOLS = {USD:'$',BDT:'৳',EUR:'€',GBP:'£',INR:'₹',JPY:'¥',CAD:'C$',AUD:'A$',AED:'د.إ',SAR:'ر.س'};
-let selectedCurrency = '{{ invoice.currency|default:"USD" }}';
+let selectedCurrency = '{{ invoice.currency|default:"BDT" }}';
 const money = n => {
-  const sym = CURRENCY_SYMBOLS[selectedCurrency] || '$';
+  const sym = CURRENCY_SYMBOLS[selectedCurrency] || '৳';
   return sym + (Number(n)||0).toFixed(2);
 };
 
@@ -202,11 +202,63 @@ function calculate(){
   document.getElementById('subtotal').textContent = money(subtotal);
   document.getElementById('total').textContent = money(total);
   document.getElementById('balance').textContent = money(balance);
-  document.getElementById('balanceTop').textContent = money(balance);
   document.getElementById('id_total').value = total.toFixed(2);
 }
 
 document.addEventListener('DOMContentLoaded', function(){
+  // Quill editor
+  function makeQuill(selector, placeholder) {
+    var q = new Quill(selector, {
+      theme: 'snow',
+      placeholder: placeholder,
+      modules: {
+        toolbar: [
+          [{ 'header': [1, 2, 3, false] }],
+          [{ 'size': ['small', false, 'large', 'huge'] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'color': [] }, { 'background': [] }],
+          [{ 'align': [] }],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['clean']
+        ]
+      }
+    });
+    var tips = { 'ql-bold':'Bold', 'ql-italic':'Italic', 'ql-underline':'Underline',
+      'ql-strike':'Strikethrough', 'ql-color':'Text Color', 'ql-background':'Background Color',
+      'ql-clean':'Clear Formatting' };
+    document.querySelectorAll(selector + ' ~ .ql-toolbar button').forEach(function(b) {
+      for (var k in tips) { if ((b.className||'').includes(k)) { b.setAttribute('title', tips[k]); break; } }
+    });
+    document.querySelectorAll(selector + ' ~ .ql-toolbar .ql-picker-label').forEach(function(p) {
+      var c = p.className||'';
+      if (c.includes('ql-header')) p.setAttribute('title','Heading');
+      else if (c.includes('ql-size')) p.setAttribute('title','Font Size');
+      else if (c.includes('ql-color')) p.setAttribute('title','Text Color');
+      else if (c.includes('ql-background')) p.setAttribute('title','Background Color');
+      else if (c.includes('ql-align')) p.setAttribute('title','Text Alignment');
+    });
+    return q;
+  }
+
+  var quillNotes = makeQuill('#quill-editor-notes', 'Write notes here...');
+
+  var notesField = document.querySelector('#id_notes');
+  if (notesField && notesField.value && notesField.value !== '<br>') {
+    quillNotes.root.innerHTML = notesField.value;
+  }
+  document.getElementById('invoice-form').addEventListener('submit', function() {
+    calculate();
+    notesField.value = quillNotes.root.innerHTML;
+    termsField.value = quillTerms.root.innerHTML;
+  });
+
+  // Client autocomplete
+  var billToInput = document.getElementById('id_bill_to_name');
+  var clientList = document.getElementById('client-list');
+  if (billToInput) {
+    billToInput.setAttribute('list', 'client-list');
+  }
+
   const rows = document.getElementById('rows');
   const totalForms = document.getElementById('id_items-TOTAL_FORMS');
 
@@ -242,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function(){
       '<input type="text" class="field desc" name="'+p+'-description" placeholder="Description of item/service...">' +
       '<input type="number" class="field qty" name="'+p+'-quantity" min="0" step="any" value="1">' +
       '<input type="number" class="field rate" name="'+p+'-unit_price" min="0" step="0.01" value="0">' +
-      '<div class="amount">$0.00</div>' +
+      '<div class="amount">৳0.00</div>' +
       '<button class="remove" type="button" title="Remove">&times;</button>' +
       '<input type="hidden" name="'+p+'-DELETE" class="del-check">';
     rows.appendChild(row);
@@ -289,23 +341,6 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
   if(logoPreview && logoPreview.src){ removeLogo.style.display = 'inline-block'; logoPlaceholder.style.display = 'none'; }
-
-  document.getElementById('id_client_select')?.addEventListener('change', function(){
-    const clientId = this.value;
-    const infoBar = document.getElementById('client-info-bar');
-    if(!clientId){ infoBar.style.display='none'; return; }
-    fetch('/accounts/client-data/?id='+clientId)
-      .then(function(r){return r.json()})
-      .then(function(data){
-        document.getElementById('id_phone').value = data.phone||'';
-        document.getElementById('info-name').textContent = data.name||'';
-        document.getElementById('info-company').textContent = data.company||'';
-        document.getElementById('info-email').textContent = data.email||'';
-        document.getElementById('info-address').textContent = data.address||'';
-        infoBar.style.display = 'block';
-        document.getElementById('id_client_name').value = '';
-      });
-  });
 
   calculate();
 });

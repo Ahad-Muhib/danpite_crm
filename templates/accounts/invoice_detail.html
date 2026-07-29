@@ -61,21 +61,27 @@
           <div class="logo-area"><img src="{{ invoice.logo.url }}" alt="Logo"></div>
           {% endif %}
           <div class="label">Bill From</div>
-          {% if invoice.bill_from %}
-          <div class="party-text">{{ invoice.bill_from|linebreaksbr }}</div>
-          {% else %}
-          <div class="party-text">Danpite CRM<br>Your Company Address<br>City, State ZIP<br>Country</div>
-          {% endif %}
+          <div class="party-text">
+            <div class="name">{{ invoice.bill_from_company|default:"Danpite CRM" }}</div>
+            {% if invoice.bill_from_address %}<div>{{ invoice.bill_from_address|linebreaksbr }}</div>{% endif %}
+            {% if invoice.bill_from_phone %}<div>{{ invoice.bill_from_phone }}</div>{% endif %}
+          </div>
 
           <div class="parties">
             <div>
               <div class="label">Bill To</div>
               <div class="party-text">
-                <div class="name">{{ invoice.client.name|default:"Walk-in Client" }}</div>
+                {% if invoice.client %}
+                <div class="name">{{ invoice.client.name }}</div>
                 {% if invoice.client.company %}<div>{{ invoice.client.company }}</div>{% endif %}
                 {% if invoice.client.email %}<div>{{ invoice.client.email }}</div>{% endif %}
-                {% if invoice.phone %}<div>Phone: {{ invoice.phone }}</div>{% endif %}
                 {% if invoice.client.address %}<div>{{ invoice.client.address }}</div>{% endif %}
+                {% elif invoice.bill_to_name %}
+                <div class="name">{{ invoice.bill_to_name }}</div>
+                {% else %}
+                <div class="name">Walk-in Client</div>
+                {% endif %}
+                {% if invoice.phone %}<div>Phone: {{ invoice.phone }}</div>{% endif %}
               </div>
             </div>
             {% if invoice.ship_to %}
@@ -92,13 +98,12 @@
           <div class="code-line">
             <span>#</span>
             <strong style="color:var(--ink)">{{ invoice.code }}</strong>
+            {% if invoice.updated_by %}<span class="badge bg-danger" title="Edited by {{ invoice.updated_by.username }}" style="font-size:10px;vertical-align:middle;">E</span>{% endif %}
             <span class="status-badge status-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
           </div>
           <div class="details">
-            <div class="detail-row"><span class="lbl">Date</span><span class="val">{{ invoice.invoice_date }}</span></div>
-            {% if invoice.payment_terms %}<div class="detail-row"><span class="lbl">Payment Terms</span><span class="val">{{ invoice.payment_terms }}</span></div>{% endif %}
-            {% if invoice.due_date %}<div class="detail-row"><span class="lbl">Due Date</span><span class="val">{{ invoice.due_date }}</span></div>{% endif %}
-            {% if invoice.po_number %}<div class="detail-row"><span class="lbl">PO Number</span><span class="val">{{ invoice.po_number }}</span></div>{% endif %}
+            <div class="detail-row"><span class="lbl">Created</span><span class="val">{{ invoice.created_at|date:"d M Y H:i" }}</span></div>
+            {% if invoice.delivery_date %}<div class="detail-row"><span class="lbl">Delivery Date</span><span class="val">{{ invoice.delivery_date }}</span></div>{% endif %}
             <div class="detail-row balance"><span>Balance Due</span><span>{% if invoice.currency %}{{ invoice.get_currency_display|slice:":3" }} {% endif %}{{ balance_due|currency }}</span></div>
           </div>
         </div>
@@ -124,7 +129,11 @@
         <div>
           {% if invoice.notes %}
           <div class="label">Notes</div>
-          <div class="note-text">{{ invoice.notes }}</div>
+          <div class="note-text">{{ invoice.notes|safe }}</div>
+          {% endif %}
+          {% if invoice.terms %}
+          <div class="label" style="margin-top:16px;">Terms</div>
+          <div class="note-text">{{ invoice.terms|safe }}</div>
           {% endif %}
         </div>
         <div>
@@ -154,6 +163,12 @@
     <div class="crm-card">
       <div class="crm-card-header"><span class="crm-card-title">Actions</span></div>
       <div class="p-3 d-flex flex-column gap-2">
+        {% if invoice.updated_by %}
+        <div class="text-danger" style="font-size:12px;">
+          <i class="bi bi-pencil-fill me-1"></i>Edited by {{ invoice.updated_by.username }}<br>
+          <span class="text-muted">{{ invoice.updated_at|date:"d M Y H:i" }}</span>
+        </div>
+        {% endif %}
         <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit Invoice</a>
         <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-outline-primary btn-sm" target="_blank"><i class="bi bi-file-earmark-pdf me-1"></i>Download PDF</a>
         {% if invoice.status != 'paid' %}
@@ -162,19 +177,18 @@
           <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-check-circle me-1"></i>Mark as Paid</button>
         </form>
         {% endif %}
-        <a href="{% url 'payment_create' %}" class="btn btn-outline-success btn-sm"><i class="bi bi-cash me-1"></i>Record Payment</a>
-        <a href="{% url 'invoice_delete' invoice.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')"><i class="bi bi-trash me-1"></i>Delete Invoice</a>
+        <a href="{% url 'payment_create' %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-cash me-1"></i>Record Payment</a>
       </div>
     </div>
     {% if payments %}
     <div class="crm-card">
-      <div class="crm-card-header"><span class="crm-card-title">Payment History</span></div>
+      <div class="crm-card-header" style="border-left:3px solid #dc3545;"><span class="crm-card-title">Payment History</span></div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead><tr><th>Amount</th><th>Date</th><th>Method</th></tr></thead>
           <tbody>
             {% for p in payments %}
-            <tr><td class="fw-medium">{{ p.amount|currency }}</td><td class="text-muted">{{ p.payment_date }}</td><td>{{ p.get_method_display }}</td></tr>
+            <tr><td class="fw-medium">{{ p.amount|currency }}</td><td class="text-muted" style="white-space:nowrap;">{{ p.created_at|date:"d M Y H:i" }}</td><td>{{ p.get_method_display }}</td></tr>
             {% endfor %}
           </tbody>
         </table>

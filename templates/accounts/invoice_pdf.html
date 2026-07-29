@@ -72,11 +72,18 @@ body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust
     <div>
       <div class="label">Bill To</div>
       <div class="party-text">
-        <div class="name">{{ invoice.client.name|default:"Walk-in Client" }}</div>
-        {% if invoice.client.company %}<div>{{ invoice.client.company }}</div>{% endif %}
-        {% if invoice.client.email %}<div>{{ invoice.client.email }}</div>{% endif %}
-        {% if invoice.phone %}<div>Phone: {{ invoice.phone }}</div>{% endif %}
-        {% if invoice.client.address %}<div>{{ invoice.client.address }}</div>{% endif %}
+        {% if invoice.client %}
+          <div class="name">{{ invoice.client.name }}</div>
+          {% if invoice.client.company %}<div>{{ invoice.client.company }}</div>{% endif %}
+          {% if invoice.client.email %}<div>{{ invoice.client.email }}</div>{% endif %}
+          {% if invoice.phone %}<div>Phone: {{ invoice.phone }}</div>{% endif %}
+          {% if invoice.client.address %}<div>{{ invoice.client.address }}</div>{% endif %}
+        {% elif invoice.bill_to_name %}
+          <div class="name">{{ invoice.bill_to_name }}</div>
+          {% if invoice.phone %}<div>Phone: {{ invoice.phone }}</div>{% endif %}
+        {% else %}
+          <div class="name">Walk-in Client</div>
+        {% endif %}
       </div>
     </div>
     {% if invoice.ship_to %}

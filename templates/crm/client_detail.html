@@ -10,8 +10,8 @@
         <h5 class="fw-bold mb-0">{{ client.name }}</h5>
         {% if client.company %}<div class="text-muted" style="font-size:13px;">{{ client.company }}</div>{% endif %}
         <div class="mt-2">
-          {% if client.status == 'active' %}<span class="badge bg-success">Active</span>
-          {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+          {% if client.status == 'open' or client.status == 'active' %}<span class="badge bg-success">Open</span>
+          {% else %}<span class="badge bg-secondary">Closed</span>{% endif %}
         </div>
       </div>
       <ul class="list-group list-group-flush" style="font-size:13px;">
@@ -22,13 +22,13 @@
       </ul>
       <div class="p-3 d-flex flex-column gap-2">
         <a href="{% url 'client_edit' client.pk %}" class="btn btn-primary btn-sm">Edit Client</a>
-        <a href="{% url 'client_delete' client.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete</a>
+        {% if request.user.is_superuser %}<a href="{% url 'client_delete' client.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete</a>{% endif %}
       </div>
     </div>
   </div>
   <div class="col-lg-8 d-flex flex-column gap-3">
     <div class="crm-card">
-      <div class="crm-card-header"><span class="crm-card-title">Recent Invoices</span><a href="{% url 'invoice_list' %}" class="btn btn-sm btn-outline-primary">View All</a></div>
+      <div class="crm-card-header"><span class="crm-card-title">Invoices <span class="text-muted fw-normal">({{ client.invoices.count }})</span></span><a href="{% url 'invoice_list' %}" class="btn btn-sm btn-outline-primary">View All</a></div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead><tr><th>Code</th><th>Total</th><th>Date</th><th>Status</th></tr></thead>

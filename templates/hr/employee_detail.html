@@ -6,12 +6,7 @@
   <div class="col-lg-4">
     <div class="crm-card">
       <div class="p-4 text-center border-bottom">
-        {% if employee.avatar %}
-          <img src="{{ employee.avatar.url }}" class="rounded-circle mb-3" width="70" height="70" style="object-fit:cover;">
-        {% else %}
-        {% endif %}
         <h5 class="fw-bold mb-0">{{ employee.name }}</h5>
-        {% if employee.designation %}<div class="text-muted" style="font-size:13px;">{{ employee.designation.title }}</div>{% endif %}
         <div class="mt-2 d-flex gap-1 justify-content-center flex-wrap">
           {% if employee.status == 'active' %}<span class="badge bg-success">Active</span>
           {% elif employee.status == 'on_leave' %}<span class="badge bg-warning text-dark">On Leave</span>
@@ -29,10 +24,11 @@
         {% if employee.department %}<li class="list-group-item d-flex gap-2"><i class="bi bi-building text-muted"></i>{{ employee.department.name }}</li>{% endif %}
         {% if employee.joining_date %}<li class="list-group-item d-flex gap-2"><i class="bi bi-calendar text-muted"></i>Joined {{ employee.joining_date }}</li>{% endif %}
       </ul>
+      {% if request.user.is_superuser %}
       <div class="p-3 d-flex flex-column gap-2">
         <a href="{% url 'employee_edit' employee.pk %}" class="btn btn-primary btn-sm">Edit Employee</a>
-        <a href="{% url 'employee_delete' employee.pk %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete?')">Delete</a>
       </div>
+      {% endif %}
     </div>
   </div>
   <div class="col-lg-8 d-flex flex-column gap-3">

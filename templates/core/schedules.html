@@ -5,29 +5,57 @@
 <div class="crm-card">
   <div class="crm-card-header">
     <span class="crm-card-title">All Schedules</span>
-    <a href="{% url 'schedule_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Schedule</a>
+    <div class="d-flex gap-2">
+      <form method="post" id="schedule-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
+      </form>
+      <a href="{% url 'schedule_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Schedule</a>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Title</th><th>Start</th><th>End</th><th>Location</th><th>Actions</th></tr></thead>
+      <thead><tr>{% if request.user.is_superuser %}<th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-schedules" aria-label="Select all"></th>{% endif %}<th>Title</th><th>Start</th><th>End</th><th>Location</th><th>Actions</th></tr></thead>
       <tbody>
         {% for s in schedules %}
         <tr>
+          {% if request.user.is_superuser %}<td><input type="checkbox" name="selected_schedules" value="{{ s.pk }}" class="form-check-input schedule-checkbox" form="schedule-bulk-form"></td>{% endif %}
           <td class="fw-medium">{{ s.title }}</td>
           <td class="text-muted">{{ s.start_datetime|date:"d M Y, H:i" }}</td>
           <td class="text-muted">{{ s.end_datetime|date:"d M Y, H:i" }}</td>
           <td>{{ s.location|default:"—" }}</td>
           <td>
+            <a href="{% url 'schedule_detail' s.pk %}" class="btn btn-sm btn-outline-info btn-sm-action"><i class="bi bi-eye"></i></a>
             <a href="{% url 'schedule_edit' s.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'schedule_delete' s.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" class="text-center text-muted py-5">No schedules yet.</td></tr>
+        <tr><td colspan="{% if request.user.is_superuser %}6{% else %}5{% endif %}" class="text-center text-muted py-5">No schedules yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% include 'includes/pagination.html' with page_obj=schedules %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-schedules');
+  const checkboxes = document.querySelectorAll('.schedule-checkbox');
+  const bulkForm = document.getElementById('schedule-bulk-form');
+  selectAll?.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+  });
+  bulkForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var selected = document.querySelectorAll('.schedule-checkbox:checked').length;
+    if (!selected) { alert('Select at least one schedule.'); return; }
+    if (!confirm('Delete selected schedules?')) return;
+    bulkForm.submit();
+  });
+});
+</script>
 {% endblock %}

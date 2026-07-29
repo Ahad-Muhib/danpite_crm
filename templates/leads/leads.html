@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load crm_tags %}
 {% block title %}Lead Contacts{% endblock %}
 {% block page_title %}Lead Contacts{% endblock %}
 {% block content %}
@@ -47,15 +48,16 @@
       <thead>
         <tr>
           <th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-leads" aria-label="Select all"></th>
-          <th>ID</th>
-          <th>Contact Name</th>
+          <th><div class="dropdown th-dropdown">ID <button class="btn btn-sm dropdown-btn p-0" data-bs-toggle="dropdown"><i class="bi {% if sort_by == 'id' and sort_order == 'asc' %}bi-sort-up{% elif sort_by == 'id' and sort_order == 'desc' %}bi-sort-down{% else %}bi-arrow-down-up{% endif %}"></i></button><ul class="dropdown-menu"><li><a class="dropdown-item small" href="?{% url_replace sort='id' order='asc' %}">Sort Ascending</a></li><li><a class="dropdown-item small" href="?{% url_replace sort='id' order='desc' %}">Sort Descending</a></li></ul></div></th>
+          <th><div class="dropdown th-dropdown">Contact Name <button class="btn btn-sm dropdown-btn p-0" data-bs-toggle="dropdown"><i class="bi {% if sort_by == 'name' and sort_order == 'asc' %}bi-sort-up{% elif sort_by == 'name' and sort_order == 'desc' %}bi-sort-down{% else %}bi-arrow-down-up{% endif %}"></i></button><ul class="dropdown-menu"><li><a class="dropdown-item small" href="?{% url_replace sort='name' order='asc' %}">Sort Ascending</a></li><li><a class="dropdown-item small" href="?{% url_replace sort='name' order='desc' %}">Sort Descending</a></li></ul></div></th>
           <th>Phone</th>
           <th>Email</th>
+          <th>Types</th>
           <th>Source</th>
           <th>State</th>
           <th>Status</th>
           <th>Budget</th>
-          <th>Follow-up</th>
+          <th><div class="dropdown th-dropdown">Follow-up <button class="btn btn-sm dropdown-btn p-0" data-bs-toggle="dropdown"><i class="bi {% if sort_by == 'next_followup_date' and sort_order == 'asc' %}bi-sort-up{% elif sort_by == 'next_followup_date' and sort_order == 'desc' %}bi-sort-down{% else %}bi-arrow-down-up{% endif %}"></i></button><ul class="dropdown-menu"><li><a class="dropdown-item small" href="?{% url_replace sort='next_followup_date' order='asc' %}">Sort Ascending</a></li><li><a class="dropdown-item small" href="?{% url_replace sort='next_followup_date' order='desc' %}">Sort Descending</a></li></ul></div></th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -81,6 +83,7 @@
           </td>
           <td>{{ l.phone|default:"—" }}</td>
           <td class="text-muted">{{ l.email|default:"—" }}</td>
+          <td><span class="badge {% if l.contact_type == 'hot' %}bg-danger{% elif l.contact_type == 'cold' %}bg-info{% elif l.contact_type == 'mid' %}bg-warning text-dark{% else %}bg-light text-dark{% endif %}">{{ l.get_contact_type_display|default:"—" }}</span></td>
           <td><span class="badge bg-light text-dark border">{{ l.lead_source_label }}</span></td>
           <td>
             <select class="form-select state-select" data-pk="{{ l.pk }}" style="width:110px;font-size:13px;padding:4px 8px;">
@@ -124,7 +127,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="11" class="text-center text-muted py-5">No leads found.</td></tr>
+        <tr><td colspan="12" class="text-center text-muted py-5">No leads found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

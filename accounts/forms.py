@@ -7,52 +7,39 @@ from .models import BankAccount, Expense, Invoice, InvoiceItem, Payment, CURRENC
 
 
 class InvoiceForm(forms.ModelForm):
-    client = forms.ModelChoiceField(
-        queryset=Client.objects.all().order_by('name'),
-        required=False,
-        empty_label='— Select Client —',
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_client_select'}),
-        label='Client',
-    )
-    client_name = forms.CharField(
-        max_length=200, required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_client_name', 'placeholder': 'Type client name... (for new clients)'}),
-        label='New Client Name',
-    )
-
     class Meta:
         model = Invoice
         fields = [
-            'logo', 'currency', 'bill_from', 'phone', 'ship_to',
-            'project', 'total', 'tax', 'discount', 'shipping',
-            'invoice_date', 'due_date', 'payment_terms', 'po_number',
-            'status', 'notes', 'received_payment',
+            'logo', 'currency', 'bill_from_company', 'bill_from_address', 'bill_from_phone',
+            'bill_to_name', 'phone', 'ship_to',
+            'total', 'tax', 'discount', 'shipping',
+            'invoice_date', 'delivery_date',
+            'status', 'notes', 'terms', 'received_payment',
         ]
         widgets = {
             'logo': forms.FileInput(attrs={'class': 'form-control', 'id': 'id_logo', 'accept': 'image/png,image/jpeg,image/webp,image/svg+xml'}),
             'currency': forms.Select(attrs={'class': 'form-select', 'id': 'id_currency'}),
-            'bill_from': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Your company\u200b\nAddress\u200b\nEmail / Phone', 'id': 'id_bill_from'}),
+            'bill_from_company': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_bill_from_company', 'placeholder': 'Your company name'}),
+            'bill_from_address': forms.Textarea(attrs={'class': 'form-control', 'id': 'id_bill_from_address', 'rows': 2, 'placeholder': 'Address'}),
+            'bill_from_phone': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_bill_from_phone', 'placeholder': 'Phone number'}),
+            'bill_to_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_bill_to_name', 'placeholder': 'Type client name...'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_phone', 'placeholder': 'Phone number'}),
             'ship_to': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Optional shipping address'}),
-            'project': forms.TextInput(attrs={'class': 'form-control'}),
             'total': forms.HiddenInput(attrs={'id': 'id_total'}),
             'tax': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_tax', 'min': '0', 'step': '0.01', 'value': '0'}),
             'discount': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_discount', 'min': '0', 'step': '0.01', 'value': '0'}),
             'shipping': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_shipping', 'min': '0', 'step': '0.01', 'value': '0'}),
-            'invoice_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'due_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'payment_terms': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'NET 30'}),
-            'po_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'invoice_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'id': 'id_invoice_date'}),
+            'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'id': 'id_delivery_date'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Any relevant information not already covered'}),
+            'notes': forms.HiddenInput(attrs={'id': 'id_notes'}),
+            'terms': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Terms and conditions...', 'style': 'border:1px solid #d1d5db;border-radius:4px;padding:7px 8px;font:inherit;font-size:13px;width:100%;resize:vertical;'}),
             'received_payment': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, **kwargs):
         instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
-        if instance and instance.client:
-            self.fields['client'].initial = instance.client
         self.fields['amount_paid'] = forms.DecimalField(
             max_digits=12, decimal_places=2, required=False, initial=0,
             widget=forms.NumberInput(attrs={
@@ -65,24 +52,37 @@ class InvoiceForm(forms.ModelForm):
             from django.db.models import Sum
             paid = instance.payments.aggregate(s=Sum('amount'))['s'] or 0
             self.fields['amount_paid'].initial = paid
-        for f in ('tax', 'discount', 'shipping', 'total', 'status', 'currency',
-                   'phone', 'ship_to', 'project', 'payment_terms', 'po_number', 'notes'):
+        for f in self.fields:
             self.fields[f].required = False
         self.fields['tax'].initial = 0
         self.fields['discount'].initial = 0
         self.fields['shipping'].initial = 0
         self.fields['total'].initial = 0
         self.fields['status'].initial = 'draft'
-        self.fields['currency'].initial = 'USD'
-        self.fields['invoice_date'].required = True
-        self.fields['bill_from'].required = True
+        self.fields['currency'].initial = 'BDT'
+
+
+class BaseInvoiceItemForm(forms.ModelForm):
+    class Meta:
+        model = InvoiceItem
+        fields = ['description', 'quantity', 'unit_price']
+        widgets = {
+            'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Description of item/service...'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control item-qty', 'min': '0', 'step': 'any'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'form-control item-rate', 'min': '0', 'step': '0.01'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for f in self.fields:
+            self.fields[f].required = False
 
 
 class BaseInvoiceItemFormSet(forms.BaseInlineFormSet):
     def clean(self):
         super().clean()
         for form in self.forms:
-            if not form.instance.pk:
+            if not form.instance or not form.instance.pk:
                 desc = (form.cleaned_data.get('description') or '').strip() if form.cleaned_data else ''
                 qty = form.cleaned_data.get('quantity') if form.cleaned_data else None
                 rate = form.cleaned_data.get('unit_price') if form.cleaned_data else None
@@ -94,14 +94,10 @@ class BaseInvoiceItemFormSet(forms.BaseInlineFormSet):
 InvoiceItemFormSet = inlineformset_factory(
     Invoice, InvoiceItem,
     formset=BaseInvoiceItemFormSet,
+    form=BaseInvoiceItemForm,
     fields=['description', 'quantity', 'unit_price'],
-    extra=3,
+    extra=1,
     can_delete=True,
-    widgets={
-        'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Description of item/service...'}),
-        'quantity': forms.NumberInput(attrs={'class': 'form-control item-qty', 'min': '0', 'step': 'any'}),
-        'unit_price': forms.NumberInput(attrs={'class': 'form-control item-rate', 'min': '0', 'step': '0.01'}),
-    }
 )
 
 
