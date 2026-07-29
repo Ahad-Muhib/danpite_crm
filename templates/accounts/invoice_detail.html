@@ -5,7 +5,7 @@
 {% block content %}
 <style>
 :root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff}
-.invoice-box{width:min(960px,calc(100% - 36px));margin:14px auto 40px;background:var(--paper);padding:54px;box-shadow:0 4px 24px #00000012;border-radius:10px}
+.invoice-box{width:100%;margin:14px auto 40px;background:var(--paper);padding:54px;box-shadow:0 4px 24px #00000012;border-radius:10px}
 .top{display:grid;grid-template-columns:1.35fr .8fr;gap:60px}
 .logo-area{width:160px;min-height:80px;margin-bottom:20px;display:flex;align-items:center;justify-content:center}
 .logo-area img{max-width:150px;max-height:90px;object-fit:contain}
@@ -177,7 +177,7 @@
           <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-check-circle me-1"></i>Mark as Paid</button>
         </form>
         {% endif %}
-        <a href="{% url 'payment_create' %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-cash me-1"></i>Record Payment</a>
+        <a href="{% url 'payment_create' %}?invoice={{ invoice.pk }}&client_name={% if invoice.client %}{{ invoice.client.name }}{% else %}{{ invoice.bill_to_name }}{% endif %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-cash me-1"></i>Record Payment</a>
       </div>
     </div>
     {% if payments %}
@@ -185,10 +185,15 @@
       <div class="crm-card-header" style="border-left:3px solid #dc3545;"><span class="crm-card-title">Payment History</span></div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead><tr><th>Amount</th><th>Date</th><th>Method</th></tr></thead>
+          <thead><tr><th>Amount</th><th>Date</th><th>Method</th><th>Bank Account</th></tr></thead>
           <tbody>
             {% for p in payments %}
-            <tr><td class="fw-medium">{{ p.amount|currency }}</td><td class="text-muted" style="white-space:nowrap;">{{ p.created_at|date:"d M Y H:i" }}</td><td>{{ p.get_method_display }}</td></tr>
+            <tr>
+              <td class="fw-medium">{{ p.amount|currency }}</td>
+              <td class="text-muted" style="white-space:nowrap;">{{ p.created_at|date:"d M Y H:i" }}</td>
+              <td>{{ p.get_method_display }}</td>
+              <td>{% if p.account %}{{ p.account.display_name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>

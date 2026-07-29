@@ -59,7 +59,7 @@ def employee_edit(request, pk):
         messages.error(request, 'Only superusers can edit employees.')
         return redirect('employee_list')
     obj = get_object_or_404(Employee, pk=pk)
-    form = EmployeeForm(request.POST or None, request.FILES or None, instance=obj)
+    form = EmployeeForm(request.POST or None, request.FILES or None, instance=obj, request_user=request.user)
     if form.is_valid():
         obj = form.save()
         log_action(request, 'update', 'Employee', obj)

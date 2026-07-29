@@ -1,53 +1,139 @@
 {% extends 'base.html' %}
-{% block title %}Bank Accounts{% endblock %}
-{% block page_title %}Bank Accounts{% endblock %}
+{% load crm_tags %}
+{% block title %}Accounts{% endblock %}
+{% block page_title %}Accounts{% endblock %}
 {% block content %}
 <div class="crm-card">
-  <div class="crm-card-header">
-    <span class="crm-card-title">Bank Accounts</span>
-    <div class="d-flex gap-2 align-items-center">
-      <form method="get" class="d-flex gap-2 align-items-center">
-        <select name="status" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
-          <option value="">All Status</option>
-          <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
-          <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
-        </select>
+  <div class="crm-card-header flex-wrap gap-2">
+    <form class="d-flex gap-2 search-form flex-wrap" method="get" id="account-filter-form">
+      <select name="category" class="form-select form-select-sm" style="width:150px;">
+        <option value="">All Categories</option>
+        <option value="bank" {% if category == 'bank' %}selected{% endif %}>Bank Transfer</option>
+        <option value="bkash" {% if category == 'bkash' %}selected{% endif %}>bKash</option>
+        <option value="nagad" {% if category == 'nagad' %}selected{% endif %}>Nagad</option>
+        <option value="rocket" {% if category == 'rocket' %}selected{% endif %}>Rocket</option>
+        <option value="card" {% if category == 'card' %}selected{% endif %}>Card</option>
+      </select>
+      <select name="status" class="form-select form-select-sm" style="width:120px;">
+        <option value="">All Status</option>
+        <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search..." style="width:240px;">
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search me-1"></i>Filter</button>
+      {% if q or status or category %}
+      <a href="{% url 'bank_account_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>
+      {% endif %}
+    </form>
+    <div class="d-flex gap-2">
+      <form method="post" id="account-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" id="bulk-action-input" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
       </form>
-      <a href="{% url 'bank_account_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Bank Account</a>
+      <a href="{% url 'bank_account_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Account</a>
     </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Bank Name</th><th>Account Name</th><th>Account Number</th><th>Type</th><th>Branch</th><th>Opening Balance</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead>
+        <tr>
+          <th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-accounts" aria-label="Select all"></th>
+          <th>Category</th>
+          <th><div class="dropdown th-dropdown">Bank Name <button class="btn btn-sm dropdown-btn p-0" data-bs-toggle="dropdown"><i class="bi {% if sort_by == 'bank_name' and sort_order == 'asc' %}bi-sort-up{% elif sort_by == 'bank_name' and sort_order == 'desc' %}bi-sort-down{% else %}bi-arrow-down-up{% endif %}"></i></button><ul class="dropdown-menu"><li><a class="dropdown-item small" href="?{% url_replace sort='bank_name' order='asc' %}">Sort Ascending</a></li><li><a class="dropdown-item small" href="?{% url_replace sort='bank_name' order='desc' %}">Sort Descending</a></li></ul></div></th>
+          <th><div class="dropdown th-dropdown">Name <button class="btn btn-sm dropdown-btn p-0" data-bs-toggle="dropdown"><i class="bi {% if sort_by == 'account_name' and sort_order == 'asc' %}bi-sort-up{% elif sort_by == 'account_name' and sort_order == 'desc' %}bi-sort-down{% else %}bi-arrow-down-up{% endif %}"></i></button><ul class="dropdown-menu"><li><a class="dropdown-item small" href="?{% url_replace sort='account_name' order='asc' %}">Sort Ascending</a></li><li><a class="dropdown-item small" href="?{% url_replace sort='account_name' order='desc' %}">Sort Descending</a></li></ul></div></th>
+          <th>Number</th>
+          <th>Status</th>
+          <th><div class="dropdown th-dropdown">Opening Balance <button class="btn btn-sm dropdown-btn p-0" data-bs-toggle="dropdown"><i class="bi {% if sort_by == 'opening_balance' and sort_order == 'asc' %}bi-sort-up{% elif sort_by == 'opening_balance' and sort_order == 'desc' %}bi-sort-down{% else %}bi-arrow-down-up{% endif %}"></i></button><ul class="dropdown-menu"><li><a class="dropdown-item small" href="?{% url_replace sort='opening_balance' order='asc' %}">Sort Ascending</a></li><li><a class="dropdown-item small" href="?{% url_replace sort='opening_balance' order='desc' %}">Sort Descending</a></li></ul></div></th>
+          <th>Available Balance</th>
+          <th>Details</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for a in accounts %}
         <tr>
-          <td class="fw-medium">{{ a.bank_name }}</td>
-          <td>{{ a.account_name }}</td>
-          <td><code>{{ a.account_number }}</code></td>
-          <td><span class="badge bg-light text-dark border">{{ a.get_account_type_display }}</span></td>
-          <td>{{ a.branch|default:"—" }}</td>
-          <td class="fw-medium">{{ a.opening_balance }}</td>
+          <td><input type="checkbox" name="selected_accounts" value="{{ a.pk }}" class="form-check-input account-checkbox" form="account-bulk-form"></td>
+          <td><span class="badge bg-light text-dark">{% if a.category == 'bank' %}Bank{% elif a.category == 'bkash' %}bKash{% elif a.category == 'nagad' %}Nagad{% elif a.category == 'rocket' %}Rocket{% elif a.category == 'card' %}Card{% endif %}</span></td>
+          <td>{% if a.category == 'bank' %}{{ a.bank_name }}{% endif %}</td>
+          <td class="fw-medium">{% if a.category == 'bank' %}{{ a.account_name }}{% elif a.category in 'bkash,nagad,rocket' %}{{ a.holder_name }}{% elif a.category == 'card' %}{{ a.card_holder }}{% endif %}</td>
+          <td><code>{% if a.category == 'bank' %}{{ a.account_number }}{% elif a.category in 'bkash,nagad,rocket' %}{{ a.mobile_number }}{% elif a.category == 'card' %}{{ a.card_number }}{% endif %}</code></td>
           <td>
-            <form method="post" action="{% url 'bank_account_toggle' a.pk %}" class="d-inline">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm {% if a.is_active %}btn-success{% else %}btn-secondary{% endif %}" title="Click to toggle status">
+            <div class="dropdown">
+              <button class="btn btn-sm dropdown-toggle {% if a.is_active %}btn-success{% else %}btn-secondary{% endif %}" data-bs-toggle="dropdown" data-bs-boundary="window">
                 {% if a.is_active %}Active{% else %}Inactive{% endif %}
               </button>
-            </form>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item status-option" data-pk="{{ a.pk }}" data-value="1" href="#">Active</a></li>
+                <li><a class="dropdown-item status-option" data-pk="{{ a.pk }}" data-value="0" href="#">Inactive</a></li>
+              </ul>
+            </div>
           </td>
+          <td>{{ a.opening_balance }}</td>
+          <td class="fw-medium">{{ a.available_balance }}</td>
+          <td>{{ a.details|default:"—"|truncatewords:8 }}</td>
           <td>
-            <a href="{% url 'bank_account_detail' a.pk %}" class="btn btn-sm btn-outline-info btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
-            <a href="{% url 'bank_account_edit' a.pk %}" class="btn btn-sm btn-outline-warning btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'bank_account_delete' a.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')" title="Delete"><i class="bi bi-trash"></i></a>
+            <a href="{% url 'bank_account_detail' a.pk %}" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'bank_account_edit' a.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" class="text-center text-muted py-5">No bank accounts added.</td></tr>
+        <tr><td colspan="10" class="text-center text-muted py-5">No accounts found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% include 'includes/pagination.html' with page_obj=accounts %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-accounts');
+  const checkboxes = document.querySelectorAll('.account-checkbox');
+  const filterForm = document.getElementById('account-filter-form');
+  const statusFilter = filterForm?.querySelector('select[name="status"]');
+  const categoryFilter = filterForm?.querySelector('select[name="category"]');
+  const bulkForm = document.getElementById('account-bulk-form');
+
+  statusFilter?.addEventListener('change', () => filterForm.submit());
+  categoryFilter?.addEventListener('change', () => filterForm.submit());
+
+  selectAll?.addEventListener('change', () => {
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+  });
+
+  bulkForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const selected = document.querySelectorAll('.account-checkbox:checked').length;
+    if (!selected) { alert('Select at least one account.'); return; }
+    if (!confirm('Delete selected accounts?')) return;
+    bulkForm.submit();
+  });
+
+  document.querySelectorAll('.status-option').forEach(el => {
+    el.addEventListener('click', function(e) {
+      e.preventDefault();
+      const pk = this.dataset.pk;
+      const val = this.dataset.value;
+      const btn = this.closest('.dropdown').querySelector('.dropdown-toggle');
+      const fd = new FormData();
+      fd.append('is_active', val);
+      fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+      fetch("{% url 'bank_account_update_status' 0 %}".replace('/0/', '/' + pk + '/'), {
+        method: 'POST', body: fd,
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+      }).then(r => r.json()).then(data => {
+        if (data.ok) {
+          btn.textContent = this.textContent;
+          btn.className = 'btn btn-sm dropdown-toggle ' + (val === '1' ? 'btn-success' : 'btn-secondary');
+        } else {
+          alert('Failed to update status.');
+        }
+      });
+    });
+  });
+});
+</script>
 {% endblock %}

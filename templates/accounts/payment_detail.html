@@ -3,7 +3,7 @@
 {% block title %}Payment #{{ payment.pk }}{% endblock %}
 {% block page_title %}Payment Details{% endblock %}
 {% block content %}
-<div class="crm-card" style="max-width:680px;">
+<div class="crm-card">
   <div class="crm-card-header">
       <span class="crm-card-title">Payment #{{ payment.pk }}{% if payment.updated_by %} <span class="badge bg-danger" title="Edited by {{ payment.updated_by.username }}" style="font-size:10px;">E</span>{% endif %}</span>
     <div class="d-flex gap-2">
@@ -32,6 +32,10 @@
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Method</label>
         <div><span class="badge bg-light text-dark border">{{ payment.get_method_display }}</span></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Bank Account</label>
+        <div>{% if payment.account %}{{ payment.account.display_name }}{% else %}—{% endif %}</div>
       </div>
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Reference</label>

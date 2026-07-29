@@ -1,3 +1,5 @@
+from datetime import date
+
 from django import forms
 from django.forms import inlineformset_factory
 
@@ -10,18 +12,13 @@ class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
         fields = [
-            'logo', 'currency', 'bill_from_company', 'bill_from_address', 'bill_from_phone',
-            'bill_to_name', 'phone', 'ship_to',
+            'currency', 'bill_to_name', 'phone', 'ship_to',
             'total', 'tax', 'discount', 'shipping',
             'invoice_date', 'delivery_date',
             'status', 'notes', 'terms', 'received_payment',
         ]
         widgets = {
-            'logo': forms.FileInput(attrs={'class': 'form-control', 'id': 'id_logo', 'accept': 'image/png,image/jpeg,image/webp,image/svg+xml'}),
             'currency': forms.Select(attrs={'class': 'form-select', 'id': 'id_currency'}),
-            'bill_from_company': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_bill_from_company', 'placeholder': 'Your company name'}),
-            'bill_from_address': forms.Textarea(attrs={'class': 'form-control', 'id': 'id_bill_from_address', 'rows': 2, 'placeholder': 'Address'}),
-            'bill_from_phone': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_bill_from_phone', 'placeholder': 'Phone number'}),
             'bill_to_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_bill_to_name', 'placeholder': 'Type client name...'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_phone', 'placeholder': 'Phone number'}),
             'ship_to': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Optional shipping address'}),
@@ -33,7 +30,7 @@ class InvoiceForm(forms.ModelForm):
             'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'id': 'id_delivery_date'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'notes': forms.HiddenInput(attrs={'id': 'id_notes'}),
-            'terms': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Terms and conditions...', 'style': 'border:1px solid #d1d5db;border-radius:4px;padding:7px 8px;font:inherit;font-size:13px;width:100%;resize:vertical;'}),
+            'terms': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_terms', 'placeholder': 'Terms and conditions...', 'list': 'terms-list', 'style': 'border:1px solid #d1d5db;border-radius:4px;padding:7px 8px;font:inherit;font-size:13px;width:100%;'}),
             'received_payment': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -60,6 +57,8 @@ class InvoiceForm(forms.ModelForm):
         self.fields['total'].initial = 0
         self.fields['status'].initial = 'draft'
         self.fields['currency'].initial = 'BDT'
+        self.fields['invoice_date'].initial = date.today()
+        self.fields['terms'].initial = 'Each payment are non refundable at any circumstance'
 
 
 class BaseInvoiceItemForm(forms.ModelForm):
@@ -106,9 +105,10 @@ class PaymentForm(forms.ModelForm):
 
     class Meta:
         model = Payment
-        fields = ['invoice', 'amount', 'payment_date', 'method', 'reference', 'notes']
+        fields = ['invoice', 'account', 'amount', 'payment_date', 'method', 'reference', 'notes']
         widgets = {
             'invoice': forms.Select(attrs={'class': 'form-select'}),
+            'account': forms.Select(attrs={'class': 'form-select'}),
             'amount': forms.NumberInput(attrs={'class': 'form-control'}),
             'payment_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'method': forms.Select(attrs={'class': 'form-select'}),
@@ -126,12 +126,13 @@ class PaymentForm(forms.ModelForm):
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
-        fields = ['title', 'category', 'amount', 'expense_date', 'description', 'receipt']
+        fields = ['title', 'category', 'amount', 'expense_date', 'bank_account', 'description', 'receipt']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
             'amount': forms.NumberInput(attrs={'class': 'form-control'}),
             'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'bank_account': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'receipt': forms.FileInput(attrs={'class': 'form-control'}),
         }
@@ -140,14 +141,23 @@ class ExpenseForm(forms.ModelForm):
 class BankAccountForm(forms.ModelForm):
     class Meta:
         model = BankAccount
-        fields = ['bank_name', 'account_name', 'account_number', 'account_type', 'branch', 'routing_number', 'opening_balance', 'is_active']
+        fields = ['category', 'bank_name', 'account_name', 'account_number', 'account_type', 'branch', 'routing_number', 'mobile_number', 'holder_name', 'mobile_type', 'card_number', 'card_holder', 'card_type', 'card_bank', 'opening_balance', 'details', 'is_active']
         widgets = {
-            'bank_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'account_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'account_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'account_type': forms.Select(attrs={'class': 'form-select'}),
-            'branch': forms.TextInput(attrs={'class': 'form-control'}),
-            'routing_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'opening_balance': forms.NumberInput(attrs={'class': 'form-control'}),
+            'category': forms.Select(attrs={'class': 'form-select', 'id': 'id_category'}),
+            'bank_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_bank_name'}),
+            'account_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_account_name'}),
+            'account_number': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_account_number'}),
+            'account_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_account_type'}),
+            'branch': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_branch'}),
+            'routing_number': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_routing_number'}),
+            'mobile_number': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_mobile_number'}),
+            'holder_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_holder_name'}),
+            'mobile_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_mobile_type'}),
+            'card_number': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_card_number'}),
+            'card_holder': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_card_holder'}),
+            'card_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_card_type'}),
+            'card_bank': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_card_bank'}),
+            'opening_balance': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_opening_balance'}),
+            'details': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Additional details...'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

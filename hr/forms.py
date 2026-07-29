@@ -37,12 +37,21 @@ class EmployeeForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        request_user = kwargs.pop('request_user', None)
         instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
+        is_admin_user = request_user and (
+            request_user.is_superuser
+            or getattr(getattr(request_user, 'employee_profile', None), 'role', None) == 'admin'
+        )
         if instance and instance.user:
             self.fields['create_login'].initial = True
             self.fields['create_login'].widget.attrs['disabled'] = True
-            self.fields['login_password'].widget.attrs['disabled'] = True
+            if not is_admin_user:
+                self.fields['login_password'].widget.attrs['disabled'] = True
+            else:
+                self.fields['login_password'].widget.attrs.pop('disabled', None)
+                self.fields['login_password'].help_text = 'Leave blank to keep current password.'
         base_choices = [('', '-- Select Role --')]
         hardcoded = [
             ('employee', 'Employee'), ('manager', 'Manager'),
@@ -75,6 +84,9 @@ class EmployeeForm(forms.ModelForm):
                 instance.user = user
                 instance.save()
                 instance._raw_password = raw_password
+            elif instance.user and self.cleaned_data.get('login_password'):
+                instance.user.set_password(self.cleaned_data['login_password'])
+                instance.user.save()
         return instance
 
 

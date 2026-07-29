@@ -8,9 +8,9 @@
     <form class="d-flex gap-2 search-form flex-wrap" method="get">
       <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search clients..." style="width:200px;">
       <select name="status" class="form-select form-select-sm" style="width:140px;">
-        <option value="">All States</option>
-        <option value="open" {% if status == 'open' %}selected{% endif %}>Open</option>
-        <option value="closed" {% if status == 'closed' %}selected{% endif %}>Closed</option>
+        <option value="">All Status</option>
+        <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
       </select>
       <button class="btn btn-sm btn-outline-secondary">Filter</button>
       {% if q or status %}
@@ -35,7 +35,7 @@
           {% if request.user.is_superuser %}<th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-clients" aria-label="Select all"></th>{% endif %}
           <th><div class="dropdown th-dropdown">Client ID <button class="btn btn-sm dropdown-btn p-0" data-bs-toggle="dropdown"><i class="bi {% if sort_by == 'id' and sort_order == 'asc' %}bi-sort-up{% elif sort_by == 'id' and sort_order == 'desc' %}bi-sort-down{% else %}bi-arrow-down-up{% endif %}"></i></button><ul class="dropdown-menu"><li><a class="dropdown-item small" href="?{% url_replace sort='id' order='asc' %}">Sort Ascending</a></li><li><a class="dropdown-item small" href="?{% url_replace sort='id' order='desc' %}">Sort Descending</a></li></ul></div></th>
           <th><div class="dropdown th-dropdown">Name <button class="btn btn-sm dropdown-btn p-0" data-bs-toggle="dropdown"><i class="bi {% if sort_by == 'name' and sort_order == 'asc' %}bi-sort-up{% elif sort_by == 'name' and sort_order == 'desc' %}bi-sort-down{% else %}bi-arrow-down-up{% endif %}"></i></button><ul class="dropdown-menu"><li><a class="dropdown-item small" href="?{% url_replace sort='name' order='asc' %}">Sort Ascending</a></li><li><a class="dropdown-item small" href="?{% url_replace sort='name' order='desc' %}">Sort Descending</a></li></ul></div></th>
-          <th>Email</th><th>Mobile</th><th>Category</th><th>State</th><th>Since</th><th>Actions</th>
+          <th>Email</th><th>Mobile</th><th>Category</th><th>Status</th><th>Since</th><th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -53,10 +53,15 @@
           <td class="text-muted">{{ c.mobile|default:c.phone|default:"—" }}</td>
           <td>{{ c.get_category_display|default:"—" }}</td>
           <td>
-            <select class="form-select state-select" data-pk="{{ c.pk }}" style="width:100px;font-size:13px;padding:4px 8px;">
-              <option value="open" {% if c.status == 'open' %}selected{% endif %}>Open</option>
-              <option value="closed" {% if c.status == 'closed' %}selected{% endif %}>Closed</option>
-            </select>
+            <div class="dropdown">
+              <button class="btn btn-sm dropdown-toggle {% if c.status == 'active' %}btn-success{% else %}btn-secondary{% endif %}" data-bs-toggle="dropdown" data-bs-boundary="window">
+                {% if c.status == 'active' %}Active{% else %}Inactive{% endif %}
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item status-option" data-pk="{{ c.pk }}" data-value="active" href="#">Active</a></li>
+                <li><a class="dropdown-item status-option" data-pk="{{ c.pk }}" data-value="inactive" href="#">Inactive</a></li>
+              </ul>
+            </div>
           </td>
           <td class="text-muted">{{ c.created_at|date:"d M Y" }}</td>
           <td>
@@ -92,19 +97,26 @@ document.addEventListener('DOMContentLoaded', function() {
     bulkForm.submit();
   });
 
-  // State inline dropdown
-  document.querySelectorAll('.state-select').forEach(sel => {
-    sel.addEventListener('change', function() {
+  // Status inline dropdown
+  document.querySelectorAll('.status-option').forEach(el => {
+    el.addEventListener('click', function(e) {
+      e.preventDefault();
       const pk = this.dataset.pk;
-      const val = this.value;
+      const val = this.dataset.value;
+      const btn = this.closest('.dropdown').querySelector('.dropdown-toggle');
       const fd = new FormData();
-      fd.append('state', val);
+      fd.append('status', val);
       fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
       fetch(`/clients/${pk}/update-state/`, {
         method: 'POST', body: fd,
         headers: {'X-Requested-With': 'XMLHttpRequest'}
       }).then(r => r.json()).then(data => {
-        if (!data.ok) alert('Failed to update state.');
+        if (data.ok) {
+          btn.textContent = this.textContent;
+          btn.className = 'btn btn-sm dropdown-toggle ' + (val === 'active' ? 'btn-success' : 'btn-secondary');
+        } else {
+          alert('Failed to update status.');
+        }
       });
     });
   });

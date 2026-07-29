@@ -2,7 +2,7 @@
 {% block title %}{{ expense.title }}{% endblock %}
 {% block page_title %}Expense Details{% endblock %}
 {% block content %}
-<div class="crm-card" style="max-width:680px;">
+<div class="crm-card">
   <div class="crm-card-header">
     <span class="crm-card-title">{{ expense.title }}</span>
     <div class="d-flex gap-2">
@@ -35,6 +35,10 @@
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Receipt</label>
         <div>{% if expense.receipt %}<a href="{{ expense.receipt.url }}" class="text-primary text-decoration-none" target="_blank">View Receipt</a>{% else %}—{% endif %}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Bank Account</label>
+        <div>{% if expense.bank_account %}{{ expense.bank_account.display_name }}{% else %}—{% endif %}</div>
       </div>
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Added By</label>

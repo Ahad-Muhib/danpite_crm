@@ -12,13 +12,8 @@
 .field:hover,.field:focus{border-color:var(--line);outline:none}
 textarea.field{resize:vertical}
 select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor:pointer}
-.top{display:grid;grid-template-columns:1.35fr .8fr;gap:60px}
-.logo-upload{width:160px;min-height:100px;border:1px dashed var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:20px;position:relative;overflow:hidden;background:#fff;cursor:pointer}
-.logo-upload:hover{border-color:#9ca3af;background:#fafafa}
-.logo-upload img{display:none;max-width:150px;max-height:90px;object-fit:contain;padding:5px}
-.logo-placeholder{text-align:center;padding:16px;font-size:13px}
-.logo-upload input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
-.logo-remove{display:none;background:transparent;color:#6b7280;border:0;padding:0 0 12px;font-size:12px;font-weight:600;cursor:pointer}
+.top{display:grid;grid-template-columns:1fr 1fr;gap:60px}
+
 .title{text-align:right;font-size:34px;font-weight:700;margin-bottom:6px}
 .number{display:flex;justify-content:flex-end;align-items:center;gap:4px}
 .parties{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:26px}
@@ -51,9 +46,15 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
   .title{text-align:left}.number{justify-content:flex-start}
   .items{overflow-x:auto}.items-head,.item{min-width:690px}
 }
+.acct-dropdown{position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.acct-dropdown-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #f3f4f6}
+.acct-dropdown-item:last-child{border-bottom:0}
+.acct-dropdown-item:hover{background:#f0fdf4}
+.acct-dropdown-item .acct-num{font-weight:600;font-size:13px}
+.acct-dropdown-item .acct-detail{font-size:11px;color:#6b7280}
 </style>
 
-<div class="inv-wrap" style="width:min(960px,calc(100% - 36px));margin:14px auto 40px;background:var(--paper);padding:54px;box-shadow:0 4px 24px #00000012;border-radius:10px;">
+<div class="inv-wrap" style="width:100%;margin:14px auto 40px;background:var(--paper);padding:54px;box-shadow:0 4px 24px #00000012;border-radius:10px;">
   <form method="post" id="invoice-form" enctype="multipart/form-data">
     {% csrf_token %}
 
@@ -69,50 +70,28 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
 
     <section class="top">
       <div>
-        <label class="logo-upload" id="logoUploadBox" title="Click to upload your logo">
-          {% if form.instance and form.instance.logo %}
-          <img id="logoPreview" src="{{ form.instance.logo.url }}" alt="Company logo" style="display:block;">
-          {% else %}
-          <img id="logoPreview" alt="Company logo">
-          {% endif %}
-          <span class="logo-placeholder" id="logoPlaceholder">+ Add Your Logo<br><small>PNG, JPG, SVG</small></span>
-          {{ form.logo }}
-        </label>
-        <button class="logo-remove" id="removeLogo" type="button">Remove logo</button>
-
-        <div class="label">Bill From</div>
-        <div style="margin-bottom:6px;">{{ form.bill_from_company }}</div>
-        <div style="margin-bottom:6px;">{{ form.bill_from_address }}</div>
-        <div style="margin-bottom:6px;">{{ form.bill_from_phone }}</div>
-
-        <div class="parties">
-          <div>
-            <div class="label">Bill To</div>
-            <div style="margin-bottom:8px;">
-              <div class="input-group input-group-sm">
-                {{ form.bill_to_name }}
-                <button type="button" class="btn btn-outline-success" id="add-bill-to-btn" title="Add client"><i class="bi bi-plus-lg"></i></button>
-              </div>
-              <datalist id="client-list">
-                {% for c in clients %}
-                <option value="{{ c.name }}">{% endfor %}
-              </datalist>
-            </div>
-            <div>{{ form.phone }}</div>
+        <img src="{{ MEDIA_URL }}invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg" alt="Danpite" style="max-width:160px;margin-bottom:20px;">
+        <div class="label">Bill To</div>
+        <div style="margin-bottom:8px;">
+          <div class="input-group input-group-sm">
+            {{ form.bill_to_name }}
+            <button type="button" class="btn btn-outline-success" id="add-bill-to-btn" title="Add client"><i class="bi bi-plus-lg"></i></button>
           </div>
-          <div>
-            <div class="label">Ship To</div>
-            {{ form.ship_to }}
-          </div>
+          <datalist id="client-list">
+            {% for c in clients %}
+            <option value="{{ c.name }}">{% endfor %}
+          </datalist>
         </div>
+        <div style="margin-bottom:6px;">{{ form.phone }}</div>
+        <div style="margin-bottom:6px;"><label class="label">Address</label>{{ form.ship_to }}</div>
       </div>
-
       <div>
         <div class="title">INVOICE</div>
         <div class="number"><span></span><span style="font-weight:600;color:var(--ink);font-size:15px;">{% if invoice %}{{ invoice.code }}{% else %}{% endif %}</span></div>
         <div class="details">
           <div class="detail-row"><span>Date</span>{{ form.invoice_date }}</div>
           <div class="detail-row"><span>Delivery Date</span>{{ form.delivery_date }}</div>
+          <div class="detail-row balance" style="border-top:1px solid var(--line);padding-top:6px;margin-top:4px;"><span>Balance Due</span><span id="balance" class="money">৳0.00</span></div>
         </div>
       </div>
     </section>
@@ -142,6 +121,14 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
       <div>
         <div class="label">Terms & Conditions</div>
         {{ form.terms }}
+        <datalist id="terms-list">
+          <option value="Each payment are non refundable at any circumstance">
+          <option value="Payment due within 30 days of invoice date">
+          <option value="Payment due within 15 days of invoice date">
+          <option value="Payment due upon receipt">
+          <option value="Net 30">
+          <option value="Net 60">
+        </datalist>
         <div class="label" style="margin-top:16px;">Notes</div>
         <div id="quill-editor-notes" style="height:200px;background:#fff;border:1px solid #dee2e6;border-radius:6px;"></div>
         {{ form.notes }}
@@ -154,7 +141,103 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
         <div class="sum-row"><span>Shipping</span>{{ form.shipping }}</div>
         <div class="sum-row total"><span>Total</span><span id="total" class="money">৳0.00</span></div>
         <div class="sum-row"><span>Amount Paid</span>{{ form.amount_paid }}</div>
-        <div class="sum-row balance"><span>Balance Due</span><span id="balance" class="money">৳0.00</span></div>
+      </div>
+    </section>
+
+    <!-- Payment Details Box -->
+    <section class="bottom" style="margin-top:20px;border-top:1px solid var(--line);padding-top:20px;">
+      <div>
+        <div class="label" style="margin-bottom:8px;">Payment Details</div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium" style="font-size:12px;">Method</label>
+            <select name="payment_method" id="payment-method" class="form-select form-select-sm">
+              <option value="">-- Select Method --</option>
+              <option value="cash">Cash</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="bkash">bKash</option>
+              <option value="nagad">Nagad</option>
+              <option value="rocket">Rocket</option>
+              <option value="card">Card</option>
+              <option value="cheque">Cheque</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium" style="font-size:12px;">Amount</label>
+            <input type="number" name="payment_amount" id="payment-amount" class="form-control form-control-sm" step="0.01" min="0" style="background:#f9fafb;">
+          </div>
+          <!-- Bank Account (bank_transfer) -->
+          <div class="col-12" id="payment-bank-section" style="display:none;">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-medium" style="font-size:12px;">Select Bank</label>
+                <select name="payment_bank_name" id="payment-bank-name" class="form-select form-select-sm">
+                  <option value="">-- Select Bank --</option>
+                  {% for bank in banks %}
+                  <option value="{{ bank }}">{{ bank }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6" style="position:relative;">
+                <label class="form-label fw-medium" style="font-size:12px;">Account Number</label>
+                <input type="text" id="payment-account-number" class="form-control form-control-sm" placeholder="Type account number..." autocomplete="off">
+                <input type="hidden" name="payment_bank_account" id="payment-bank-account-pk">
+                <div id="acct-dropdown" class="acct-dropdown" style="display:none;"></div>
+              </div>
+            </div>
+            <div id="bank-account-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+              <div style="font-size:13px;font-weight:600;" id="bank-info-name"></div>
+              <div style="font-size:12px;color:#374151;"><span id="bank-info-holder"></span> · <span id="bank-info-type"></span></div>
+              <div style="font-size:12px;color:#6b7280;" id="bank-info-number"></div>
+            </div>
+          </div>
+          <!-- Mobile Account (bkash/nagad/rocket) -->
+          <div class="col-12" id="payment-mobile-section" style="display:none;">
+            <div class="row g-3">
+              <div class="col-md-6" style="position:relative;">
+                <label class="form-label fw-medium" style="font-size:12px;">Account Number</label>
+                <input type="text" name="payment_mobile_number" id="payment-mobile-number" class="form-control form-control-sm" placeholder="Enter number..." autocomplete="off">
+                <div id="mobile-dropdown" class="acct-dropdown" style="display:none;"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-medium" style="font-size:12px;">Account Holder Name</label>
+                <input type="text" name="payment_mobile_holder" id="payment-mobile-holder" class="form-control form-control-sm" placeholder="Auto-filled on selection...">
+              </div>
+            </div>
+            <div id="mobile-account-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+              <div style="font-size:13px;font-weight:600;" id="mobile-info-method"></div>
+              <div style="font-size:12px;color:#374151;" id="mobile-info-number"></div>
+              <div style="font-size:12px;color:#6b7280;" id="mobile-info-holder"></div>
+            </div>
+          </div>
+          <!-- Card -->
+          <div class="col-12" id="payment-card-section" style="display:none;">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-medium" style="font-size:12px;">Card Number (last 4)</label>
+                <input type="text" name="payment_card_number" class="form-control form-control-sm" placeholder="Last 4 digits" maxlength="4">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-medium" style="font-size:12px;">Card Holder</label>
+                <input type="text" name="payment_card_holder" class="form-control form-control-sm" placeholder="Name on card">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-medium" style="font-size:12px;">Reference</label>
+                <input type="text" name="payment_reference" class="form-control form-control-sm" placeholder="Transaction ID / Ref">
+              </div>
+            </div>
+          </div>
+          <!-- Cash / Cheque / Online -->
+          <div class="col-12" id="payment-other-section" style="display:none;">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-medium" style="font-size:12px;">Reference</label>
+                <input type="text" name="payment_reference" class="form-control form-control-sm" placeholder="Reference / Description">
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -206,6 +289,13 @@ function calculate(){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
+  // Direct amount paid -> payment amount sync
+  var amtPaid = document.getElementById('id_amount_paid');
+  var pmtAmt = document.getElementById('payment-amount');
+  function copyAmount() { if (pmtAmt) pmtAmt.value = amtPaid ? (amtPaid.value || '0') : '0'; }
+  if (amtPaid) { amtPaid.addEventListener('input', copyAmount); amtPaid.addEventListener('change', copyAmount); }
+  copyAmount();
+
   // Quill editor
   function makeQuill(selector, placeholder) {
     var q = new Quill(selector, {
@@ -249,7 +339,6 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('invoice-form').addEventListener('submit', function() {
     calculate();
     notesField.value = quillNotes.root.innerHTML;
-    termsField.value = quillTerms.root.innerHTML;
   });
 
   // Client autocomplete
@@ -302,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function(){
     calculate();
   });
 
-  ['id_discount','id_tax','id_shipping','id_amount_paid'].forEach(function(id){
+  ['id_discount','id_tax','id_shipping'].forEach(function(id){
     document.getElementById(id)?.addEventListener('input', calculate);
   });
 
@@ -312,35 +401,178 @@ document.addEventListener('DOMContentLoaded', function(){
     calculate();
   });
 
-  const logoInput = document.getElementById('id_logo');
-  const logoPreview = document.getElementById('logoPreview');
-  const logoPlaceholder = document.getElementById('logoPlaceholder');
-  const removeLogo = document.getElementById('removeLogo');
-  if(logoInput){
-    logoInput.addEventListener('change', function(){
-      const file = this.files && this.files[0];
-      if(!file) return;
-      if(!file.type.startsWith('image/')){ alert('Please choose an image file.'); this.value=''; return; }
-      const reader = new FileReader();
-      reader.onload = function(ev){
-        logoPreview.src = ev.target.result;
-        logoPreview.style.display = 'block';
-        logoPlaceholder.style.display = 'none';
-        removeLogo.style.display = 'inline-block';
-      };
-      reader.readAsDataURL(file);
+  // Payment method toggle
+  document.getElementById('payment-method')?.addEventListener('change', function() {
+    var val = this.value;
+    ['payment-bank-section', 'payment-mobile-section', 'payment-card-section', 'payment-other-section'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
     });
+    if (val === 'bank_transfer') {
+      document.getElementById('payment-bank-section').style.display = 'block';
+    } else if (['bkash','nagad','rocket'].includes(val)) {
+      document.getElementById('payment-mobile-section').style.display = 'block';
+    } else if (val === 'card') {
+      document.getElementById('payment-card-section').style.display = 'block';
+    } else if (['cash','cheque','online'].includes(val)) {
+      document.getElementById('payment-other-section').style.display = 'block';
+    }
+    // auto-set payment amount
+    var a = document.getElementById('id_amount_paid');
+    var p = document.getElementById('payment-amount');
+    if (a && p) p.value = a.value || '0';
+  });
+
+  // Bank cascading autocomplete
+  var bankAccounts = [];
+  var acctInput = document.getElementById('payment-account-number');
+  var bankSelect = document.getElementById('payment-bank-name');
+  var acctDropdown = document.getElementById('acct-dropdown');
+  var acctPk = document.getElementById('payment-bank-account-pk');
+  var bankInfo = document.getElementById('bank-account-info');
+
+  function showAccountInfo(acct) {
+    if (!acct) {
+      bankInfo.style.display = 'none';
+      return;
+    }
+    document.getElementById('bank-info-name').textContent = acct.account_name;
+    document.getElementById('bank-info-holder').textContent = acct.bank_name;
+    document.getElementById('bank-info-type').textContent = 'Bank';
+    document.getElementById('bank-info-number').textContent = 'A/C: ' + acct.account_number + (acct.branch ? ' · ' + acct.branch : '');
+    bankInfo.style.display = 'block';
   }
-  if(removeLogo){
-    removeLogo.addEventListener('click', function(){
-      logoInput.value = '';
-      logoPreview.removeAttribute('src');
-      logoPreview.style.display = 'none';
-      logoPlaceholder.style.display = 'block';
-      removeLogo.style.display = 'none';
+
+  function closeDropdown() {
+    acctDropdown.style.display = 'none';
+  }
+
+  function renderDropdown(matches) {
+    if (!matches || !matches.length) { closeDropdown(); return; }
+    acctDropdown.innerHTML = '';
+    matches.forEach(function(a) {
+      var item = document.createElement('div');
+      item.className = 'acct-dropdown-item';
+      item.innerHTML = '<div class="acct-num">' + a.account_number + '</div><div class="acct-detail">' + a.account_name + ' · ' + a.bank_name + (a.branch ? ' · ' + a.branch : '') + '</div>';
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        acctInput.value = a.account_number;
+        acctPk.value = a.id;
+        showAccountInfo(a);
+        closeDropdown();
+      });
+      acctDropdown.appendChild(item);
     });
+    acctDropdown.style.display = 'block';
   }
-  if(logoPreview && logoPreview.src){ removeLogo.style.display = 'inline-block'; logoPlaceholder.style.display = 'none'; }
+
+  bankSelect?.addEventListener('change', function() {
+    var bank = this.value;
+    acctInput.value = '';
+    acctPk.value = '';
+    bankInfo.style.display = 'none';
+    closeDropdown();
+    bankAccounts = [];
+    if (!bank) return;
+    fetch('/accounts/bank-accounts-by-bank/?bank_name=' + encodeURIComponent(bank))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        bankAccounts = data.accounts;
+        // If there are accounts, show all initially in dropdown
+        if (bankAccounts.length) renderDropdown(bankAccounts);
+      });
+  });
+
+  acctInput?.addEventListener('input', function() {
+    var val = this.value.trim();
+    // Check for exact match first
+    var exact = bankAccounts.find(function(a) { return a.account_number === val; });
+    if (exact) {
+      acctPk.value = exact.id;
+      showAccountInfo(exact);
+      closeDropdown();
+      return;
+    }
+    acctPk.value = '';
+    bankInfo.style.display = 'none';
+    // Show matching accounts in dropdown
+    var fuzzy = val ? bankAccounts.filter(function(a) { return a.account_number.indexOf(val) !== -1; }) : bankAccounts;
+    renderDropdown(fuzzy);
+  });
+
+  acctInput?.addEventListener('blur', function() {
+    // Delay close so mousedown on item fires first
+    setTimeout(closeDropdown, 200);
+  });
+
+  // Mobile account dropdown
+  var mobileAccounts = [];
+  var mobileInput = document.getElementById('payment-mobile-number');
+  var mobileDropdown = document.getElementById('mobile-dropdown');
+  var mobileHolder = document.getElementById('payment-mobile-holder');
+  var mobileInfo = document.getElementById('mobile-account-info');
+
+  function fetchMobileAccounts(category) {
+    if (!category) { mobileAccounts = []; return; }
+    fetch('/accounts/bank-accounts-by-bank/?category=' + encodeURIComponent(category))
+      .then(function(r) { return r.json(); })
+      .then(function(data) { mobileAccounts = data.accounts; });
+  }
+
+  function renderMobileDropdown(matches) {
+    if (!matches || !matches.length) { mobileDropdown.style.display = 'none'; return; }
+    mobileDropdown.innerHTML = '';
+    matches.forEach(function(a) {
+      var item = document.createElement('div');
+      item.className = 'acct-dropdown-item';
+      item.innerHTML = '<div class="acct-num">' + a.mobile_number + '</div><div class="acct-detail">' + (a.holder_name || '—') + '</div>';
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        mobileInput.value = a.mobile_number;
+        if (mobileHolder) mobileHolder.value = a.holder_name || '';
+        document.getElementById('mobile-info-method').textContent = a.category;
+        document.getElementById('mobile-info-number').textContent = 'Number: ' + a.mobile_number;
+        document.getElementById('mobile-info-holder').textContent = 'Name: ' + (a.holder_name || '—');
+        mobileInfo.style.display = 'block';
+        mobileDropdown.style.display = 'none';
+      });
+      mobileDropdown.appendChild(item);
+    });
+    mobileDropdown.style.display = 'block';
+  }
+
+  document.getElementById('payment-method')?.addEventListener('change', function() {
+    var val = this.value;
+    if (['bkash','nagad','rocket'].includes(val)) {
+      fetchMobileAccounts(val);
+    } else {
+      mobileAccounts = [];
+    }
+  });
+
+  mobileInput?.addEventListener('input', function() {
+    var val = this.value.trim();
+    var exact = mobileAccounts.find(function(a) { return a.mobile_number === val; });
+    if (exact) {
+      if (mobileHolder) mobileHolder.value = exact.holder_name || '';
+      document.getElementById('mobile-info-method').textContent = exact.category;
+      document.getElementById('mobile-info-number').textContent = 'Number: ' + exact.mobile_number;
+      document.getElementById('mobile-info-holder').textContent = 'Name: ' + (exact.holder_name || '—');
+      mobileInfo.style.display = 'block';
+      mobileDropdown.style.display = 'none';
+      return;
+    }
+    mobileInfo.style.display = 'none';
+    var fuzzy = val ? mobileAccounts.filter(function(a) { return a.mobile_number.indexOf(val) !== -1; }) : mobileAccounts;
+    renderMobileDropdown(fuzzy);
+  });
+
+  mobileInput?.addEventListener('blur', function() {
+    setTimeout(function() { mobileDropdown.style.display = 'none'; }, 200);
+  });
+
+  // Trigger payment method change on load
+  var pm = document.getElementById('payment-method');
+  if (pm) pm.dispatchEvent(new Event('change'));
 
   calculate();
 });

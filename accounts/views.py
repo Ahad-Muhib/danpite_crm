@@ -15,6 +15,16 @@ from orders.models import Order, OrderItem
 from datetime import date
 
 
+def _update_invoice_paid_status(invoice):
+    if invoice.is_fully_paid and invoice.status != 'paid':
+        invoice.status = 'paid'
+        invoice.received_payment = True
+        invoice.save(update_fields=['status', 'received_payment'])
+    elif not invoice.is_fully_paid and invoice.status == 'paid':
+        invoice.status = 'sent'
+        invoice.save(update_fields=['status'])
+
+
 @login_required
 def client_data_api(request):
     client_id = request.GET.get('id')
@@ -67,6 +77,59 @@ def invoice_list(request):
 
 
 @login_required
+def bank_accounts_by_bank(request):
+    category = request.GET.get('category', 'bank')
+    bank_name = request.GET.get('bank_name', '')
+    qs = BankAccount.objects.filter(is_active=True, category=category)
+    if bank_name:
+        qs = qs.filter(bank_name=bank_name)
+    accounts = []
+    for ba in qs:
+        accounts.append({
+            'id': ba.pk,
+            'category': ba.category,
+            'bank_name': ba.bank_name,
+            'account_name': ba.account_name,
+            'account_number': ba.account_number,
+            'mobile_number': ba.mobile_number,
+            'holder_name': ba.holder_name,
+            'card_number': ba.card_number,
+            'card_holder': ba.card_holder,
+            'card_bank': ba.card_bank,
+            'display_name': ba.display_name,
+            'branch': ba.branch,
+            'available_balance': str(ba.available_balance),
+        })
+    return JsonResponse({'accounts': accounts})
+
+
+@login_required
+def mobile_account_lookup(request):
+    category = request.GET.get('type', '')
+    number = request.GET.get('number', '')
+    if category and number:
+        acct = BankAccount.objects.filter(category=category, mobile_number=number, is_active=True).first()
+        if acct:
+            return JsonResponse({'found': True, 'category': acct.category, 'number': acct.mobile_number, 'holder_name': acct.holder_name})
+    return JsonResponse({'found': False})
+
+
+@login_required
+def invoice_update_status(request, pk):
+    if request.method == 'POST':
+        inv = get_object_or_404(Invoice, pk=pk)
+        new_status = request.POST.get('status', '')
+        valid = [s[0] for s in Invoice.STATUS]
+        if new_status in valid:
+            inv.status = new_status
+            inv.save(update_fields=['status'])
+            log_action(request, 'update', 'Invoice', inv, description=f'Status changed to {new_status}')
+            return JsonResponse({'ok': True, 'status': new_status})
+        return JsonResponse({'ok': False, 'error': 'Invalid status.'}, status=400)
+    return JsonResponse({'ok': False, 'error': 'POST required.'}, status=405)
+
+
+@login_required
 def invoice_create(request):
     form = InvoiceForm(request.POST or None, request.FILES or None)
     formset = InvoiceItemFormSet(request.POST or None)
@@ -97,11 +160,34 @@ def invoice_create(request):
             obj.save(update_fields=['total'])
             amount_paid = form.cleaned_data.get('amount_paid') or 0
             if float(amount_paid) > 0:
+                method = request.POST.get('payment_method', '') or 'cash'
+                account_pk = request.POST.get('payment_bank_account', '')
+                account = BankAccount.objects.filter(pk=account_pk).first() if account_pk else None
+                mobile_number = request.POST.get('payment_mobile_number', '').strip()
+                mobile_holder = request.POST.get('payment_mobile_holder', '').strip()
+                if method in ('bkash', 'nagad', 'rocket') and mobile_number and not account:
+                    account, _ = BankAccount.objects.get_or_create(
+                        category=method, mobile_number=mobile_number,
+                        defaults={'holder_name': mobile_holder, 'is_active': True},
+                    )
+                    if mobile_holder and account.holder_name != mobile_holder:
+                        account.holder_name = mobile_holder
+                        account.save()
+                elif method in ('bkash', 'nagad', 'rocket') and mobile_number and account:
+                    if account.mobile_number != mobile_number:
+                        account.mobile_number = mobile_number
+                    if mobile_holder and account.holder_name != mobile_holder:
+                        account.holder_name = mobile_holder
+                    account.save()
+                ref = request.POST.get('payment_reference', '').strip() or f'Invoice {obj.code}'
                 Payment.objects.create(
                     invoice=obj, client=obj.client, amount=amount_paid,
-                    payment_date=date.today(), method='cash',
-                    reference=f'Invoice {obj.code}', created_by=request.user,
+                    payment_date=date.today(),
+                    method=method,
+                    account=account,
+                    reference=ref, created_by=request.user,
                 )
+            _update_invoice_paid_status(obj)
             log_action(request, 'create', 'Invoice', obj, description=f'{obj.code} — Total: {obj.total}')
             messages.success(request, 'Invoice created.')
             order = Order.objects.create(
@@ -120,7 +206,14 @@ def invoice_create(request):
                 )
             return redirect('invoice_list')
     clients = Client.objects.all().order_by('name')
-    return render(request, 'accounts/invoice_form.html', {'form': form, 'formset': formset, 'action': 'Create', 'invoice': form.instance, 'clients': clients})
+    banks = list(
+        BankAccount.objects.filter(is_active=True, category='bank')
+        .values_list('bank_name', flat=True).distinct().order_by('bank_name')
+    )
+    return render(request, 'accounts/invoice_form.html', {
+        'form': form, 'formset': formset, 'action': 'Create',
+        'invoice': form.instance, 'clients': clients, 'banks': banks,
+    })
 
 
 @login_required
@@ -155,10 +248,32 @@ def invoice_edit(request, pk):
             current_paid = obj.payments.aggregate(s=Sum('amount'))['s'] or 0
             diff = new_amount - float(current_paid)
             if diff > 0:
+                method = request.POST.get('payment_method', '') or 'cash'
+                account_pk = request.POST.get('payment_bank_account', '')
+                account = BankAccount.objects.filter(pk=account_pk).first() if account_pk else None
+                mobile_number = request.POST.get('payment_mobile_number', '').strip()
+                mobile_holder = request.POST.get('payment_mobile_holder', '').strip()
+                if method in ('bkash', 'nagad', 'rocket') and mobile_number and not account:
+                    account, _ = BankAccount.objects.get_or_create(
+                        category=method, mobile_number=mobile_number,
+                        defaults={'holder_name': mobile_holder, 'is_active': True},
+                    )
+                    if mobile_holder and account.holder_name != mobile_holder:
+                        account.holder_name = mobile_holder
+                        account.save()
+                elif method in ('bkash', 'nagad', 'rocket') and mobile_number and account:
+                    if account.mobile_number != mobile_number:
+                        account.mobile_number = mobile_number
+                    if mobile_holder and account.holder_name != mobile_holder:
+                        account.holder_name = mobile_holder
+                    account.save()
+                ref = request.POST.get('payment_reference', '').strip() or f'Invoice {obj.code}'
                 Payment.objects.create(
                     invoice=obj, client=obj.client, amount=diff,
-                    payment_date=date.today(), method='cash',
-                    reference=f'Invoice {obj.code}', created_by=request.user,
+                    payment_date=date.today(),
+                    method=method,
+                    account=account,
+                    reference=ref, created_by=request.user,
                 )
             elif diff < 0:
                 for p in obj.payments.order_by('-created_at'):
@@ -171,11 +286,19 @@ def invoice_edit(request, pk):
                         p.amount += diff
                         p.save()
                         diff = 0
+            _update_invoice_paid_status(obj)
             log_action(request, 'update', 'Invoice', obj, description=f'{obj.code} — Total: {obj.total}')
             messages.success(request, 'Invoice updated.')
             return redirect('invoice_list')
     clients = Client.objects.all().order_by('name')
-    return render(request, 'accounts/invoice_form.html', {'form': form, 'formset': formset, 'action': 'Edit', 'invoice': obj, 'clients': clients})
+    banks = list(
+        BankAccount.objects.filter(is_active=True, category='bank')
+        .values_list('bank_name', flat=True).distinct().order_by('bank_name')
+    )
+    return render(request, 'accounts/invoice_form.html', {
+        'form': form, 'formset': formset, 'action': 'Edit',
+        'invoice': obj, 'clients': clients, 'banks': banks,
+    })
 
 
 @login_required
@@ -251,7 +374,19 @@ def payment_list(request):
 
 @login_required
 def payment_create(request):
-    form = PaymentForm(request.POST or None)
+    initial = {}
+    invoice_id = request.GET.get('invoice')
+    client_name = request.GET.get('client_name')
+    if invoice_id and not request.method == 'POST':
+        try:
+            inv = Invoice.objects.get(pk=invoice_id)
+            initial['invoice'] = inv
+            initial['amount'] = inv.balance_due if inv.balance_due > 0 else inv.total
+        except Invoice.DoesNotExist:
+            pass
+    if client_name and not request.method == 'POST':
+        initial['client_name'] = client_name
+    form = PaymentForm(request.POST or None, initial=initial or None)
     if form.is_valid():
         obj = form.save(commit=False)
         obj.created_by = request.user
@@ -260,6 +395,8 @@ def payment_create(request):
             client, _ = Client.objects.get_or_create(name=client_name)
             obj.client = client
         obj.save()
+        if obj.invoice:
+            _update_invoice_paid_status(obj.invoice)
         cname = obj.client.name if obj.client else '—'
         log_action(request, 'create', 'Payment', obj, description=f'{obj.amount} — {cname} — {obj.payment_date}')
         messages.success(request, 'Payment recorded.')
@@ -286,7 +423,12 @@ def payment_edit(request, pk):
             obj.client = client
         else:
             obj.client = None
+        old_invoice = Payment.objects.get(pk=pk).invoice
         obj.save()
+        if obj.invoice:
+            _update_invoice_paid_status(obj.invoice)
+        if old_invoice and old_invoice != obj.invoice:
+            _update_invoice_paid_status(old_invoice)
         cname = obj.client.name if obj.client else '—'
         log_action(request, 'update', 'Payment', obj, description=f'{obj.amount} — {cname} — {obj.payment_date}')
         messages.success(request, 'Payment updated.')
@@ -300,9 +442,12 @@ def payment_delete(request, pk):
         messages.error(request, 'Only superusers can delete payments.')
         return redirect('payment_list')
     obj = get_object_or_404(Payment, pk=pk)
+    invoice = obj.invoice
     cname = obj.client.name if obj.client else '—'
     log_action(request, 'delete', 'Payment', obj, description=f'{obj.amount} — {cname} — {obj.payment_date}')
     obj.delete()
+    if invoice:
+        _update_invoice_paid_status(invoice)
     messages.success(request, 'Payment deleted.')
     return redirect('payment_list')
 
@@ -361,15 +506,65 @@ def expense_delete(request, pk):
 
 @login_required
 def bank_account_list(request):
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_accounts')
+        action = request.POST.get('bulk_action')
+        selected = BankAccount.objects.filter(pk__in=selected_ids)
+
+        if not selected_ids:
+            messages.error(request, 'Select at least one bank account first.')
+            return redirect('bank_account_list')
+
+        if action == 'delete':
+            if not request.user.is_superuser:
+                messages.error(request, 'Only superusers can delete bank accounts.')
+                return redirect('bank_account_list')
+            deleted = selected.count()
+            for obj in selected:
+                log_action(request, 'delete', 'BankAccount', obj)
+            selected.delete()
+            messages.success(request, f'{deleted} bank account(s) deleted.')
+        else:
+            messages.error(request, 'Choose a bulk action first.')
+        return redirect('bank_account_list')
+
+    q = request.GET.get('q', '')
     status = request.GET.get('status', '')
-    qs = BankAccount.objects.all().order_by('-id')
+    category = request.GET.get('category', '')
+    sort_by = request.GET.get('sort', 'id')
+    sort_order = request.GET.get('order', 'desc')
+
+    valid_sorts = {
+        'id': 'id', 'bank_name': 'bank_name', 'account_name': 'account_name',
+        'account_number': 'account_number', 'account_type': 'account_type',
+        'opening_balance': 'opening_balance',
+    }
+    sort_field = valid_sorts.get(sort_by, 'id')
+    if sort_order == 'asc':
+        order_field = sort_field
+    else:
+        order_field = f'-{sort_field}'
+
+    qs = BankAccount.objects.all().order_by(order_field)
+    if q:
+        qs = qs.filter(
+            Q(bank_name__icontains=q) | Q(account_name__icontains=q) |
+            Q(account_number__icontains=q) | Q(mobile_number__icontains=q) |
+            Q(holder_name__icontains=q) | Q(card_number__icontains=q) |
+            Q(card_holder__icontains=q)
+        )
+    if category:
+        qs = qs.filter(category=category)
     if status == 'active':
         qs = qs.filter(is_active=True)
     elif status == 'inactive':
         qs = qs.filter(is_active=False)
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get('page'))
-    return render(request, 'accounts/bank_accounts.html', {'accounts': page, 'status': status})
+    return render(request, 'accounts/bank_accounts.html', {
+        'accounts': page, 'status': status, 'q': q, 'category': category,
+        'sort_by': sort_by, 'sort_order': sort_order,
+    })
 
 
 @login_required
@@ -385,8 +580,15 @@ def bank_account_create(request):
 
 @login_required
 def bank_account_detail(request, pk):
+    from django.db.models import Sum
     obj = get_object_or_404(BankAccount, pk=pk)
-    return render(request, 'accounts/bank_account_detail.html', {'account': obj})
+    total_payments = obj.payments.aggregate(s=Sum('amount'))['s'] or 0
+    total_expenses = obj.expenses.aggregate(s=Sum('amount'))['s'] or 0
+    return render(request, 'accounts/bank_account_detail.html', {
+        'account': obj,
+        'total_payments': total_payments,
+        'total_expenses': total_expenses,
+    })
 
 
 @login_required
@@ -413,6 +615,23 @@ def bank_account_toggle(request, pk):
 
 
 @login_required
+def bank_account_update_status(request, pk):
+    if request.method == 'POST':
+        obj = get_object_or_404(BankAccount, pk=pk)
+        is_active = request.POST.get('is_active')
+        if is_active in ('1', 'true'):
+            obj.is_active = True
+        elif is_active in ('0', 'false'):
+            obj.is_active = False
+        else:
+            return JsonResponse({'ok': False, 'error': 'Invalid value.'}, status=400)
+        obj.save(update_fields=['is_active'])
+        log_action(request, 'update', 'BankAccount', obj, description=f'status={"active" if obj.is_active else "inactive"}')
+        return JsonResponse({'ok': True, 'is_active': obj.is_active})
+    return JsonResponse({'ok': False, 'error': 'POST required.'}, status=405)
+
+
+@login_required
 def bank_account_delete(request, pk):
     if not request.user.is_superuser:
         messages.error(request, 'Only superusers can delete bank accounts.')
@@ -428,6 +647,7 @@ def bank_account_delete(request, pk):
 def invoice_pdf(request, pk):
     from weasyprint import HTML
     from django.db.models import Sum
+    from django.conf import settings
     invoice = get_object_or_404(Invoice, pk=pk)
     items = invoice.items.all()
     subtotal = items.aggregate(s=Sum('total'))['s'] or 0
@@ -440,14 +660,15 @@ def invoice_pdf(request, pk):
     total_with_tax = after_discount + tax_amount + shipping
     total_paid = invoice.payments.aggregate(s=Sum('amount'))['s'] or 0
     balance_due = total_with_tax - float(total_paid)
+    logo_path = settings.MEDIA_ROOT / 'invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg'
     html_string = render_to_string('accounts/invoice_pdf.html', {
         'invoice': invoice, 'items': items,
         'subtotal': subtotal, 'discount_amount': discount_amount,
         'tax_amount': tax_amount, 'total_with_tax': total_with_tax,
         'total_paid': total_paid, 'balance_due': balance_due,
-        'shipping': shipping,
-    })
-    pdf = HTML(string=html_string).write_pdf()
+        'shipping': shipping, 'logo_path': logo_path,
+    }, request=request)
+    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
     response = HttpResponse(pdf, content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="{invoice.code}.pdf"'
     return response

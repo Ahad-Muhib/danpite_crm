@@ -36,7 +36,7 @@ class Client(models.Model):
         ('architecture_engineering', 'Architecture & Engineering Consultancy'),
         ('agriculture', 'Agriculture'),
     ]
-    STATE = [('open', 'Open'), ('closed', 'Closed')]
+    STATE = [('active', 'Active'), ('inactive', 'Inactive')]
     salutation = models.CharField(max_length=10, blank=True)
     name = models.CharField(max_length=200)
     page = models.CharField(max_length=200, blank=True)

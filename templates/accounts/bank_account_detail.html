@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}Bank Account - {{ account.bank_name }}{% endblock %}
-{% block page_title %}Bank Account Details{% endblock %}
+{% block title %}Account - {{ account.display_name }}{% endblock %}
+{% block page_title %}Account Details{% endblock %}
 {% block content %}
-<div class="crm-card" style="max-width:700px;">
+<div class="crm-card">
   <div class="crm-card-header">
-    <span class="crm-card-title">{{ account.bank_name }}</span>
+    <span class="crm-card-title">{{ account.display_name }}</span>
     <div class="d-flex gap-2">
       <a href="{% url 'bank_account_edit' account.pk %}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil me-1"></i>Edit</a>
       <a href="{% url 'bank_account_list' %}" class="btn btn-sm btn-outline-secondary">Back to List</a>
@@ -12,6 +12,12 @@
   </div>
   <div class="p-4">
     <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Category</label>
+        <div><span class="badge bg-light text-dark border">{{ account.get_category_display }}</span></div>
+      </div>
+
+      {% if account.category == 'bank' %}
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Bank Name</label>
         <div class="fw-medium">{{ account.bank_name }}</div>
@@ -36,14 +42,65 @@
         <label class="form-label fw-medium text-muted">Routing Number</label>
         <div>{{ account.routing_number|default:"—" }}</div>
       </div>
+      {% elif account.category in 'bkash,nagad,rocket' %}
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Mobile Number</label>
+        <div><code>{{ account.mobile_number }}</code></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Holder Name</label>
+        <div class="fw-medium">{{ account.holder_name }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Account Type</label>
+        <div><span class="badge bg-light text-dark border">{{ account.get_mobile_type_display }}</span></div>
+      </div>
+      {% elif account.category == 'card' %}
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Card Number</label>
+        <div><code>{{ account.card_number }}</code></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Card Holder</label>
+        <div class="fw-medium">{{ account.card_holder }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Card Type</label>
+        <div><span class="badge bg-light text-dark border">{{ account.get_card_type_display }}</span></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Connected Bank</label>
+        <div>{{ account.card_bank|default:"—" }}</div>
+      </div>
+      {% endif %}
+
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Opening Balance</label>
         <div class="fw-medium">{{ account.opening_balance }}</div>
       </div>
       <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Available Balance</label>
+        <div class="fw-bold" style="font-size:18px;">{{ account.available_balance }}</div>
+      </div>
+      <div class="col-12">
+        <hr>
+        <div class="fw-medium mb-2">Reconciliation</div>
+        <div class="row g-2" style="font-size:13px;">
+          <div class="col-md-4"><span class="text-muted">Opening Balance:</span> <strong>{{ account.opening_balance }}</strong></div>
+          <div class="col-md-4"><span class="text-muted">Total Payments In:</span> <strong class="text-success">+{{ total_payments }}</strong></div>
+          <div class="col-md-4"><span class="text-muted">Total Expenses Out:</span> <strong class="text-danger">-{{ total_expenses }}</strong></div>
+        </div>
+      </div>
+      <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Status</label>
         <div>{% if account.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</div>
       </div>
+      {% if account.details %}
+      <div class="col-12">
+        <label class="form-label fw-medium text-muted">Details</label>
+        <div>{{ account.details|linebreaksbr }}</div>
+      </div>
+      {% endif %}
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Created At</label>
         <div>{{ account.created_at|date:"d M Y H:i" }}</div>
@@ -51,4 +108,33 @@
     </div>
   </div>
 </div>
+
+{% if account.payments.exists or account.expenses.exists %}
+<div class="crm-card mt-4">
+  <div class="crm-card-header"><span class="crm-card-title">Transaction History</span></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th></tr></thead>
+      <tbody>
+        {% for p in account.payments.all %}
+        <tr>
+          <td>{{ p.payment_date }}</td>
+          <td><span class="badge bg-success">Payment</span></td>
+          <td>{{ p.reference|default:"" }} {% if p.invoice %}({{ p.invoice.code }}){% endif %}</td>
+          <td class="fw-medium text-success">+{{ p.amount }}</td>
+        </tr>
+        {% endfor %}
+        {% for e in account.expenses.all %}
+        <tr>
+          <td>{{ e.expense_date }}</td>
+          <td><span class="badge bg-danger">Expense</span></td>
+          <td>{{ e.title }}</td>
+          <td class="fw-medium text-danger">-{{ e.amount }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

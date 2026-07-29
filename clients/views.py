@@ -104,10 +104,49 @@ def add_client_category(request):
 @require_POST
 def client_update_state(request, pk):
     client = get_object_or_404(Client, pk=pk)
-    new_state = request.POST.get('state', '')
-    if new_state in ['open', 'closed']:
+    new_state = request.POST.get('status', '')
+    if new_state in ['active', 'inactive']:
         client.status = new_state
         client.save(update_fields=['status', 'updated_at'])
-        log_action(request, 'update', 'Client', client, description=f'State changed to {new_state}')
-        return JsonResponse({'ok': True, 'state': new_state})
-    return JsonResponse({'ok': False, 'error': 'Invalid state.'})
+        log_action(request, 'update', 'Client', client, description=f'Status changed to {new_state}')
+        return JsonResponse({'ok': True, 'status': new_state})
+    return JsonResponse({'ok': False, 'error': 'Invalid status.'})
+
+
+@login_required
+def client_statement(request, pk):
+    from django.db.models import Sum
+    client = get_object_or_404(Client, pk=pk)
+    invoices = client.invoices.all().order_by('created_at')
+    payments = client.payments.all().order_by('created_at')
+    transactions = []
+    for inv in invoices:
+        transactions.append({
+            'date': inv.created_at,
+            'type': 'Invoice',
+            'description': f'{inv.code} — {inv.get_status_display}',
+            'debit': float(inv.total),
+            'credit': 0,
+        })
+    for p in payments:
+        transactions.append({
+            'date': p.created_at,
+            'type': 'Payment',
+            'description': f'{p.get_method_display}' + (f' ({p.invoice.code})' if p.invoice else ''),
+            'debit': 0,
+            'credit': float(p.amount),
+        })
+    transactions.sort(key=lambda t: t['date'])
+    balance = 0
+    for t in transactions:
+        balance += t['debit'] - t['credit']
+        t['balance'] = balance
+    total_invoiced = sum(t['debit'] for t in transactions)
+    total_paid = sum(t['credit'] for t in transactions)
+    return render(request, 'clients/client_statement.html', {
+        'client': client,
+        'transactions': transactions,
+        'total_invoiced': total_invoiced,
+        'total_paid': total_paid,
+        'balance_due': total_invoiced - total_paid,
+    })

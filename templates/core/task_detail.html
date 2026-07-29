@@ -2,7 +2,7 @@
 {% block title %}{{ task.title }}{% endblock %}
 {% block page_title %}{{ task.title }}{% endblock %}
 {% block content %}
-<div class="crm-card" style="max-width:860px;">
+<div class="crm-card">
   <div class="crm-card-header">
     <span class="crm-card-title">{{ task.title }}</span>
     {% if task.status == 'completed' %}<span class="badge bg-success fs-6">Completed</span>

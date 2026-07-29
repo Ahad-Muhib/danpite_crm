@@ -13,7 +13,7 @@
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Title</th><th>Category</th><th>Amount</th><th>Date</th><th>Added By</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Title</th><th>Category</th><th>Amount</th><th>Date</th><th>Bank Account</th><th>Added By</th><th>Actions</th></tr></thead>
       <tbody>
         {% for e in expenses %}
         <tr>
@@ -21,6 +21,7 @@
           <td><span class="badge bg-light text-dark border">{{ e.get_category_display }}</span></td>
           <td class="fw-medium text-danger">{{ e.amount|currency }}</td>
           <td class="text-muted">{{ e.expense_date }}</td>
+          <td>{% if e.bank_account %}{{ e.bank_account.display_name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
           <td>{{ e.created_by.username|default:"—" }}</td>
           <td>
             <a href="{% url 'expense_detail' e.pk %}" class="btn btn-sm btn-outline-info btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
@@ -29,7 +30,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="text-center text-muted py-5">No expenses recorded.</td></tr>
+        <tr><td colspan="7" class="text-center text-muted py-5">No expenses recorded.</td></tr>
         {% endfor %}
       </tbody>
     </table>

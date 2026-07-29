@@ -3,6 +3,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('accounts/bank-accounts-by-bank/', views.bank_accounts_by_bank, name='bank_accounts_by_bank'),
+    path('accounts/mobile-account-lookup/', views.mobile_account_lookup, name='mobile_account_lookup'),
     path('accounts/client-data/', views.client_data_api, name='client_data_api'),
     path('accounts/invoices/', views.invoice_list, name='invoice_list'),
     path('accounts/invoices/new/', views.invoice_create, name='invoice_create'),
@@ -11,6 +13,7 @@ urlpatterns = [
     path('accounts/invoices/<int:pk>/delete/', views.invoice_delete, name='invoice_delete'),
     path('accounts/invoices/<int:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),
     path('accounts/invoices/<int:pk>/mark-paid/', views.invoice_mark_paid, name='invoice_mark_paid'),
+    path('accounts/invoices/<int:pk>/update-status/', views.invoice_update_status, name='invoice_update_status'),
     path('accounts/payments/', views.payment_list, name='payment_list'),
     path('accounts/payments/new/', views.payment_create, name='payment_create'),
     path('accounts/payments/<int:pk>/', views.payment_detail, name='payment_detail'),
@@ -26,6 +29,7 @@ urlpatterns = [
     path('accounts/bank/<int:pk>/', views.bank_account_detail, name='bank_account_detail'),
     path('accounts/bank/<int:pk>/edit/', views.bank_account_edit, name='bank_account_edit'),
     path('accounts/bank/<int:pk>/toggle/', views.bank_account_toggle, name='bank_account_toggle'),
+    path('accounts/bank/<int:pk>/update-status/', views.bank_account_update_status, name='bank_account_update_status'),
     path('accounts/bank/<int:pk>/delete/', views.bank_account_delete, name='bank_account_delete'),
 ]
 

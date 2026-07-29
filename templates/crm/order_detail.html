@@ -2,7 +2,7 @@
 {% block title %}{{ order.order_number }}{% endblock %}
 {% block page_title %}{{ order.order_number }}{% endblock %}
 {% block content %}
-<div class="crm-card" style="max-width:860px;">
+<div class="crm-card">
   <div class="crm-card-header">
     <span class="crm-card-title">Order: {{ order.order_number }}</span>
     {% if order.status == 'delivered' %}<span class="badge bg-success fs-6">Delivered</span>

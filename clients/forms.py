@@ -18,6 +18,7 @@ class ClientForm(forms.ModelForm):
             'website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://...'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Address'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
             'sub_category': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Sub category'}),
             'notes': forms.HiddenInput(),
         }
@@ -25,7 +26,7 @@ class ClientForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['notes'].required = False
-        self.fields['status'].label = 'State'
+        self.fields['status'].label = 'Status'
         base_choices = [('', '-- Select Category --')]
         hardcoded = [
             ('education', 'Education'),

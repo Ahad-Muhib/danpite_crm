@@ -1,30 +1,65 @@
 {% extends 'base.html' %}
-{% block title %}{{ action|default:"Add" }} Bank Account{% endblock %}
-{% block page_title %}{{ action|default:"Add" }} Bank Account{% endblock %}
+{% block title %}{{ action|default:"Add" }} Account{% endblock %}
+{% block page_title %}{{ action|default:"Add" }} Account{% endblock %}
 {% block content %}
 <div class="crm-card">
-  <div class="crm-card-header"><span class="crm-card-title">Bank Account Details</span></div>
+  <div class="crm-card-header"><span class="crm-card-title">Account Details</span></div>
   <div class="p-4">
     <form method="post">
       {% csrf_token %}
       <div class="row g-3">
-        <div class="col-md-6"><label class="form-label fw-medium">Bank Name <span class="text-danger">*</span></label>{{ form.bank_name }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Account Name <span class="text-danger">*</span></label>{{ form.account_name }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Account Number <span class="text-danger">*</span></label>{{ form.account_number }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Account Type</label>{{ form.account_type }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Branch</label>{{ form.branch }}</div>
-        <div class="col-md-6"><label class="form-label fw-medium">Routing Number</label>{{ form.routNumber }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Category</label>{{ form.category }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Opening Balance</label>{{ form.opening_balance }}</div>
+
+        <div id="bank-fields" class="row g-3" style="display:none;">
+          <div class="col-md-6"><label class="form-label fw-medium">Bank Name</label>{{ form.bank_name }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Account Name</label>{{ form.account_name }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Account Number</label>{{ form.account_number }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Account Type</label>{{ form.account_type }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Branch</label>{{ form.branch }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Routing Number</label>{{ form.routing_number }}</div>
+        </div>
+
+        <div id="mobile-fields" class="row g-3" style="display:none;">
+          <div class="col-md-6"><label class="form-label fw-medium">Mobile Number</label>{{ form.mobile_number }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Account Holder Name</label>{{ form.holder_name }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Account Type</label>{{ form.mobile_type }}</div>
+        </div>
+
+        <div id="card-fields" class="row g-3" style="display:none;">
+          <div class="col-md-6"><label class="form-label fw-medium">Card Number</label>{{ form.card_number }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Card Holder Name</label>{{ form.card_holder }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Card Type</label>{{ form.card_type }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Connected Bank</label>{{ form.card_bank }}</div>
+        </div>
+
+        {% if form.instance.pk %}
+        <div class="col-md-6"><label class="form-label fw-medium">Available Balance</label><div class="form-control-plaintext fw-bold" style="font-size:18px;">{{ form.instance.available_balance }}</div></div>
+        {% endif %}
+        <div class="col-12"><label class="form-label fw-medium">Details</label>{{ form.details }}</div>
         <div class="col-12">
           <label class="form-label fw-medium">Status</label>
           <div class="form-check">{{ form.is_active }}<label class="form-check-label ms-2">Active</label></div>
         </div>
       </div>
       <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary">{{ action|default:"Add" }} Bank Account</button>
+        <button type="submit" class="btn btn-primary">{{ action|default:"Add" }} Account</button>
         <a href="{% url 'bank_account_list' %}" class="btn btn-outline-secondary">Cancel</a>
       </div>
     </form>
   </div>
 </div>
+<script>
+(function(){
+  var cat = document.getElementById('id_category');
+  function toggleFields(){
+    var v = cat.value;
+    document.getElementById('bank-fields').style.display = v === 'bank' ? '' : 'none';
+    document.getElementById('mobile-fields').style.display = (v === 'bkash' || v === 'nagad' || v === 'rocket') ? '' : 'none';
+    document.getElementById('card-fields').style.display = v === 'card' ? '' : 'none';
+  }
+  cat?.addEventListener('change', toggleFields);
+  toggleFields();
+})();
+</script>
 {% endblock %}

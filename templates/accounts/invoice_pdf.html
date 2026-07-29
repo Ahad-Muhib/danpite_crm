@@ -9,7 +9,10 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @page{size:A4;margin:14mm 16mm}
-.top{display:grid;grid-template-columns:1.35fr .8fr;gap:40px}
+{% if invoice.status == 'paid' %}
+.watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:120px;font-weight:900;color:rgba(22,163,74,0.12);pointer-events:none;z-index:999;text-align:center;white-space:nowrap;letter-spacing:8px}
+{% endif %}
+.top{display:grid;grid-template-columns:1fr 1fr;gap:40px}
 .title{text-align:right;font-size:30px;font-weight:700;margin-bottom:4px;color:var(--ink)}
 .code{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:13px;color:var(--muted)}
 .logo-area{width:160px;min-height:60px;margin-bottom:14px;display:flex;align-items:center}
@@ -36,40 +39,14 @@ body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust
 .sum-row .val{text-align:right;font-weight:500}
 .total-row{border-top:2px solid var(--line);font-size:15px;font-weight:700;padding-top:5px;margin-top:4px}
 .balance-due-row{font-size:14px;font-weight:800;color:var(--ink);border-top:1px solid var(--line);padding-top:5px;margin-top:4px}
-.footer{text-align:center;padding-top:14px;border-top:1px solid var(--line);margin-top:20px}
-.footer .thank-you{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px}
-.footer p{font-size:10px;color:var(--muted)}
 </style>
 </head>
 <body>
+{% if invoice.status == 'paid' %}<div class="watermark">PAID</div>{% endif %}
 <main style="width:100%;padding:0;background:var(--paper)">
   <section class="top">
     <div>
-      {% if invoice.logo %}
-      <div class="logo-area"><img src="file://{{ invoice.logo.path }}" alt="Logo"></div>
-      {% endif %}
-      <div class="label">Bill From</div>
-      <div class="party-text">
-        {% if invoice.bill_from %}{{ invoice.bill_from|linebreaksbr }}{% else %}Danpite CRM<br>Your Company Address<br>City, State ZIP{% endif %}
-      </div>
-    </div>
-    <div>
-      <div class="title">INVOICE</div>
-      <div class="code"><span>#</span><span style="font-weight:600;color:var(--ink)">{{ invoice.code }}</span></div>
-      <div class="details">
-        <div class="detail-row"><span class="lbl">Date</span><span class="val">{{ invoice.invoice_date }}</span></div>
-        {% if invoice.payment_terms %}<div class="detail-row"><span class="lbl">Payment Terms</span><span class="val">{{ invoice.payment_terms }}</span></div>{% endif %}
-        {% if invoice.due_date %}<div class="detail-row"><span class="lbl">Due Date</span><span class="val">{{ invoice.due_date }}</span></div>{% endif %}
-        {% if invoice.po_number %}<div class="detail-row"><span class="lbl">PO Number</span><span class="val">{{ invoice.po_number }}</span></div>{% endif %}
-        {% if balance_due > 0 %}
-        <div class="detail-row balance-line"><span>Balance Due</span><span>{{ balance_due|currency }}</span></div>
-        {% endif %}
-      </div>
-    </div>
-  </section>
-
-  <section class="parties">
-    <div>
+      <div class="logo-area"><img src="file://{{ logo_path }}" alt="Danpite"></div>
       <div class="label">Bill To</div>
       <div class="party-text">
         {% if invoice.client %}
@@ -81,17 +58,26 @@ body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust
         {% elif invoice.bill_to_name %}
           <div class="name">{{ invoice.bill_to_name }}</div>
           {% if invoice.phone %}<div>Phone: {{ invoice.phone }}</div>{% endif %}
-        {% else %}
-          <div class="name">Walk-in Client</div>
+        {% endif %}
+      </div>
+      {% if invoice.ship_to %}
+      <div style="margin-top:10px;">
+        <div class="label">Address</div>
+        <div class="party-text">{{ invoice.ship_to|linebreaksbr }}</div>
+      </div>
+      {% endif %}
+    </div>
+    <div>
+      <div class="title">INVOICE</div>
+      <div class="code"><span>#</span><span style="font-weight:600;color:var(--ink)">{{ invoice.code }}</span></div>
+      <div class="details">
+        <div class="detail-row"><span class="lbl">Date</span><span class="val">{{ invoice.invoice_date }}</span></div>
+        {% if invoice.delivery_date %}<div class="detail-row"><span class="lbl">Delivery Date</span><span class="val">{{ invoice.delivery_date }}</span></div>{% endif %}
+        {% if balance_due > 0 %}
+        <div class="detail-row balance-line"><span>Balance Due</span><span>{{ balance_due|currency }}</span></div>
         {% endif %}
       </div>
     </div>
-    {% if invoice.ship_to %}
-    <div>
-      <div class="label">Ship To</div>
-      <div class="party-text">{{ invoice.ship_to|linebreaksbr }}</div>
-    </div>
-    {% else %}<div></div>{% endif %}
   </section>
 
   <section class="items">
@@ -105,8 +91,6 @@ body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust
       <div>{{ item.unit_price|currency }}</div>
       <div class="item-amount">{{ item.total|currency }}</div>
     </div>
-    {% empty %}
-    <div class="item"><div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:16px;">No line items</div></div>
     {% endfor %}
   </section>
 
@@ -116,8 +100,6 @@ body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust
       <div class="label">Notes</div>
       <div class="note-text">{{ invoice.notes }}</div>
       {% endif %}
-      <div class="label">Terms</div>
-      <div class="note-text">Payment is due within {{ invoice.payment_terms|default:"30 days" }} of invoice date. Late payments may incur additional charges.</div>
     </div>
     <div>
       <div class="sum-row"><span>Subtotal</span><span class="val">{{ subtotal|currency }}</span></div>
@@ -134,16 +116,14 @@ body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust
       {% if total_paid > 0 %}
       <div class="sum-row"><span>Amount Paid</span><span class="val" style="color:#16a34a;font-weight:600;">{{ total_paid|currency }}</span></div>
       {% endif %}
-      {% if balance_due > 0 %}
-      <div class="sum-row balance-due-row"><span>Balance Due</span><span class="val">{{ balance_due|currency }}</span></div>
-      {% endif %}
     </div>
   </section>
-
-  <div class="footer">
-    <div class="thank-you">Thank you for your business!</div>
-    <p>If you have any questions, please contact us.</p>
+  {% if invoice.terms %}
+  <div style="margin-top:16px;">
+    <div class="label">Terms</div>
+    <div class="note-text">{{ invoice.terms }}</div>
   </div>
+  {% endif %}
 </main>
 </body>
 </html>
