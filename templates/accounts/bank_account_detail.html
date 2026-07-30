@@ -116,6 +116,23 @@
           <div class="col-md-4"><span class="text-muted">Total Expenses Out:</span> <strong class="text-danger">-{{ total_expenses }}</strong></div>
         </div>
       </div>
+      {% if request.user.is_superuser %}
+      <div class="col-12 mt-3">
+        <details class="border rounded p-3" style="background:#fefce8;">
+          <summary class="fw-medium" style="cursor:pointer;font-size:13px;">Adjust Available Balance (Superuser)</summary>
+          <form method="post" class="mt-2 row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col-auto">
+              <label class="form-label fw-medium" style="font-size:12px;">New Available Balance</label>
+              <input type="number" name="new_available_balance" value="{{ account.available_balance }}" step="0.01" class="form-control form-control-sm" style="width:180px;">
+            </div>
+            <div class="col-auto">
+              <button type="submit" name="adjust_balance" value="1" class="btn btn-sm btn-warning">Save</button>
+            </div>
+          </form>
+        </details>
+      </div>
+      {% endif %}
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Status</label>
         <div>{% if account.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</div>

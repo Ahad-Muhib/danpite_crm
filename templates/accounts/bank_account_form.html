@@ -99,6 +99,23 @@
 
         {% if form.instance.pk %}
         <div class="col-md-6"><label class="form-label fw-medium">Available Balance</label><div class="form-control-plaintext fw-bold" style="font-size:18px;">{{ form.instance.available_balance }}</div></div>
+        {% if request.user.is_superuser %}
+        <div class="col-12 mt-2">
+          <details class="border rounded p-3" style="background:#fefce8;">
+            <summary class="fw-medium" style="cursor:pointer;font-size:13px;">Adjust Available Balance (Superuser)</summary>
+            <form method="post" class="mt-2 row g-2 align-items-end">
+              {% csrf_token %}
+              <div class="col-auto">
+                <label class="form-label fw-medium" style="font-size:12px;">New Available Balance</label>
+                <input type="number" name="new_available_balance" value="{{ form.instance.available_balance }}" step="0.01" class="form-control form-control-sm" style="width:180px;">
+              </div>
+              <div class="col-auto">
+                <button type="submit" name="adjust_balance" value="1" class="btn btn-sm btn-warning">Save</button>
+              </div>
+            </form>
+          </details>
+        </div>
+        {% endif %}
         {% endif %}
         <div class="col-12"><label class="form-label fw-medium">Details</label>{{ form.details }}</div>
         <div class="col-12">

@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -82,11 +83,14 @@ def invoice_list(request):
 def bank_accounts_by_bank(request):
     category_pk = request.GET.get('category', '')
     bank_name = request.GET.get('bank_name', '')
+    account_type = request.GET.get('account_type', '')
     qs = BankAccount.objects.filter(is_active=True)
     if category_pk:
         qs = qs.filter(account_category_id=category_pk)
     if bank_name:
         qs = qs.filter(bank_name=bank_name)
+    if account_type:
+        qs = qs.filter(account_category__account_type=account_type)
     accounts = []
     for ba in qs:
         cat_name = ba.account_category.name if ba.account_category else ''
@@ -169,7 +173,7 @@ def invoice_create(request):
             amount_paid = form.cleaned_data.get('amount_paid') or 0
             if float(amount_paid) > 0:
                 method = request.POST.get('payment_method', '') or 'cash'
-                account_pk = request.POST.get('payment_bank_account', '')
+                account_pk = request.POST.get('payment_bank_account', '') or request.POST.get('payment_cash_account', '')
                 account = BankAccount.objects.filter(pk=account_pk).first() if account_pk else None
                 mobile_number = request.POST.get('payment_mobile_number', '').strip()
                 mobile_holder = request.POST.get('payment_mobile_holder', '').strip()
@@ -266,7 +270,7 @@ def invoice_edit(request, pk):
             diff = new_amount - float(current_paid)
             if diff > 0:
                 method = request.POST.get('payment_method', '') or 'cash'
-                account_pk = request.POST.get('payment_bank_account', '')
+                account_pk = request.POST.get('payment_bank_account', '') or request.POST.get('payment_cash_account', '')
                 account = BankAccount.objects.filter(pk=account_pk).first() if account_pk else None
                 mobile_number = request.POST.get('payment_mobile_number', '').strip()
                 mobile_holder = request.POST.get('payment_mobile_holder', '').strip()
@@ -523,6 +527,7 @@ def expense_list(request):
 
 
 @login_required
+@login_required
 def expense_create(request):
     form = ExpenseForm(request.POST or None, request.FILES or None)
     accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
@@ -555,6 +560,7 @@ def expense_edit(request, pk):
     return render(request, 'accounts/expense_form.html', {'form': form, 'action': 'Edit', 'accounts': accounts})
 
 
+@login_required
 @login_required
 def expense_delete(request, pk):
     if not request.user.is_superuser:
@@ -794,6 +800,19 @@ def bank_account_create(request):
 def bank_account_detail(request, pk):
     from django.db.models import Sum
     obj = get_object_or_404(BankAccount, pk=pk)
+    if request.method == 'POST' and request.user.is_superuser and 'adjust_balance' in request.POST:
+        try:
+            desired = Decimal(request.POST.get('new_available_balance', '0'))
+            total_payments = obj.payments.aggregate(s=Sum('amount'))['s'] or 0
+            total_expenses = obj.expenses.aggregate(s=Sum('amount'))['s'] or 0
+            transfers_out = obj.transfers_out.aggregate(s=Sum('amount'))['s'] or 0
+            transfers_in = obj.transfers_in.aggregate(s=Sum('amount'))['s'] or 0
+            obj.opening_balance = desired - total_payments + total_expenses + transfers_out - transfers_in
+            obj.save(update_fields=['opening_balance'])
+            messages.success(request, f'Available balance adjusted to {desired}.')
+        except Exception:
+            messages.error(request, 'Invalid balance value.')
+        return redirect('bank_account_detail', pk=pk)
     total_payments = obj.payments.aggregate(s=Sum('amount'))['s'] or 0
     total_expenses = obj.expenses.aggregate(s=Sum('amount'))['s'] or 0
     categories = AccountCategory.objects.filter(is_active=True)
@@ -808,6 +827,19 @@ def bank_account_detail(request, pk):
 @login_required
 def bank_account_edit(request, pk):
     obj = get_object_or_404(BankAccount, pk=pk)
+    if request.method == 'POST' and request.user.is_superuser and 'adjust_balance' in request.POST:
+        try:
+            desired = Decimal(request.POST.get('new_available_balance', '0'))
+            total_payments = obj.payments.aggregate(s=Sum('amount'))['s'] or 0
+            total_expenses = obj.expenses.aggregate(s=Sum('amount'))['s'] or 0
+            transfers_out = obj.transfers_out.aggregate(s=Sum('amount'))['s'] or 0
+            transfers_in = obj.transfers_in.aggregate(s=Sum('amount'))['s'] or 0
+            obj.opening_balance = desired - total_payments + total_expenses + transfers_out - transfers_in
+            obj.save(update_fields=['opening_balance'])
+            messages.success(request, f'Available balance adjusted to {desired}.')
+        except Exception:
+            messages.error(request, 'Invalid balance value.')
+        return redirect('bank_account_edit', pk=pk)
     form = BankAccountForm(request.POST or None, instance=obj)
     categories = AccountCategory.objects.filter(is_active=True)
     selected_type = obj.account_category.account_type if obj.account_category else None

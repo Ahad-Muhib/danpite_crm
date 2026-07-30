@@ -138,13 +138,32 @@ class ExpenseForm(forms.ModelForm):
             'receipt': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
+    def clean(self):
+        cleaned = super().clean()
+        amount = cleaned.get('amount')
+        account = cleaned.get('bank_account')
+        if amount and account:
+            balance = account.available_balance
+            if self.instance and self.instance.pk:
+                balance += float(self.instance.amount or 0)
+            if float(amount) > balance:
+                raise forms.ValidationError(f'Insufficient balance in {account.display_name}. Available: {balance:.2f}')
+        return cleaned
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['expense_date'].initial = date.today()
         self.fields['description'].label = 'Notes'
         cats = ExpenseCategory.objects.filter(is_active=True)
         if cats:
-            self.fields['category'].choices = [(c.name, c.name) for c in cats]
+            choices = [(v, l) for v, l in Expense.CATEGORY]
+            seen = {v for v, _ in choices}
+            for c in cats:
+                key = c.name.lower()
+                if key not in seen:
+                    choices.append((key, c.name))
+                    seen.add(key)
+            self.fields['category'].choices = choices
 
 
 class BankAccountForm(forms.ModelForm):
@@ -204,7 +223,7 @@ class TransferForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['transfer_date'].initial = date.today()
 
-        cats = AccountCategory.objects.filter(is_active=True).values_list('pk', 'name')
+        cats = AccountCategory.objects.filter(is_active=True)
         cat_choices = [('', '-- Select Type --')] + [(str(c.pk), c.name) for c in cats]
         self.fields['from_method'].choices = cat_choices
         self.fields['to_method'].choices = cat_choices

@@ -72,18 +72,12 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
       <div>
         <img src="{{ MEDIA_URL }}invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg" alt="Danpite" style="max-width:160px;margin-bottom:20px;">
         <div class="label">Bill To</div>
-        <div style="margin-bottom:8px;">
-          <div class="input-group input-group-sm">
-            {{ form.bill_to_name }}
-            <button type="button" class="btn btn-outline-success" id="add-bill-to-btn" title="Add client"><i class="bi bi-plus-lg"></i></button>
-          </div>
-          <datalist id="client-list">
-            {% for c in clients %}
-            <option value="{{ c.name }}">{% endfor %}
-          </datalist>
+        <div style="position:relative;">
+          {{ form.bill_to_name }}
+          <div id="inv-client-dropdown" class="acct-dropdown" style="display:none;"></div>
         </div>
-        <div style="margin-bottom:6px;">{{ form.phone }}</div>
-        <div style="margin-bottom:6px;"><label class="label">Address</label>{{ form.ship_to }}</div>
+        <div style="margin-top:6px;">{{ form.phone }}</div>
+        <div style="margin-top:6px;"><label class="label">Address</label>{{ form.ship_to }}</div>
       </div>
       <div>
         <div class="title">INVOICE</div>
@@ -91,7 +85,7 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
         <div class="details">
           <div class="detail-row"><span>Date</span>{{ form.invoice_date }}</div>
           <div class="detail-row"><span>Delivery Date</span>{{ form.delivery_date }}</div>
-          <div class="detail-row balance" style="border-top:1px solid var(--line);padding-top:6px;margin-top:4px;"><span>Balance Due</span><span id="balance" class="money">৳0.00</span></div>
+          <div class="detail-row balance" style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px;"><span>Balance Due</span><span id="balance" class="money">৳0.00</span></div>
         </div>
       </div>
     </section>
@@ -228,7 +222,26 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
               </div>
             </div>
           </div>
-          <!-- Cash / Cheque / Online -->
+          <!-- Cash Account -->
+          <div class="col-12" id="payment-cash-section" style="display:none;">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-medium" style="font-size:12px;">Reference</label>
+                <input type="text" name="payment_reference" class="form-control form-control-sm" placeholder="Reference / Description">
+              </div>
+              <div class="col-md-6" style="position:relative;">
+                <label class="form-label fw-medium" style="font-size:12px;">Cash Account</label>
+                <input type="text" id="payment-cash-search" class="form-control form-control-sm" placeholder="Search by holder name..." autocomplete="off">
+                <input type="hidden" name="payment_cash_account" id="payment-cash-account-pk">
+                <div id="cash-dropdown" class="acct-dropdown" style="display:none;"></div>
+              </div>
+            </div>
+            <div id="cash-account-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+              <div style="font-size:13px;font-weight:600;" id="cash-info-holder"></div>
+              <div style="font-size:12px;color:#6b7280;"><span id="cash-info-contact"></span></div>
+            </div>
+          </div>
+          <!-- Cheque / Online -->
           <div class="col-12" id="payment-other-section" style="display:none;">
             <div class="row g-3">
               <div class="col-md-6">
@@ -293,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var amtPaid = document.getElementById('id_amount_paid');
   var pmtAmt = document.getElementById('payment-amount');
   function copyAmount() { if (pmtAmt) pmtAmt.value = amtPaid ? (amtPaid.value || '0') : '0'; }
-  if (amtPaid) { amtPaid.addEventListener('input', copyAmount); amtPaid.addEventListener('change', copyAmount); }
+  if (amtPaid) { amtPaid.addEventListener('input', function(){ copyAmount(); calculate(); }); amtPaid.addEventListener('change', function(){ copyAmount(); calculate(); }); }
   copyAmount();
 
   // Quill editor
@@ -342,11 +355,60 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   // Client autocomplete
+  var clientsData = [
+    {% for c in clients %}
+    {pk: {{ c.pk }}, name: "{{ c.name|escapejs }}", phone: "{{ c.phone|escapejs }}", address: "{{ c.address|escapejs }}"},
+    {% endfor %}
+  ];
   var billToInput = document.getElementById('id_bill_to_name');
-  var clientList = document.getElementById('client-list');
-  if (billToInput) {
-    billToInput.setAttribute('list', 'client-list');
+  var invClientDropdown = document.getElementById('inv-client-dropdown');
+  var phoneInput = document.getElementById('id_phone');
+  var addressInput = document.getElementById('id_ship_to');
+
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  function renderClientDropdown(items) {
+    invClientDropdown.innerHTML = '';
+    if (!items.length) { invClientDropdown.style.display = 'none'; return; }
+    items.forEach(function(c) {
+      var item = document.createElement('div');
+      item.className = 'acct-dropdown-item';
+      item.innerHTML = '<div class="acct-num">' + escHtml(c.name) + '</div>'
+                     + '<div class="acct-detail">' + escHtml(c.phone || '') + (c.phone && c.address ? ' · ' : '') + escHtml(c.address || '') + '</div>';
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        billToInput.value = c.name;
+        phoneInput.value = c.phone || '';
+        addressInput.value = c.address || '';
+        invClientDropdown.style.display = 'none';
+      });
+      invClientDropdown.appendChild(item);
+    });
+    invClientDropdown.style.display = 'block';
+  }
+
+  function closeClientDropdown() { invClientDropdown.style.display = 'none'; }
+
+  billToInput.addEventListener('input', function() {
+    var q = this.value.trim().toLowerCase();
+    if (!q) { closeClientDropdown(); return; }
+    var results = clientsData.filter(function(c) { return c.name.toLowerCase().includes(q); });
+    renderClientDropdown(results);
+  });
+  billToInput.addEventListener('blur', function() { setTimeout(closeClientDropdown, 200); });
+  billToInput.addEventListener('focus', function() {
+    if (this.value.trim()) {
+      var q = this.value.trim().toLowerCase();
+      var results = clientsData.filter(function(c) { return c.name.toLowerCase().includes(q); });
+      renderClientDropdown(results);
+    }
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#id_bill_to_name') && !e.target.closest('#inv-client-dropdown') && !e.target.closest('#add-bill-to-btn')) closeClientDropdown();
+  });
 
   const rows = document.getElementById('rows');
   const totalForms = document.getElementById('id_items-TOTAL_FORMS');
@@ -391,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function(){
     calculate();
   });
 
-  ['id_discount','id_tax','id_shipping'].forEach(function(id){
+  ['id_discount','id_tax','id_shipping','id_amount_paid'].forEach(function(id){
     document.getElementById(id)?.addEventListener('input', calculate);
   });
 
@@ -404,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function(){
   // Payment method toggle
   document.getElementById('payment-method')?.addEventListener('change', function() {
     var val = this.value;
-    ['payment-bank-section', 'payment-mobile-section', 'payment-card-section', 'payment-other-section'].forEach(function(id) {
+    ['payment-bank-section', 'payment-mobile-section', 'payment-card-section', 'payment-cash-section', 'payment-other-section'].forEach(function(id) {
       document.getElementById(id).style.display = 'none';
     });
     if (val === 'bank_transfer') {
@@ -413,7 +475,9 @@ document.addEventListener('DOMContentLoaded', function(){
       document.getElementById('payment-mobile-section').style.display = 'block';
     } else if (val === 'card') {
       document.getElementById('payment-card-section').style.display = 'block';
-    } else if (['cash','cheque','online'].includes(val)) {
+    } else if (val === 'cash') {
+      document.getElementById('payment-cash-section').style.display = 'block';
+    } else if (['cheque','online'].includes(val)) {
       document.getElementById('payment-other-section').style.display = 'block';
     }
     // auto-set payment amount
@@ -576,6 +640,69 @@ document.addEventListener('DOMContentLoaded', function(){
 
   mobileInput?.addEventListener('blur', function() {
     setTimeout(function() { mobileDropdown.style.display = 'none'; }, 200);
+  });
+
+  // Cash account dropdown
+  var cashAccounts = [];
+  var cashSearch = document.getElementById('payment-cash-search');
+  var cashDropdown = document.getElementById('cash-dropdown');
+  var cashPk = document.getElementById('payment-cash-account-pk');
+  var cashInfo = document.getElementById('cash-account-info');
+
+  function fetchCashAccounts() {
+    fetch('/accounts/bank-accounts-by-bank/?account_type=cash')
+      .then(function(r) { return r.json(); })
+      .then(function(data) { cashAccounts = data.accounts; });
+  }
+
+  function renderCashDropdown(matches) {
+    if (!matches || !matches.length) { cashDropdown.style.display = 'none'; return; }
+    cashDropdown.innerHTML = '';
+    matches.forEach(function(a) {
+      var item = document.createElement('div');
+      item.className = 'acct-dropdown-item';
+      item.innerHTML = '<div class="acct-num">' + (a.holder_name || '—') + '</div><div class="acct-detail">' + (a.contact_number || '') + '</div>';
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        cashSearch.value = a.holder_name || '';
+        cashPk.value = a.id;
+        document.getElementById('cash-info-holder').textContent = 'Holder: ' + (a.holder_name || '—');
+        document.getElementById('cash-info-contact').textContent = 'Contact: ' + (a.contact_number || '—');
+        cashInfo.style.display = 'block';
+        cashDropdown.style.display = 'none';
+      });
+      cashDropdown.appendChild(item);
+    });
+    cashDropdown.style.display = 'block';
+  }
+
+  document.getElementById('payment-method')?.addEventListener('change', function() {
+    var val = this.value;
+    if (val === 'cash') {
+      fetchCashAccounts();
+    } else {
+      cashAccounts = [];
+    }
+  });
+
+  cashSearch?.addEventListener('input', function() {
+    var val = this.value.trim().toLowerCase();
+    var exact = cashAccounts.find(function(a) { return (a.holder_name || '').toLowerCase() === val; });
+    if (exact) {
+      cashPk.value = exact.id;
+      document.getElementById('cash-info-holder').textContent = 'Holder: ' + (exact.holder_name || '—');
+      document.getElementById('cash-info-contact').textContent = 'Contact: ' + (exact.contact_number || '—');
+      cashInfo.style.display = 'block';
+      cashDropdown.style.display = 'none';
+      return;
+    }
+    cashInfo.style.display = 'none';
+    var fuzzy = val ? cashAccounts.filter(function(a) { return (a.holder_name || '').toLowerCase().indexOf(val) !== -1; }) : cashAccounts;
+    renderCashDropdown(fuzzy);
+  });
+
+  cashSearch?.addEventListener('blur', function() {
+    setTimeout(function() { cashDropdown.style.display = 'none'; }, 200);
   });
 
   // Trigger payment method change on load

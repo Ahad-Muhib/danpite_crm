@@ -16,6 +16,12 @@
 <div class="crm-card">
   <div class="crm-card-header"><span class="crm-card-title">Expense Details</span></div>
   <div class="p-4">
+    {% if form.non_field_errors or form.errors %}
+    <div class="alert alert-danger py-2 small">
+      {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+      {% for field, errors in form.errors.items %}{% if field != '__all__' %}{% for e in errors %}<div>{{ field }}: {{ e }}</div>{% endfor %}{% endif %}{% endfor %}
+    </div>
+    {% endif %}
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
       <div class="row g-3">
