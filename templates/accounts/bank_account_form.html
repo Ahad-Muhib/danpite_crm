@@ -1,14 +1,74 @@
 {% extends 'base.html' %}
 {% block title %}{{ action|default:"Add" }} Account{% endblock %}
 {% block page_title %}{{ action|default:"Add" }} Account{% endblock %}
+{% block extra_head %}
+<style>
+.acct-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 999;
+  background: #fff; border: 1px solid #d1d5db; border-radius: 6px;
+  max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,.12);
+}
+.acct-dropdown-item {
+  padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f3f4f6;
+}
+.acct-dropdown-item:last-child { border-bottom: 0; }
+.acct-dropdown-item:hover { background: #f0fdf4; }
+.acct-dropdown-item .acct-num { font-weight: 600; font-size: 13px; }
+.acct-dropdown-item .acct-detail { font-size: 11px; color: #6b7280; }
+</style>
+{% endblock %}
 {% block content %}
 <div class="crm-card">
   <div class="crm-card-header"><span class="crm-card-title">Account Details</span></div>
   <div class="p-4">
-    <form method="post">
+    <form method="post" id="bank-account-form">
       {% csrf_token %}
+      <div style="display:none">{{ form.account_category }}</div>
+
+      <label class="form-label fw-medium mb-2">Account Type</label>
+      <div class="mb-3 d-flex align-items-center gap-2 flex-wrap" id="type-radios">
+        {% for type_key, type_label in type_choices %}
+        <a href="#" class="text-decoration-none px-3 py-1 rounded type-option {% if selected_type == type_key %}fw-bold text-primary bg-light{% else %}text-secondary{% endif %}"
+           data-type="{{ type_key }}" id="type-link-{{ type_key }}">{{ type_label }}</a>
+        {% endfor %}
+        <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="add-category-btn" data-bs-toggle="modal" data-bs-target="#categoryModal"><i class="bi bi-plus-lg"></i></button>
+      </div>
+
+      <div id="category-sub-select" class="row g-3 mb-3" style="display:none;">
+        <div class="col-md-6"><label class="form-label fw-medium">Category</label>
+          <select id="id_account_category_visible" class="form-select"></select>
+        </div>
+      </div>
+
       <div class="row g-3">
-        <div class="col-md-6"><label class="form-label fw-medium">Category</label>{{ form.category }}</div>
+        <div id="card-bank-section" style="display:none;" class="row g-3">
+          <div class="col-md-6" style="position:relative;">
+            <label class="form-label fw-medium">Bank Name</label>
+            <input type="text" id="card-bank-search" class="form-control" placeholder="Type bank name..." autocomplete="off"
+                   value="{% if form.instance.pk and form.instance.bank_name %}{{ form.instance.bank_name }}{% endif %}">
+            <div id="card-bank-dropdown" class="acct-dropdown" style="display:none;"></div>
+          </div>
+          <div class="col-md-6" style="position:relative;">
+            <label class="form-label fw-medium">Account Name</label>
+            <input type="text" id="card-acct-search" class="form-control" placeholder="Type account name..." autocomplete="off"
+                   value="{% if form.instance.pk and form.instance.account_name %}{{ form.instance.account_name }}{% endif %}">
+            <div id="card-acct-dropdown" class="acct-dropdown" style="display:none;"></div>
+          </div>
+          <div id="card-bank-info" class="col-12" style="display:none;">
+            <div class="p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+              <div style="font-size:13px;font-weight:600;" id="card-info-account-name"></div>
+              <div style="font-size:12px;color:#374151;">
+                <span id="card-info-bank-name"></span> · A/C <span id="card-info-account-number"></span>
+              </div>
+              <div style="font-size:12px;color:#6b7280;">
+                <span id="card-info-account-type"></span>
+                <span id="card-info-branch"></span>
+                <span id="card-info-routing"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="col-md-6"><label class="form-label fw-medium">Opening Balance</label>{{ form.opening_balance }}</div>
 
         <div id="bank-fields" class="row g-3" style="display:none;">
@@ -20,17 +80,21 @@
           <div class="col-md-6"><label class="form-label fw-medium">Routing Number</label>{{ form.routing_number }}</div>
         </div>
 
+        <div id="card-fields" class="row g-3" style="display:none;">
+          <div class="col-md-6"><label class="form-label fw-medium">Card Holder Name</label>{{ form.card_holder_name }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Card Number</label>{{ form.card_number }}</div>
+        </div>
+
         <div id="mobile-fields" class="row g-3" style="display:none;">
           <div class="col-md-6"><label class="form-label fw-medium">Mobile Number</label>{{ form.mobile_number }}</div>
           <div class="col-md-6"><label class="form-label fw-medium">Account Holder Name</label>{{ form.holder_name }}</div>
           <div class="col-md-6"><label class="form-label fw-medium">Account Type</label>{{ form.mobile_type }}</div>
         </div>
 
-        <div id="card-fields" class="row g-3" style="display:none;">
-          <div class="col-md-6"><label class="form-label fw-medium">Card Number</label>{{ form.card_number }}</div>
-          <div class="col-md-6"><label class="form-label fw-medium">Card Holder Name</label>{{ form.card_holder }}</div>
-          <div class="col-md-6"><label class="form-label fw-medium">Card Type</label>{{ form.card_type }}</div>
-          <div class="col-md-6"><label class="form-label fw-medium">Connected Bank</label>{{ form.card_bank }}</div>
+        <div id="cash-fields" class="row g-3" style="display:none;">
+          <div class="col-md-6"><label class="form-label fw-medium">Account Holder Name</label>{{ form.holder_name }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Contact Number</label>{{ form.contact_number }}</div>
+          <div class="col-md-6"><label class="form-label fw-medium">Currency</label>{{ form.currency }}</div>
         </div>
 
         {% if form.instance.pk %}
@@ -49,17 +113,378 @@
     </form>
   </div>
 </div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-medium">Name</label>
+          <input type="text" id="new-cat-name" class="form-control" placeholder="Category name">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-medium">Type
+            <button type="button" class="btn btn-sm btn-outline-primary ms-1 py-0 px-1" id="add-type-btn" title="Add new type"><i class="bi bi-plus"></i></button>
+          </label>
+          <select id="new-cat-type" class="form-select"></select>
+        </div>
+        <button class="btn btn-primary w-100" id="add-cat-btn"><i class="bi bi-plus me-1"></i>Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Type Modal -->
+<div class="modal fade" id="typeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Account Type</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-medium">Label</label>
+          <input type="text" id="new-type-label" class="form-control" placeholder="e.g. Digital Wallet">
+        </div>
+        <button class="btn btn-primary w-100" id="add-type-save"><i class="bi bi-plus me-1"></i>Add Type</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
-  var cat = document.getElementById('id_category');
-  function toggleFields(){
-    var v = cat.value;
-    document.getElementById('bank-fields').style.display = v === 'bank' ? '' : 'none';
-    document.getElementById('mobile-fields').style.display = (v === 'bkash' || v === 'nagad' || v === 'rocket') ? '' : 'none';
-    document.getElementById('card-fields').style.display = v === 'card' ? '' : 'none';
+  var categories = {{ categories_json|safe }};
+  var types = {{ types_json|safe }};
+  var hiddenInput = document.getElementById('id_account_category');
+  var visibleSelect = document.getElementById('id_account_category_visible');
+  var catSubSelect = document.getElementById('category-sub-select');
+  var selectedType = '{{ selected_type|default:"" }}';
+  var typeLinks = document.querySelectorAll('.type-option');
+
+  function populateTypeSelect() {
+    var sel = document.getElementById('new-cat-type');
+    sel.innerHTML = '';
+    types.forEach(function(t) {
+      var opt = document.createElement('option');
+      opt.value = t.key;
+      opt.textContent = t.label;
+      sel.appendChild(opt);
+    });
   }
-  cat?.addEventListener('change', toggleFields);
-  toggleFields();
+  populateTypeSelect();
+
+  function selectType(type) {
+    selectedType = type;
+    typeLinks.forEach(function(link) {
+      var isActive = link.dataset.type === type;
+      link.className = 'text-decoration-none px-3 py-1 rounded type-option ' + (isActive ? 'fw-bold text-primary bg-light' : 'text-secondary');
+    });
+    showFields(type);
+  }
+
+  function filterCategories(type) {
+    var matching = categories.filter(function(c) { return c.account_type === type; });
+    var html = '';
+    for (var i = 0; i < matching.length; i++) {
+      var sel = parseInt(hiddenInput.value) === matching[i].pk ? 'selected' : '';
+      html += '<option value="' + matching[i].pk + '" ' + sel + '>' + matching[i].name + '</option>';
+    }
+    visibleSelect.innerHTML = html;
+    if (matching.length > 1) {
+      catSubSelect.style.display = '';
+    } else {
+      catSubSelect.style.display = 'none';
+      if (matching.length === 1) {
+        hiddenInput.value = matching[0].pk;
+      } else {
+        hiddenInput.value = '';
+      }
+    }
+    if (matching.length > 0 && !hiddenInput.value) {
+      hiddenInput.value = matching[0].pk;
+    }
+    return matching;
+  }
+
+  function isCardCategory() {
+    var pk = parseInt(hiddenInput.value);
+    for (var i = 0; i < categories.length; i++) {
+      if (categories[i].pk === pk && categories[i].name.toLowerCase() === 'card') return true;
+    }
+    return false;
+  }
+
+  // ── Card Autocomplete (two-field) ──
+  var cardAccounts = [
+    {% for a in bank_accounts %}
+    {pk: {{ a.pk }}, bank_name: "{{ a.bank_name|escapejs }}", account_name: "{{ a.account_name|escapejs }}", account_number: "{{ a.account_number|escapejs }}", account_type: "{{ a.account_type|escapejs }}", branch: "{{ a.branch|escapejs }}", routing_number: "{{ a.routing_number|escapejs }}"},
+    {% endfor %}
+  ];
+  var cardBankSearch = document.getElementById('card-bank-search');
+  var cardBankDropdown = document.getElementById('card-bank-dropdown');
+  var cardAcctSearch = document.getElementById('card-acct-search');
+  var cardAcctDropdown = document.getElementById('card-acct-dropdown');
+  var cardBankInfo = document.getElementById('card-bank-info');
+  var cardInfoName = document.getElementById('card-info-account-name');
+  var cardInfoBank = document.getElementById('card-info-bank-name');
+  var cardInfoNum = document.getElementById('card-info-account-number');
+  var cardInfoType = document.getElementById('card-info-account-type');
+  var cardInfoBranch = document.getElementById('card-info-branch');
+  var cardInfoRouting = document.getElementById('card-info-routing');
+
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function uniqueBanks(results) {
+    var seen = {};
+    return results.filter(function(a) {
+      var key = a.bank_name.toLowerCase();
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+
+  function renderDropdown(container, items, labelKey, detailFn, onSelect) {
+    container.innerHTML = '';
+    if (!items.length) { container.style.display = 'none'; return; }
+    items.forEach(function(a) {
+      var item = document.createElement('div');
+      item.className = 'acct-dropdown-item';
+      item.innerHTML = '<div class="acct-num">' + escHtml(a[labelKey]) + '</div>'
+                     + '<div class="acct-detail">' + detailFn(a) + '</div>';
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        onSelect(a);
+        container.style.display = 'none';
+        updateCardInfo();
+      });
+      container.appendChild(item);
+    });
+    container.style.display = 'block';
+  }
+
+  function closeDropdown(el) { el.style.display = 'none'; }
+
+  function updateCardInfo() {
+    var bank = document.getElementById('id_bank_name').value;
+    var name = document.getElementById('id_account_name').value;
+    var num = document.getElementById('id_account_number').value;
+    var type = document.getElementById('id_account_type').value;
+    var branch = document.getElementById('id_branch').value;
+    var routing = document.getElementById('id_routing_number').value;
+    if (bank || name) {
+      cardInfoName.textContent = name || '—';
+      cardInfoBank.textContent = bank || '—';
+      cardInfoNum.textContent = num || '—';
+      cardInfoType.textContent = type || '—';
+      cardInfoBranch.textContent = branch ? '· ' + branch : '';
+      cardInfoRouting.textContent = routing ? '· ' + routing : '';
+      cardBankInfo.style.display = '';
+    } else {
+      cardBankInfo.style.display = 'none';
+    }
+  }
+
+  // Bank name search
+  cardBankSearch.addEventListener('input', function() {
+    var q = this.value.trim().toLowerCase();
+    if (!q) { closeDropdown(cardBankDropdown); return; }
+    renderDropdown(cardBankDropdown, uniqueBanks(cardAccounts.filter(function(a) { return a.bank_name.toLowerCase().includes(q); })), 'bank_name',
+      function(a) { return ''; },
+      function(a) {
+        document.getElementById('id_bank_name').value = a.bank_name;
+        cardBankSearch.value = a.bank_name;
+        cardAcctSearch.value = '';
+        cardAcctSearch.focus();
+        document.getElementById('id_account_name').value = '';
+        document.getElementById('id_account_number').value = '';
+        document.getElementById('id_account_type').value = '';
+        document.getElementById('id_branch').value = '';
+        document.getElementById('id_routing_number').value = '';
+        renderDropdown(cardAcctDropdown, cardAccounts.filter(function(x) { return x.bank_name === a.bank_name; }), 'account_name',
+          function(x) { return escHtml(x.account_number); },
+          function(x) {
+            document.getElementById('id_account_name').value = x.account_name;
+            document.getElementById('id_account_number').value = x.account_number;
+            document.getElementById('id_account_type').value = x.account_type;
+            document.getElementById('id_branch').value = x.branch;
+            document.getElementById('id_routing_number').value = x.routing_number;
+            cardAcctSearch.value = x.account_name;
+          });
+      });
+  });
+  cardBankSearch.addEventListener('blur', function() { setTimeout(function() { closeDropdown(cardBankDropdown); }, 200); });
+
+  // Account name search (only works if bank is selected)
+  cardAcctSearch.addEventListener('input', function() {
+    var bank = document.getElementById('id_bank_name').value;
+    if (!bank) { alert('First select a bank.'); cardAcctSearch.value = ''; closeDropdown(cardAcctDropdown); return; }
+    var q = this.value.trim().toLowerCase();
+    if (!q) { closeDropdown(cardAcctDropdown); return; }
+    renderDropdown(cardAcctDropdown, cardAccounts.filter(function(a) { return a.bank_name === bank && a.account_name.toLowerCase().includes(q); }), 'account_name',
+      function(a) { return escHtml(a.account_number); },
+      function(a) {
+        document.getElementById('id_account_name').value = a.account_name;
+        document.getElementById('id_account_number').value = a.account_number;
+        document.getElementById('id_account_type').value = a.account_type;
+        document.getElementById('id_branch').value = a.branch;
+        document.getElementById('id_routing_number').value = a.routing_number;
+        cardAcctSearch.value = a.account_name;
+      });
+  });
+  cardAcctSearch.addEventListener('blur', function() { setTimeout(function() { closeDropdown(cardAcctDropdown); }, 200); });
+  cardAcctSearch.addEventListener('focus', function() {
+    var bank = document.getElementById('id_bank_name').value;
+    if (bank && this.value.trim()) {
+      var q = this.value.trim().toLowerCase();
+      renderDropdown(cardAcctDropdown, cardAccounts.filter(function(a) { return a.bank_name === bank && a.account_name.toLowerCase().includes(q); }), 'account_name',
+        function(a) { return escHtml(a.account_number); },
+        function(a) {
+          document.getElementById('id_account_name').value = a.account_name;
+          document.getElementById('id_account_number').value = a.account_number;
+          document.getElementById('id_account_type').value = a.account_type;
+          document.getElementById('id_branch').value = a.branch;
+          document.getElementById('id_routing_number').value = a.routing_number;
+          cardAcctSearch.value = a.account_name;
+        });
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#card-bank-section')) {
+      closeDropdown(cardBankDropdown);
+      closeDropdown(cardAcctDropdown);
+    }
+  });
+
+  function showFields(type) {
+    var isCard = type === 'bank' && isCardCategory();
+    document.getElementById('card-bank-section').style.display = isCard ? '' : 'none';
+    document.getElementById('bank-fields').style.display = type === 'bank' ? '' : 'none';
+    document.getElementById('card-fields').style.display = isCard ? '' : 'none';
+    document.getElementById('mobile-fields').style.display = type === 'mobile' ? '' : 'none';
+    document.getElementById('cash-fields').style.display = type === 'cash' ? '' : 'none';
+    filterCategories(type);
+  }
+
+  typeLinks.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      selectType(this.dataset.type);
+    });
+  });
+
+  visibleSelect.addEventListener('change', function() {
+    hiddenInput.value = this.value;
+    if (selectedType) showFields(selectedType);
+  });
+
+  if (selectedType) {
+    selectType(selectedType);
+  } else if (hiddenInput.value) {
+    var pk = parseInt(hiddenInput.value);
+    for (var i = 0; i < categories.length; i++) {
+      if (categories[i].pk === pk) {
+        selectType(categories[i].account_type);
+        break;
+      }
+    }
+  }
+
+  // If editing a Card account with pre-filled data, show info box
+  if (isCardCategory()) { updateCardInfo(); }
+
+  // ── Add Category ──
+  var csrf = '{{ csrf_token }}';
+
+  document.getElementById('add-cat-btn').addEventListener('click', function() {
+    var name = document.getElementById('new-cat-name').value.trim();
+    var type = document.getElementById('new-cat-type').value;
+    if (!name) { alert('Enter a category name.'); return; }
+    var fd = new FormData();
+    fd.append('name', name);
+    fd.append('account_type', type);
+    fd.append('csrfmiddlewaretoken', csrf);
+    fetch('/accounts/categories/add/', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function(r) { return r.json(); })
+      .then(function(resp) {
+        if (resp.ok) {
+          document.getElementById('new-cat-name').value = '';
+          var modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
+          if (modal) modal.hide();
+          // Refresh categories
+          fetch('/accounts/categories-json/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              categories = data;
+              if (selectedType) showFields(selectedType);
+            });
+        } else {
+          alert(resp.error || 'Failed to add category.');
+        }
+      });
+  });
+
+  // ── Add Type ──
+  document.getElementById('add-type-btn').addEventListener('click', function() {
+    var typeModal = new bootstrap.Modal(document.getElementById('typeModal'));
+    typeModal.show();
+  });
+
+  document.getElementById('add-type-save').addEventListener('click', function() {
+    var label = document.getElementById('new-type-label').value.trim();
+    if (!label) { alert('Enter a type label.'); return; }
+    var key = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    if (!key) { alert('Invalid type name.'); return; }
+    var fd = new FormData();
+    fd.append('key', key);
+    fd.append('label', label);
+    fd.append('csrfmiddlewaretoken', csrf);
+    fetch('/accounts/types/add/', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function(r) { return r.json(); })
+      .then(function(resp) {
+        if (resp.ok) {
+          document.getElementById('new-type-label').value = '';
+          var modal = bootstrap.Modal.getInstance(document.getElementById('typeModal'));
+          if (modal) modal.hide();
+          types = resp.types;
+          // Rebuild type dropdown in category modal
+          populateTypeSelect();
+          // Rebuild radio buttons
+          var container = document.getElementById('type-radios');
+          var btn = container.querySelector('#add-category-btn');
+          container.innerHTML = '';
+          types.forEach(function(t) {
+            var a = document.createElement('a');
+            a.href = '#';
+            a.className = 'text-decoration-none px-3 py-1 rounded type-option text-secondary';
+            a.dataset.type = t.key;
+            a.id = 'type-link-' + t.key;
+            a.textContent = t.label;
+            a.addEventListener('click', function(e) {
+              e.preventDefault();
+              selectType(this.dataset.type);
+            });
+            container.appendChild(a);
+          });
+          container.appendChild(btn);
+          typeLinks = document.querySelectorAll('.type-option');
+          selectType(types[0].key);
+        } else {
+          alert(resp.error || 'Failed to add type.');
+        }
+      });
+  });
 })();
 </script>
 {% endblock %}

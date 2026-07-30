@@ -11,13 +11,40 @@
     </div>
   </div>
   <div class="p-4">
+    {% with cat=account.account_category %}
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Category</label>
-        <div><span class="badge bg-light text-dark border">{{ account.get_category_display }}</span></div>
+        <div><span class="badge bg-light text-dark border">{{ cat.name|default:"—" }}</span></div>
       </div>
 
-      {% if account.category == 'bank' %}
+      {% if cat.account_type == 'bank' and cat.name|lower == 'card' %}
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Card Holder Name</label>
+        <div class="fw-medium">{{ account.card_holder_name }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Card Number</label>
+        <div><code>{{ account.card_number }}</code></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Bank Name</label>
+        <div class="fw-medium">{{ account.bank_name }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Account Number</label>
+        <div><code>{{ account.account_number }}</code></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Routing Number</label>
+        <div>{{ account.routing_number|default:"—" }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Branch</label>
+        <div>{{ account.branch|default:"—" }}</div>
+      </div>
+
+      {% elif cat.account_type == 'bank' %}
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Bank Name</label>
         <div class="fw-medium">{{ account.bank_name }}</div>
@@ -42,7 +69,8 @@
         <label class="form-label fw-medium text-muted">Routing Number</label>
         <div>{{ account.routing_number|default:"—" }}</div>
       </div>
-      {% elif account.category in 'bkash,nagad,rocket' %}
+
+      {% elif cat.account_type == 'mobile' %}
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Mobile Number</label>
         <div><code>{{ account.mobile_number }}</code></div>
@@ -55,22 +83,19 @@
         <label class="form-label fw-medium text-muted">Account Type</label>
         <div><span class="badge bg-light text-dark border">{{ account.get_mobile_type_display }}</span></div>
       </div>
-      {% elif account.category == 'card' %}
+
+      {% elif cat.account_type == 'cash' %}
       <div class="col-md-6">
-        <label class="form-label fw-medium text-muted">Card Number</label>
-        <div><code>{{ account.card_number }}</code></div>
+        <label class="form-label fw-medium text-muted">Holder Name</label>
+        <div class="fw-medium">{{ account.holder_name }}</div>
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-medium text-muted">Card Holder</label>
-        <div class="fw-medium">{{ account.card_holder }}</div>
+        <label class="form-label fw-medium text-muted">Contact Number</label>
+        <div><code>{{ account.contact_number|default:"—" }}</code></div>
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-medium text-muted">Card Type</label>
-        <div><span class="badge bg-light text-dark border">{{ account.get_card_type_display }}</span></div>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label fw-medium text-muted">Connected Bank</label>
-        <div>{{ account.card_bank|default:"—" }}</div>
+        <label class="form-label fw-medium text-muted">Currency</label>
+        <div>{{ account.currency|default:"BDT" }}</div>
       </div>
       {% endif %}
 
@@ -106,6 +131,7 @@
         <div>{{ account.created_at|date:"d M Y H:i" }}</div>
       </div>
     </div>
+    {% endwith %}
   </div>
 </div>
 

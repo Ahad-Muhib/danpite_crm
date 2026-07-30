@@ -202,15 +202,15 @@ const ALL_ACCOUNTS = [
   {% for a in accounts %}
   {
     pk: {{ a.pk }},
-    category: "{{ a.category|escapejs }}",
+    account_category_id: {{ a.account_category_id|default:'null' }},
+    category_type: "{{ a.account_category.account_type|default:''|escapejs }}",
+    category_name: "{{ a.account_category.name|default:''|escapejs }}",
     bank_name: "{{ a.bank_name|escapejs }}",
     account_name: "{{ a.account_name|escapejs }}",
     account_number: "{{ a.account_number|escapejs }}",
     mobile_number: "{{ a.mobile_number|escapejs }}",
     holder_name: "{{ a.holder_name|escapejs }}",
-    card_number: "{{ a.card_number|escapejs }}",
-    card_holder: "{{ a.card_holder|escapejs }}",
-    card_bank: "{{ a.card_bank|escapejs }}",
+    mobile_provider: "{{ a.mobile_provider|escapejs }}",
     display: "{{ a.display_name|escapejs }}",
     branch: "{{ a.branch|escapejs }}",
     available_balance: "{{ a.available_balance|escapejs }}",
@@ -221,7 +221,7 @@ const ALL_ACCOUNTS = [
 const SIDES = ['from', 'to'];
 var bankAccounts = { from: [], to: [] };
 var mobileAccounts = { from: [], to: [] };
-var cardAccounts = { from: [], to: [] };
+var cashAccounts = { from: [], to: [] };
 
 function escHtml(str) {
   var d = document.createElement('div');
@@ -231,31 +231,20 @@ function escHtml(str) {
 
 // ─── Method toggle ────────────────────────────────────
 function toggleMethod(side) {
-  var method = document.getElementById('id_' + side + '_method').value;
-  var sections = {
-    'bank': side + '-bank-section',
-    'bkash': side + '-mobile-section',
-    'nagad': side + '-mobile-section',
-    'rocket': side + '-mobile-section',
-    'card': side + '-card-section',
-  };
-  Object.values(sections).forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  var secId = sections[method];
-  if (secId) document.getElementById(secId).style.display = 'block';
+  var methodPk = document.getElementById('id_' + side + '_method').value;
+  var cat = ALL_ACCOUNTS.length ? ALL_ACCOUNTS.find(function(a) { return a.account_category_id == methodPk; }) : null;
+  var catType = cat ? cat.category_type : '';
+  document.getElementById(side + '-bank-section').style.display = catType === 'bank' ? 'block' : 'none';
+  document.getElementById(side + '-mobile-section').style.display = catType === 'mobile' ? 'block' : 'none';
 
-  if (method === 'bank') {
-    bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'bank'; });
+  if (catType === 'bank') {
+    bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.account_category_id == methodPk; });
     var bankSelect = document.getElementById('id_' + side + '_bank_name');
     if (bankSelect && bankSelect.value) {
-      bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'bank' && a.bank_name === bankSelect.value; });
+      bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.account_category_id == methodPk && a.bank_name === bankSelect.value; });
     }
-  } else if (['bkash','nagad','rocket'].includes(method)) {
-    mobileAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === method; });
-  } else if (method === 'card') {
-    cardAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'card'; });
+  } else if (catType === 'mobile') {
+    mobileAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.account_category_id == methodPk; });
   }
 }
 
@@ -312,7 +301,7 @@ function selectMobileAccount(side, a) {
   document.getElementById(side + '-mobile-holder').value = a.holder_name || '';
   document.getElementById('id_' + side + '_account').value = a.pk;
   var info = document.getElementById(side + '-mobile-info');
-  document.getElementById(side + '-mobile-info-method').textContent = a.category;
+  document.getElementById(side + '-mobile-info-method').textContent = a.category_name;
   document.getElementById(side + '-mobile-info-number').textContent = 'Number: ' + a.mobile_number;
   document.getElementById(side + '-mobile-info-holder').textContent = 'Name: ' + (a.holder_name || '—');
   info.style.display = 'block';
@@ -327,25 +316,16 @@ function restoreSelection(side) {
   if (!account) return;
 
   var methodEl = document.getElementById('id_' + side + '_method');
-  methodEl.value = account.category;
+  methodEl.value = account.account_category_id;
   toggleMethod(side);
 
-  if (account.category === 'bank') {
+  if (account.category_type === 'bank') {
     var bankEl = document.getElementById('id_' + side + '_bank_name');
     if (bankEl && account.bank_name) bankEl.value = account.bank_name;
-    bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'bank' && a.bank_name === account.bank_name; });
+    bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.account_category_id == account.account_category_id && a.bank_name === account.bank_name; });
     selectBankAccount(side, account);
-  } else if (['bkash','nagad','rocket'].includes(account.category)) {
+  } else if (account.category_type === 'mobile') {
     selectMobileAccount(side, account);
-  } else if (account.category === 'card') {
-    document.getElementById(side + '-card-number').value = account.card_number;
-    document.getElementById(side + '-card-holder').value = account.card_holder || '';
-    document.getElementById(side + '-card-bank').value = account.card_bank || '';
-    document.getElementById('id_' + side + '_account').value = account.pk;
-    var info = document.getElementById(side + '-card-info');
-    document.getElementById(side + '-card-info-name').textContent = 'Card: ' + account.card_number;
-    document.getElementById(side + '-card-info-detail').textContent = (account.card_holder || '') + (account.card_bank ? ' · ' + account.card_bank : '');
-    info.style.display = 'block';
   }
 }
 
@@ -373,7 +353,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('id_' + side + '_account').value = '';
         document.getElementById(side + '-bank-info').style.display = 'none';
         document.getElementById(side + '-acct-dropdown').style.display = 'none';
-        bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'bank' && a.bank_name === this.value; }.bind(this));
+        var methodPk = document.getElementById('id_' + side + '_method').value;
+        bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.account_category_id == methodPk && a.bank_name === this.value; }.bind(this));
         renderBankDropdown(side, bankAccounts[side]);
       });
     }
@@ -418,24 +399,11 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // Card number typing
+    // Card number typing (no longer used)
     var cardInput = document.getElementById(side + '-card-number');
     if (cardInput) {
       cardInput.addEventListener('input', function() {
-        var val = this.value.trim();
-        var exact = cardAccounts[side].find(function(a) { return a.card_number === val; });
-        if (exact) {
-          document.getElementById('id_' + side + '_account').value = exact.pk;
-          document.getElementById(side + '-card-holder').value = exact.card_holder || '';
-          document.getElementById(side + '-card-bank').value = exact.card_bank || '';
-          var info = document.getElementById(side + '-card-info');
-          document.getElementById(side + '-card-info-name').textContent = 'Card: ' + exact.card_number;
-          document.getElementById(side + '-card-info-detail').textContent = (exact.card_holder || '') + (exact.card_bank ? ' · ' + exact.card_bank : '');
-          info.style.display = 'block';
-          return;
-        }
-        document.getElementById('id_' + side + '_account').value = '';
-        document.getElementById(side + '-card-info').style.display = 'none';
+        // Card accounts removed; just no-op
       });
     }
   });
@@ -455,6 +423,11 @@ document.addEventListener('DOMContentLoaded', function() {
         var dd = document.getElementById(side + '-mobile-dropdown');
         if (dd) dd.style.display = 'none';
       }
+    });
+    // Hide card sections (no longer used)
+    SIDES.forEach(function(s) {
+      var el = document.getElementById(s + '-card-section');
+      if (el) el.style.display = 'none';
     });
   });
 });

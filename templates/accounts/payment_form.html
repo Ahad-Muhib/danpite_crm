@@ -72,7 +72,9 @@
 <script>
 const accounts = [
   {% for a in accounts %}
-  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ a.get_category_display|escapejs }}", method: "{{ a.category|escapejs }}", number: "{% firstof a.account_number a.mobile_number a.card_number ''|escapejs %}"},
+  {% with cat=a.account_category %}
+  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ cat.name|escapejs }}", method: "{{ cat.name|lower|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}", category_type: "{{ cat.account_type|escapejs }}"},
+  {% endwith %}
   {% endfor %}
 ];
 const invoicesData = [
@@ -188,7 +190,7 @@ const acctInfoDetail = document.getElementById('acct-info-detail');
 var selectedAcctPk = acctPk.value || '';
 
 function methodNeedsAccount(method) {
-  return ['bank', 'bkash', 'nagad', 'rocket', 'card'].includes(method);
+  return ['bank_transfer', 'bkash', 'nagad', 'rocket', 'upay', 'cash'].includes(method);
 }
 
 function filterAccountsByMethod(method, query) {

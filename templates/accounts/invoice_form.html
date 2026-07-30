@@ -511,9 +511,17 @@ document.addEventListener('DOMContentLoaded', function(){
   var mobileHolder = document.getElementById('payment-mobile-holder');
   var mobileInfo = document.getElementById('mobile-account-info');
 
-  function fetchMobileAccounts(category) {
-    if (!category) { mobileAccounts = []; return; }
-    fetch('/accounts/bank-accounts-by-bank/?category=' + encodeURIComponent(category))
+  // Map method names to category pks
+  var METHOD_CATEGORY_MAP = {
+    {% for c in categories %}
+    "{{ c.name|lower }}": {{ c.pk }},
+    {% endfor %}
+  };
+
+  function fetchMobileAccounts(methodVal) {
+    var catPk = METHOD_CATEGORY_MAP[methodVal];
+    if (!catPk) { mobileAccounts = []; return; }
+    fetch('/accounts/bank-accounts-by-bank/?category=' + catPk)
       .then(function(r) { return r.json(); })
       .then(function(data) { mobileAccounts = data.accounts; });
   }

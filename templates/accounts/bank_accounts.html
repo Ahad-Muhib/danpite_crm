@@ -8,11 +8,9 @@
     <form class="d-flex gap-2 search-form flex-wrap" method="get" id="account-filter-form">
       <select name="category" class="form-select form-select-sm" style="width:150px;">
         <option value="">All Categories</option>
-        <option value="bank" {% if category == 'bank' %}selected{% endif %}>Bank Transfer</option>
-        <option value="bkash" {% if category == 'bkash' %}selected{% endif %}>bKash</option>
-        <option value="nagad" {% if category == 'nagad' %}selected{% endif %}>Nagad</option>
-        <option value="rocket" {% if category == 'rocket' %}selected{% endif %}>Rocket</option>
-        <option value="card" {% if category == 'card' %}selected{% endif %}>Card</option>
+        {% for c in all_categories %}
+        <option value="{{ c.pk }}" {% if category == c.pk|slugify %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
       </select>
       <select name="status" class="form-select form-select-sm" style="width:120px;">
         <option value="">All Status</option>
@@ -54,12 +52,13 @@
       </thead>
       <tbody>
         {% for a in accounts %}
+        {% with cat=a.account_category %}
         <tr>
           <td><input type="checkbox" name="selected_accounts" value="{{ a.pk }}" class="form-check-input account-checkbox" form="account-bulk-form"></td>
-          <td><span class="badge bg-light text-dark">{% if a.category == 'bank' %}Bank{% elif a.category == 'bkash' %}bKash{% elif a.category == 'nagad' %}Nagad{% elif a.category == 'rocket' %}Rocket{% elif a.category == 'card' %}Card{% endif %}</span></td>
-          <td>{% if a.category == 'bank' %}{{ a.bank_name }}{% endif %}</td>
-          <td class="fw-medium">{% if a.category == 'bank' %}{{ a.account_name }}{% elif a.category in 'bkash,nagad,rocket' %}{{ a.holder_name }}{% elif a.category == 'card' %}{{ a.card_holder }}{% endif %}</td>
-          <td><code>{% if a.category == 'bank' %}{{ a.account_number }}{% elif a.category in 'bkash,nagad,rocket' %}{{ a.mobile_number }}{% elif a.category == 'card' %}{{ a.card_number }}{% endif %}</code></td>
+          <td><span class="badge bg-light text-dark">{{ cat.name|default:"—" }}</span></td>
+          <td>{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.bank_name }}{% elif cat.account_type == 'bank' %}{{ a.bank_name }}{% endif %}</td>
+          <td class="fw-medium">{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.card_holder_name }}{% else %}{{ a.account_name|default:a.holder_name }}{% endif %}</td>
+          <td><code>{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.card_number }}{% else %}{{ a.account_number|default:a.mobile_number }}{% endif %}</code></td>
           <td>
             <div class="dropdown">
               <button class="btn btn-sm dropdown-toggle {% if a.is_active %}btn-success{% else %}btn-secondary{% endif %}" data-bs-toggle="dropdown" data-bs-boundary="window">
@@ -79,6 +78,7 @@
             <a href="{% url 'bank_account_edit' a.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
           </td>
         </tr>
+        {% endwith %}
         {% empty %}
         <tr><td colspan="10" class="text-center text-muted py-5">No accounts found.</td></tr>
         {% endfor %}

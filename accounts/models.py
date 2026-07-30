@@ -84,38 +84,60 @@ class InvoiceItem(models.Model):
         super().save(*args, **kwargs)
 
 
+class AccountType(models.Model):
+    key = models.CharField(max_length=20, unique=True)
+    label = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['key']
+
+    def __str__(self):
+        return self.label
+
+
+class AccountCategory(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    account_type = models.CharField(max_length=20)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['account_type', 'name']
+        verbose_name_plural = 'Account Categories'
+
+    def __str__(self):
+        return self.name
+
+
 class BankAccount(models.Model):
-    CATEGORY = [
-        ('bank', 'Bank Transfer'),
-        ('bkash', 'bKash'),
-        ('nagad', 'Nagad'),
-        ('rocket', 'Rocket'),
-        ('card', 'Card'),
-    ]
-    TYPES = [('savings', 'Savings'), ('current', 'Current'), ('fixed', 'Fixed Deposit'), ('other', 'Other')]
+    BANK_TYPES = [('savings', 'Savings'), ('current', 'Current'), ('fixed', 'Fixed Deposit'), ('other', 'Other')]
     MOBILE_TYPES = [('personal', 'Personal'), ('agent', 'Agent')]
-    CARD_TYPES = [('credit', 'Credit'), ('debit', 'Debit')]
+    MOBILE_PROVIDERS = [('bkash', 'bKash'), ('nagad', 'Nagad'), ('upay', 'Upay'), ('rocket', 'Rocket')]
 
-    category = models.CharField(max_length=10, choices=CATEGORY, default='bank')
+    account_category = models.ForeignKey(AccountCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='accounts')
+    mobile_provider = models.CharField(max_length=20, choices=MOBILE_PROVIDERS, blank=True)
 
-    # Bank
+    # Bank fields
     bank_name = models.CharField(max_length=200, blank=True)
     account_name = models.CharField(max_length=200, blank=True)
     account_number = models.CharField(max_length=100, blank=True)
-    account_type = models.CharField(max_length=20, choices=TYPES, default='current')
+    account_type = models.CharField(max_length=20, choices=BANK_TYPES, default='current')
     branch = models.CharField(max_length=200, blank=True)
     routing_number = models.CharField(max_length=100, blank=True)
 
-    # Mobile (bkash/nagad/rocket)
+    # Mobile fields
     mobile_number = models.CharField(max_length=50, blank=True)
     holder_name = models.CharField(max_length=200, blank=True)
     mobile_type = models.CharField(max_length=10, choices=MOBILE_TYPES, default='personal')
 
-    # Card
+    # Card fields (for bank-type card categories)
     card_number = models.CharField(max_length=50, blank=True)
-    card_holder = models.CharField(max_length=200, blank=True)
-    card_type = models.CharField(max_length=10, choices=CARD_TYPES, default='debit')
-    card_bank = models.CharField(max_length=200, blank=True)
+    card_holder_name = models.CharField(max_length=200, blank=True)
+
+    # Cash fields
+    contact_number = models.CharField(max_length=50, blank=True)
+    currency = models.CharField(max_length=5, blank=True, default='BDT')
 
     # Common
     opening_balance = models.DecimalField(max_digits=14, decimal_places=2, default=0)
@@ -134,14 +156,20 @@ class BankAccount(models.Model):
 
     @property
     def display_name(self):
-        if self.category == 'bank':
+        cat = self.account_category
+        if not cat:
+            return 'Uncategorized'
+        if cat.name.lower() == 'card' and cat.account_type == 'bank':
+            parts = [p for p in [self.card_holder_name, self.card_number, self.bank_name] if p]
+            return ' - '.join(parts) if parts else 'Card'
+        if cat.account_type == 'bank':
             parts = [p for p in [self.bank_name, self.account_name, self.account_number] if p]
-            return ' - '.join(parts) if parts else 'Bank Account'
-        elif self.category in ('bkash', 'nagad', 'rocket'):
-            return f"{self.get_category_display()} - {self.mobile_number or '(no number)'}"
-        elif self.category == 'card':
-            return f"Card - {self.card_number or '(no number)'}"
-        return self.get_category_display()
+            return ' - '.join(parts) if parts else cat.name
+        elif cat.account_type == 'mobile':
+            return f"{self.get_mobile_provider_display() or cat.name} - {self.mobile_number or '(no number)'}"
+        elif cat.account_type == 'cash':
+            return f"Cash - {self.holder_name or '(no name)'}"
+        return cat.name
 
     def __str__(self):
         return self.display_name

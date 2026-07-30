@@ -1,3 +1,5 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -10,7 +12,7 @@ from core.models import log_action
 from clients.models import Client
 
 from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm, TransferForm
-from .models import BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer
+from .models import AccountCategory, AccountType, BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer
 from orders.models import Order, OrderItem
 from datetime import date
 
@@ -78,24 +80,30 @@ def invoice_list(request):
 
 @login_required
 def bank_accounts_by_bank(request):
-    category = request.GET.get('category', 'bank')
+    category_pk = request.GET.get('category', '')
     bank_name = request.GET.get('bank_name', '')
-    qs = BankAccount.objects.filter(is_active=True, category=category)
+    qs = BankAccount.objects.filter(is_active=True)
+    if category_pk:
+        qs = qs.filter(account_category_id=category_pk)
     if bank_name:
         qs = qs.filter(bank_name=bank_name)
     accounts = []
     for ba in qs:
+        cat_name = ba.account_category.name if ba.account_category else ''
+        cat_type = ba.account_category.account_type if ba.account_category else ''
         accounts.append({
             'id': ba.pk,
-            'category': ba.category,
+            'account_category_id': ba.account_category_id,
+            'category': cat_name,
+            'category_type': cat_type,
+            'mobile_provider': ba.mobile_provider,
             'bank_name': ba.bank_name,
             'account_name': ba.account_name,
             'account_number': ba.account_number,
             'mobile_number': ba.mobile_number,
             'holder_name': ba.holder_name,
-            'card_number': ba.card_number,
-            'card_holder': ba.card_holder,
-            'card_bank': ba.card_bank,
+            'contact_number': ba.contact_number,
+            'currency': ba.currency,
             'display_name': ba.display_name,
             'branch': ba.branch,
             'available_balance': str(ba.available_balance),
@@ -108,9 +116,9 @@ def mobile_account_lookup(request):
     category = request.GET.get('type', '')
     number = request.GET.get('number', '')
     if category and number:
-        acct = BankAccount.objects.filter(category=category, mobile_number=number, is_active=True).first()
+        acct = BankAccount.objects.filter(account_category_id=category, mobile_number=number, is_active=True).first()
         if acct:
-            return JsonResponse({'found': True, 'category': acct.category, 'number': acct.mobile_number, 'holder_name': acct.holder_name})
+            return JsonResponse({'found': True, 'category': acct.account_category_id, 'number': acct.mobile_number, 'holder_name': acct.holder_name})
     return JsonResponse({'found': False})
 
 
@@ -166,9 +174,14 @@ def invoice_create(request):
                 mobile_number = request.POST.get('payment_mobile_number', '').strip()
                 mobile_holder = request.POST.get('payment_mobile_holder', '').strip()
                 if method in ('bkash', 'nagad', 'rocket') and mobile_number and not account:
+                    category = AccountCategory.objects.filter(name__iexact=method).first()
+                    if not category:
+                        category, _ = AccountCategory.objects.get_or_create(
+                            name=method.capitalize(), account_type='mobile',
+                        )
                     account, _ = BankAccount.objects.get_or_create(
-                        category=method, mobile_number=mobile_number,
-                        defaults={'holder_name': mobile_holder, 'is_active': True},
+                        account_category=category, mobile_number=mobile_number,
+                        defaults={'holder_name': mobile_holder, 'mobile_provider': method, 'is_active': True},
                     )
                     if mobile_holder and account.holder_name != mobile_holder:
                         account.holder_name = mobile_holder
@@ -207,13 +220,16 @@ def invoice_create(request):
                 )
             return redirect('invoice_list')
     clients = Client.objects.all().order_by('name')
+    bank_cats = AccountCategory.objects.filter(is_active=True, account_type='bank').values_list('pk', flat=True)
     banks = list(
-        BankAccount.objects.filter(is_active=True, category='bank')
+        BankAccount.objects.filter(is_active=True, account_category__in=bank_cats)
         .values_list('bank_name', flat=True).distinct().order_by('bank_name')
     )
+    categories = AccountCategory.objects.filter(is_active=True)
     return render(request, 'accounts/invoice_form.html', {
         'form': form, 'formset': formset, 'action': 'Create',
         'invoice': form.instance, 'clients': clients, 'banks': banks,
+        'categories': categories,
     })
 
 
@@ -255,9 +271,14 @@ def invoice_edit(request, pk):
                 mobile_number = request.POST.get('payment_mobile_number', '').strip()
                 mobile_holder = request.POST.get('payment_mobile_holder', '').strip()
                 if method in ('bkash', 'nagad', 'rocket') and mobile_number and not account:
+                    category = AccountCategory.objects.filter(name__iexact=method).first()
+                    if not category:
+                        category, _ = AccountCategory.objects.get_or_create(
+                            name=method.capitalize(), account_type='mobile',
+                        )
                     account, _ = BankAccount.objects.get_or_create(
-                        category=method, mobile_number=mobile_number,
-                        defaults={'holder_name': mobile_holder, 'is_active': True},
+                        account_category=category, mobile_number=mobile_number,
+                        defaults={'holder_name': mobile_holder, 'mobile_provider': method, 'is_active': True},
                     )
                     if mobile_holder and account.holder_name != mobile_holder:
                         account.holder_name = mobile_holder
@@ -293,13 +314,16 @@ def invoice_edit(request, pk):
             messages.success(request, 'Invoice updated.')
             return redirect('invoice_list')
     clients = Client.objects.all().order_by('name')
+    bank_cats = AccountCategory.objects.filter(is_active=True, account_type='bank').values_list('pk', flat=True)
     banks = list(
-        BankAccount.objects.filter(is_active=True, category='bank')
+        BankAccount.objects.filter(is_active=True, account_category__in=bank_cats)
         .values_list('bank_name', flat=True).distinct().order_by('bank_name')
     )
+    categories = AccountCategory.objects.filter(is_active=True)
     return render(request, 'accounts/invoice_form.html', {
         'form': form, 'formset': formset, 'action': 'Edit',
         'invoice': obj, 'clients': clients, 'banks': banks,
+        'categories': categories,
     })
 
 
@@ -389,7 +413,7 @@ def payment_create(request):
     if client_name and not request.method == 'POST':
         initial['client_name'] = client_name
     form = PaymentForm(request.POST or None, initial=initial or None)
-    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     invoices = Invoice.objects.all().order_by('-created_at')[:100]
     clients = Client.objects.all().order_by('name')
     if form.is_valid():
@@ -440,7 +464,7 @@ def payment_edit(request, pk):
         log_action(request, 'update', 'Payment', obj, description=f'{obj.amount} — {cname} — {obj.payment_date}')
         messages.success(request, 'Payment updated.')
         return redirect('payment_list')
-    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     invoices = Invoice.objects.all().order_by('-created_at')[:100]
     clients = Client.objects.all().order_by('name')
     return render(request, 'accounts/payment_form.html', {
@@ -501,7 +525,7 @@ def expense_list(request):
 @login_required
 def expense_create(request):
     form = ExpenseForm(request.POST or None, request.FILES or None)
-    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     if form.is_valid():
         obj = form.save(commit=False)
         obj.created_by = request.user
@@ -522,7 +546,7 @@ def expense_detail(request, pk):
 def expense_edit(request, pk):
     obj = get_object_or_404(Expense, pk=pk)
     form = ExpenseForm(request.POST or None, request.FILES or None, instance=obj)
-    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     if form.is_valid():
         obj = form.save()
         log_action(request, 'update', 'Expense', obj)
@@ -629,6 +653,59 @@ def expense_category_edit(request, pk):
 
 
 @login_required
+def categories_json(request):
+    cats = AccountCategory.objects.all().order_by('account_type', 'name')
+    type_map = {t.key: t.label for t in AccountType.objects.all()}
+    data = [{'pk': c.pk, 'name': c.name, 'account_type': c.account_type, 'type_display': type_map.get(c.account_type, c.account_type), 'is_active': c.is_active} for c in cats]
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+def category_toggle_status(request, pk):
+    if request.method == 'POST':
+        cat = get_object_or_404(AccountCategory, pk=pk)
+        is_active = request.POST.get('is_active')
+        if is_active in ('1', 'true'):
+            cat.is_active = True
+        elif is_active in ('0', 'false'):
+            cat.is_active = False
+        else:
+            return JsonResponse({'ok': False, 'error': 'Invalid value.'}, status=400)
+        cat.save(update_fields=['is_active'])
+        return JsonResponse({'ok': True, 'is_active': cat.is_active})
+    return JsonResponse({'ok': False, 'error': 'POST required.'}, status=405)
+
+
+@login_required
+def type_add(request):
+    if request.method == 'POST':
+        key = request.POST.get('key', '').strip().lower().replace(' ', '_')
+        label = request.POST.get('label', '').strip()
+        if not key or not label:
+            return JsonResponse({'ok': False, 'error': 'Enter both key and label.'})
+        if AccountType.objects.filter(key=key).exists():
+            return JsonResponse({'ok': False, 'error': 'Type already exists.'})
+        AccountType.objects.create(key=key, label=label)
+        data = list(AccountType.objects.all().values('key', 'label'))
+        return JsonResponse({'ok': True, 'types': data})
+    return JsonResponse({'ok': False, 'error': 'POST required.'}, status=405)
+
+
+@login_required
+def category_add(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        account_type = request.POST.get('account_type', '')
+        if not name or not account_type:
+            return JsonResponse({'ok': False, 'error': 'Invalid name or type.'})
+        if AccountCategory.objects.filter(name__iexact=name).exists():
+            return JsonResponse({'ok': False, 'error': 'Category already exists.'})
+        AccountCategory.objects.create(name=name, account_type=account_type)
+        return JsonResponse({'ok': True})
+    return JsonResponse({'ok': False, 'error': 'POST required.'}, status=405)
+
+
+@login_required
 def bank_account_list(request):
     if request.method == 'POST' and 'bulk_action' in request.POST:
         selected_ids = request.POST.getlist('selected_accounts')
@@ -674,32 +751,43 @@ def bank_account_list(request):
         qs = qs.filter(
             Q(bank_name__icontains=q) | Q(account_name__icontains=q) |
             Q(account_number__icontains=q) | Q(mobile_number__icontains=q) |
-            Q(holder_name__icontains=q) | Q(card_number__icontains=q) |
-            Q(card_holder__icontains=q)
+            Q(holder_name__icontains=q) | Q(contact_number__icontains=q)
         )
     if category:
-        qs = qs.filter(category=category)
+        qs = qs.filter(account_category_id=category)
     if status == 'active':
         qs = qs.filter(is_active=True)
     elif status == 'inactive':
         qs = qs.filter(is_active=False)
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get('page'))
+    all_categories = AccountCategory.objects.filter(is_active=True)
     return render(request, 'accounts/bank_accounts.html', {
         'accounts': page, 'status': status, 'q': q, 'category': category,
         'sort_by': sort_by, 'sort_order': sort_order,
+        'all_categories': all_categories,
     })
 
 
 @login_required
 def bank_account_create(request):
     form = BankAccountForm(request.POST or None)
+    categories = AccountCategory.objects.filter(is_active=True)
+    type_choices = list(AccountType.objects.all().values_list('key', 'label'))
+    cats_json = json.dumps([{'pk': c.pk, 'name': c.name, 'account_type': c.account_type} for c in categories])
+    bank_accounts = BankAccount.objects.filter(is_active=True, account_category__name='Bank')
+    types_json = json.dumps([{'key': t.key, 'label': t.label} for t in AccountType.objects.all()])
     if form.is_valid():
         obj = form.save()
         log_action(request, 'create', 'BankAccount', obj)
         messages.success(request, 'Bank account added.')
         return redirect('bank_account_list')
-    return render(request, 'accounts/bank_account_form.html', {'form': form, 'action': 'Add'})
+    return render(request, 'accounts/bank_account_form.html', {
+        'form': form, 'action': 'Add', 'categories': categories,
+        'type_choices': type_choices, 'categories_json': cats_json,
+        'types_json': types_json,
+        'selected_type': None, 'bank_accounts': bank_accounts,
+    })
 
 
 @login_required
@@ -708,10 +796,12 @@ def bank_account_detail(request, pk):
     obj = get_object_or_404(BankAccount, pk=pk)
     total_payments = obj.payments.aggregate(s=Sum('amount'))['s'] or 0
     total_expenses = obj.expenses.aggregate(s=Sum('amount'))['s'] or 0
+    categories = AccountCategory.objects.filter(is_active=True)
     return render(request, 'accounts/bank_account_detail.html', {
         'account': obj,
         'total_payments': total_payments,
         'total_expenses': total_expenses,
+        'categories': categories,
     })
 
 
@@ -719,12 +809,23 @@ def bank_account_detail(request, pk):
 def bank_account_edit(request, pk):
     obj = get_object_or_404(BankAccount, pk=pk)
     form = BankAccountForm(request.POST or None, instance=obj)
+    categories = AccountCategory.objects.filter(is_active=True)
+    selected_type = obj.account_category.account_type if obj.account_category else None
+    type_choices = list(AccountType.objects.all().values_list('key', 'label'))
+    cats_json = json.dumps([{'pk': c.pk, 'name': c.name, 'account_type': c.account_type} for c in categories])
+    bank_accounts = BankAccount.objects.filter(is_active=True, account_category__name='Bank')
+    types_json = json.dumps([{'key': t.key, 'label': t.label} for t in AccountType.objects.all()])
     if form.is_valid():
         obj = form.save()
         log_action(request, 'update', 'BankAccount', obj)
         messages.success(request, 'Bank account updated.')
         return redirect('bank_account_list')
-    return render(request, 'accounts/bank_account_form.html', {'form': form, 'action': 'Edit'})
+    return render(request, 'accounts/bank_account_form.html', {
+        'form': form, 'action': 'Edit', 'categories': categories,
+        'type_choices': type_choices, 'categories_json': cats_json,
+        'types_json': types_json,
+        'selected_type': selected_type, 'bank_accounts': bank_accounts,
+    })
 
 
 @login_required
@@ -842,7 +943,7 @@ def transfer_list(request):
     total = qs.aggregate(Sum('amount'))['amount__sum'] or 0
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get('page'))
-    bank_accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    bank_accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     return render(request, 'accounts/transfer_list.html', {
         'transfers': page, 'total': total, 'bank_id': bank_id,
         'sent_total': sent_total, 'recv_total': recv_total,
@@ -853,11 +954,12 @@ def transfer_list(request):
 @login_required
 def transfer_create(request):
     form = TransferForm(request.POST or None, request.FILES or None)
+    bank_cats = AccountCategory.objects.filter(is_active=True, account_type='bank').values_list('pk', flat=True)
     banks = list(
-        BankAccount.objects.filter(is_active=True, category='bank')
+        BankAccount.objects.filter(is_active=True, account_category__in=bank_cats)
         .values_list('bank_name', flat=True).distinct().order_by('bank_name')
     )
-    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     if form.is_valid():
         obj = form.save(commit=False)
         obj.created_by = request.user

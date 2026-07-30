@@ -5,7 +5,7 @@ from django.forms import inlineformset_factory
 
 from clients.models import Client
 
-from .models import BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, Transfer, CURRENCY_CHOICES
+from .models import AccountCategory, BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, Transfer, CURRENCY_CHOICES
 
 
 class InvoiceForm(forms.ModelForm):
@@ -150,9 +150,9 @@ class ExpenseForm(forms.ModelForm):
 class BankAccountForm(forms.ModelForm):
     class Meta:
         model = BankAccount
-        fields = ['category', 'bank_name', 'account_name', 'account_number', 'account_type', 'branch', 'routing_number', 'mobile_number', 'holder_name', 'mobile_type', 'card_number', 'card_holder', 'card_type', 'card_bank', 'opening_balance', 'details', 'is_active']
+        fields = ['account_category', 'bank_name', 'account_name', 'account_number', 'account_type', 'branch', 'routing_number', 'mobile_number', 'holder_name', 'mobile_type', 'card_number', 'card_holder_name', 'contact_number', 'currency', 'opening_balance', 'details', 'is_active']
         widgets = {
-            'category': forms.Select(attrs={'class': 'form-select', 'id': 'id_category'}),
+            'account_category': forms.Select(attrs={'class': 'form-select', 'id': 'id_account_category'}),
             'bank_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_bank_name'}),
             'account_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_account_name'}),
             'account_number': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_account_number'}),
@@ -163,13 +163,22 @@ class BankAccountForm(forms.ModelForm):
             'holder_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_holder_name'}),
             'mobile_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_mobile_type'}),
             'card_number': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_card_number'}),
-            'card_holder': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_card_holder'}),
-            'card_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_card_type'}),
-            'card_bank': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_card_bank'}),
+            'card_holder_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_card_holder_name'}),
+            'contact_number': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contact_number'}),
+            'currency': forms.Select(attrs={'class': 'form-select', 'id': 'id_currency'}, choices=CURRENCY_CHOICES),
             'opening_balance': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_opening_balance'}),
             'details': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Additional details...'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['account_category'].queryset = AccountCategory.objects.filter(is_active=True)
+        self.fields['account_category'].label = 'Account Type'
+        self.fields['card_holder_name'].label = 'Card Holder Name'
+        self.fields['card_number'].label = 'Card Number'
+        self.fields['contact_number'].label = 'Contact Number'
+        self.fields['currency'].initial = 'BDT'
 
 
 class TransferForm(forms.ModelForm):
@@ -195,11 +204,13 @@ class TransferForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['transfer_date'].initial = date.today()
 
-        cat_choices = [('', '-- Select Type --')] + BankAccount.CATEGORY
+        cats = AccountCategory.objects.filter(is_active=True).values_list('pk', 'name')
+        cat_choices = [('', '-- Select Type --')] + [(str(c.pk), c.name) for c in cats]
         self.fields['from_method'].choices = cat_choices
         self.fields['to_method'].choices = cat_choices
 
-        banks = BankAccount.objects.filter(is_active=True, category='bank') \
+        bank_cats = AccountCategory.objects.filter(is_active=True, account_type='bank').values_list('pk', flat=True)
+        banks = BankAccount.objects.filter(is_active=True, account_category__in=bank_cats) \
             .values_list('bank_name', flat=True).distinct().order_by('bank_name')
         bank_choices = [('', '-- Select Bank --')] + [(b, b) for b in banks]
         self.fields['from_bank_name'].choices = bank_choices

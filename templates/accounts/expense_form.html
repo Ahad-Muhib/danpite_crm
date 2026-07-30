@@ -47,7 +47,7 @@
 <script>
 const accounts = [
   {% for a in accounts %}
-  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ a.get_category_display|escapejs }}", number: "{% firstof a.account_number a.mobile_number a.card_number ''|escapejs %}"},
+  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ a.account_category.name|default:''|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}"},
   {% endfor %}
 ];
 const searchInput = document.getElementById('expense-account-search');
