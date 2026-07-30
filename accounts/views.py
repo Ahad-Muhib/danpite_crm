@@ -9,8 +9,8 @@ from django.template.loader import render_to_string
 from core.models import log_action
 from clients.models import Client
 
-from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm
-from .models import BankAccount, Expense, ExpenseCategory, Invoice, Payment
+from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm, TransferForm
+from .models import BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer
 from orders.models import Order, OrderItem
 from datetime import date
 
@@ -807,3 +807,89 @@ def invoice_mark_paid(request, pk):
         invoice.save()
         messages.success(request, f'{invoice.code} marked as paid.')
     return redirect('invoice_detail', pk=pk)
+
+
+@login_required
+def transfer_list(request):
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_transfers')
+        if not selected_ids:
+            messages.error(request, 'Select at least one transfer first.')
+            return redirect('transfer_list')
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can delete transfers.')
+            return redirect('transfer_list')
+        for obj in Transfer.objects.filter(pk__in=selected_ids):
+            log_action(request, 'delete', 'Transfer', obj, description=f'{obj.from_account} → {obj.to_account}: {obj.amount}')
+            obj.delete()
+        messages.success(request, f'{len(selected_ids)} transfer(s) deleted.')
+        return redirect('transfer_list')
+    q = request.GET.get('q', '')
+    bank_id = request.GET.get('bank', '')
+    sort = request.GET.get('sort', 'date')
+    dir = request.GET.get('dir', 'desc')
+    sort_map = {'id': 'id', 'amount': 'amount', 'date': 'transfer_date', 'created': 'created_at'}
+    order = sort_map.get(sort, 'transfer_date')
+    if dir == 'desc':
+        order = '-' + order
+    qs = Transfer.objects.all().order_by(order)
+    if q:
+        qs = qs.filter(
+            Q(from_account__account_name__icontains=q) |
+            Q(from_account__bank_name__icontains=q) |
+            Q(to_account__account_name__icontains=q) |
+            Q(to_account__bank_name__icontains=q) |
+            Q(reference__icontains=q)
+        )
+    if bank_id:
+        qs = qs.filter(Q(from_account_id=bank_id) | Q(to_account_id=bank_id))
+        sent_total = Transfer.objects.filter(from_account_id=bank_id).aggregate(s=Sum('amount'))['s'] or 0
+        recv_total = Transfer.objects.filter(to_account_id=bank_id).aggregate(s=Sum('amount'))['s'] or 0
+    else:
+        agg = Transfer.objects.aggregate(s=Sum('amount'))
+        sent_total = recv_total = agg['s'] or 0
+    total = qs.aggregate(Sum('amount'))['amount__sum'] or 0
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page'))
+    bank_accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    return render(request, 'accounts/transfer_list.html', {
+        'transfers': page, 'total': total, 'q': q, 'bank_id': bank_id,
+        'sent_total': sent_total, 'recv_total': recv_total,
+        'sort': sort, 'dir': dir, 'bank_accounts': bank_accounts,
+    })
+
+
+@login_required
+def transfer_create(request):
+    form = TransferForm(request.POST or None, request.FILES or None)
+    banks = list(
+        BankAccount.objects.filter(is_active=True, category='bank')
+        .values_list('bank_name', flat=True).distinct().order_by('bank_name')
+    )
+    accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
+    if form.is_valid():
+        obj = form.save(commit=False)
+        obj.created_by = request.user
+        obj.save()
+        log_action(request, 'create', 'Transfer', obj, description=f'{obj.from_account} → {obj.to_account}: {obj.amount}')
+        messages.success(request, 'Transfer completed.')
+        return redirect('transfer_list')
+    return render(request, 'accounts/transfer_form.html', {'form': form, 'action': 'Add', 'banks': banks, 'accounts': accounts})
+
+
+@login_required
+def transfer_detail(request, pk):
+    obj = get_object_or_404(Transfer, pk=pk)
+    return render(request, 'accounts/transfer_detail.html', {'transfer': obj})
+
+
+@login_required
+def transfer_delete(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can delete transfers.')
+        return redirect('transfer_list')
+    obj = get_object_or_404(Transfer, pk=pk)
+    log_action(request, 'delete', 'Transfer', obj, description=f'{obj.from_account} → {obj.to_account}: {obj.amount}')
+    obj.delete()
+    messages.success(request, 'Transfer deleted.')
+    return redirect('transfer_list')

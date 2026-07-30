@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import BankAccount, Expense, Invoice, InvoiceItem, Payment
+from .models import BankAccount, Expense, Invoice, InvoiceItem, Payment, Transfer
 
 
 class InvoiceItemInline(admin.TabularInline):
@@ -30,4 +30,11 @@ class ExpenseAdmin(admin.ModelAdmin):
 @admin.register(BankAccount)
 class BankAccountAdmin(admin.ModelAdmin):
     list_display = ['bank_name', 'account_name', 'account_number', 'is_active']
+
+
+@admin.register(Transfer)
+class TransferAdmin(admin.ModelAdmin):
+    list_display = ['from_account', 'to_account', 'amount', 'transfer_date', 'created_by']
+    list_filter = ['transfer_date']
+    search_fields = ['from_account__account_name', 'to_account__account_name', 'reference']
 

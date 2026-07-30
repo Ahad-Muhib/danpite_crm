@@ -36,5 +36,9 @@ urlpatterns = [
     path('accounts/bank/<int:pk>/toggle/', views.bank_account_toggle, name='bank_account_toggle'),
     path('accounts/bank/<int:pk>/update-status/', views.bank_account_update_status, name='bank_account_update_status'),
     path('accounts/bank/<int:pk>/delete/', views.bank_account_delete, name='bank_account_delete'),
+    path('accounts/transfers/', views.transfer_list, name='transfer_list'),
+    path('accounts/transfers/new/', views.transfer_create, name='transfer_create'),
+    path('accounts/transfers/<int:pk>/', views.transfer_detail, name='transfer_detail'),
+    path('accounts/transfers/<int:pk>/delete/', views.transfer_delete, name='transfer_delete'),
 ]
 

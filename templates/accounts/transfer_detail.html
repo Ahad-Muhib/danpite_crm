@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load crm_tags %}
+{% block title %}Transfer #{{ transfer.pk }}{% endblock %}
+{% block page_title %}Transfer Details{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header">
+    <span class="crm-card-title">Transfer #{{ transfer.pk }}</span>
+    <div class="d-flex gap-2">
+      <a href="{% url 'transfer_list' %}" class="btn btn-sm btn-outline-secondary">Back to List</a>
+    </div>
+  </div>
+  <div class="p-4">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">From Account</label>
+        <div class="fw-medium">{{ transfer.from_account.display_name }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">To Account</label>
+        <div class="fw-medium">{{ transfer.to_account.display_name }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Amount</label>
+        <div class="fw-bold" style="font-size:18px;">{{ transfer.amount|currency }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Transfer Date</label>
+        <div>{{ transfer.transfer_date }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Reference</label>
+        <div>{{ transfer.reference|default:"—" }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Receipt</label>
+        <div>{% if transfer.receipt %}<a href="{{ transfer.receipt.url }}" class="text-primary text-decoration-none" target="_blank">View Receipt</a>{% else %}—{% endif %}</div>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-medium text-muted">Description</label>
+        <div>{{ transfer.description|default:"—"|linebreaksbr }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Transferred By</label>
+        <div>{{ transfer.created_by.username|default:"—" }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Created At</label>
+        <div>{{ transfer.created_at|date:"d M Y H:i" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

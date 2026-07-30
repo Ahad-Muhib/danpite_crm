@@ -55,6 +55,7 @@
     <a href="{% url 'expense_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Expenses</a>
     <a href="{% url 'expense_category_list' %}" class="nav-link {% if request.resolver_match.url_name == 'expense_category_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Expense Categories</a>
     <a href="{% url 'bank_account_list' %}" class="nav-link {% if request.resolver_match.url_name == 'bank_account_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Bank Accounts</a>
+    <a href="{% url 'transfer_list' %}" class="nav-link {% if request.resolver_match.url_name == 'transfer_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Balance Transfer</a>
   </div>
 
   <!-- HR -->

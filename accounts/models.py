@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.core.validators import MinValueValidator
 
 from clients.models import Client
 
@@ -127,7 +128,9 @@ class BankAccount(models.Model):
         from django.db.models import Sum
         total_payments = self.payments.aggregate(s=Sum('amount'))['s'] or 0
         total_expenses = self.expenses.aggregate(s=Sum('amount'))['s'] or 0
-        return self.opening_balance + total_payments - total_expenses
+        transfers_out = self.transfers_out.aggregate(s=Sum('amount'))['s'] or 0
+        transfers_in = self.transfers_in.aggregate(s=Sum('amount'))['s'] or 0
+        return self.opening_balance + total_payments - total_expenses - transfers_out + transfers_in
 
     @property
     def display_name(self):
@@ -189,3 +192,18 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.amount} - {self.payment_date}"
+
+
+class Transfer(models.Model):
+    from_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='transfers_out')
+    to_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='transfers_in')
+    amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0.01)])
+    transfer_date = models.DateField()
+    reference = models.CharField(max_length=100, blank=True)
+    description = models.TextField(blank=True)
+    receipt = models.FileField(upload_to='receipts/', null=True, blank=True)
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.from_account} → {self.to_account}: {self.amount}"

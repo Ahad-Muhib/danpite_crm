@@ -5,7 +5,7 @@ from django.forms import inlineformset_factory
 
 from clients.models import Client
 
-from .models import BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, CURRENCY_CHOICES
+from .models import BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, Transfer, CURRENCY_CHOICES
 
 
 class InvoiceForm(forms.ModelForm):
@@ -170,3 +170,61 @@ class BankAccountForm(forms.ModelForm):
             'details': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Additional details...'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+
+class TransferForm(forms.ModelForm):
+    from_method = forms.ChoiceField(choices=[], required=True, widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_from_method'}))
+    from_bank_name = forms.ChoiceField(choices=[], required=False, widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_from_bank_name'}))
+    to_method = forms.ChoiceField(choices=[], required=True, widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_to_method'}))
+    to_bank_name = forms.ChoiceField(choices=[], required=False, widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_to_bank_name'}))
+
+    class Meta:
+        model = Transfer
+        fields = ['from_account', 'to_account', 'amount', 'transfer_date', 'reference', 'description', 'receipt']
+        widgets = {
+            'from_account': forms.HiddenInput(attrs={'id': 'id_from_account'}),
+            'to_account': forms.HiddenInput(attrs={'id': 'id_to_account'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01', 'style': 'text-align:right'}),
+            'transfer_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'reference': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Transaction ID / Ref'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional notes...'}),
+            'receipt': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['transfer_date'].initial = date.today()
+
+        cat_choices = [('', '-- Select Type --')] + BankAccount.CATEGORY
+        self.fields['from_method'].choices = cat_choices
+        self.fields['to_method'].choices = cat_choices
+
+        banks = BankAccount.objects.filter(is_active=True, category='bank') \
+            .values_list('bank_name', flat=True).distinct().order_by('bank_name')
+        bank_choices = [('', '-- Select Bank --')] + [(b, b) for b in banks]
+        self.fields['from_bank_name'].choices = bank_choices
+        self.fields['to_bank_name'].choices = bank_choices
+        self.fields['from_account'].required = False
+        self.fields['to_account'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        for side in ('from_account', 'to_account'):
+            pk = self.data.get(side, '').strip()
+            if pk:
+                try:
+                    obj = BankAccount.objects.get(pk=pk)
+                    cleaned[side] = obj
+                except BankAccount.DoesNotExist:
+                    self.add_error(side, f'Invalid {"source" if side == "from_account" else "destination"} account.')
+            else:
+                self.add_error(side, f'Please select a {"source" if side == "from_account" else "destination"} account.')
+        if not self.errors.get('from_account') and not self.errors.get('to_account') and cleaned.get('from_account') == cleaned.get('to_account'):
+            self.add_error('to_account', 'Source and destination accounts must be different.')
+        from_acct = cleaned.get('from_account')
+        amount = cleaned.get('amount')
+        if from_acct and amount and not self.errors.get('from_account'):
+            balance = from_acct.available_balance
+            if amount > balance:
+                self.add_error('amount', f'Insufficient balance in source account. Available: {balance}')
+        return cleaned

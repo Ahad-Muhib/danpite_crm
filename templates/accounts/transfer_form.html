@@ -1,0 +1,462 @@
+{% extends 'base.html' %}
+{% load crm_tags %}
+{% block title %}{{ action|default:"Add" }} Transfer{% endblock %}
+{% block page_title %}{{ action|default:"Add" }} Transfer{% endblock %}
+{% block content %}
+<style>
+.acct-dropdown{position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.acct-dropdown-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #f3f4f6}
+.acct-dropdown-item:last-child{border-bottom:0}
+.acct-dropdown-item:hover{background:#f0fdf4}
+.acct-dropdown-item .acct-num{font-weight:600;font-size:13px}
+.acct-dropdown-item .acct-detail{font-size:11px;color:#6b7280}
+.section-toggle{transition:all .2s}
+</style>
+<div class="crm-card">
+  <div class="crm-card-header"><span class="crm-card-title">Transfer Details</span></div>
+  <div class="p-4">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if form.non_field_errors or form.errors %}
+      <div class="mb-3 p-3" style="background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;color:#991b1b;font-size:13px;">
+        <strong>Please fix the following errors:</strong>
+        {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+        {% for field, errors in form.errors.items %}
+          {% for e in errors %}<div>{{ field|title }}: {{ e }}</div>{% endfor %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="row g-3">
+        <!-- ========= FROM ACCOUNT ========= -->
+        <div class="col-md-6">
+          <div class="border rounded p-3" style="background:#f8fafc;">
+            <h6 class="fw-bold mb-3"><i class="bi bi-arrow-up-circle text-danger me-1"></i> From Account</h6>
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">Account Type</label>
+              {{ form.from_method }}
+            </div>
+
+            <div id="from-bank-section" class="section-toggle" style="display:none;">
+              <div class="mb-2">
+                <label class="form-label fw-medium">Select Bank</label>
+                {{ form.from_bank_name }}
+              </div>
+              <div style="position:relative;">
+                <label class="form-label fw-medium">Account Number</label>
+                <input type="text" id="from-account-number" class="form-control" placeholder="Type account number..." autocomplete="off">
+                <div id="from-acct-dropdown" class="acct-dropdown" style="display:none;"></div>
+              </div>
+              <div id="from-bank-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+                <div style="font-size:13px;font-weight:600;" id="from-bank-info-name"></div>
+                <div style="font-size:12px;color:#374151;"><span id="from-bank-info-holder"></span> · <span id="from-bank-info-type"></span></div>
+                <div style="font-size:12px;color:#6b7280;" id="from-bank-info-number"></div>
+              </div>
+            </div>
+
+            <div id="from-mobile-section" class="section-toggle" style="display:none;">
+              <div style="position:relative;">
+                <label class="form-label fw-medium">Account Number</label>
+                <input type="text" id="from-mobile-number" class="form-control" placeholder="Enter number..." autocomplete="off">
+                <div id="from-mobile-dropdown" class="acct-dropdown" style="display:none;"></div>
+              </div>
+              <div class="mt-2">
+                <label class="form-label fw-medium">Account Holder Name</label>
+                <input type="text" id="from-mobile-holder" class="form-control" placeholder="Auto-filled on selection..." readonly>
+              </div>
+              <div id="from-mobile-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+                <div style="font-size:13px;font-weight:600;" id="from-mobile-info-method"></div>
+                <div style="font-size:12px;color:#374151;" id="from-mobile-info-number"></div>
+                <div style="font-size:12px;color:#6b7280;" id="from-mobile-info-holder"></div>
+              </div>
+            </div>
+
+            <div id="from-card-section" class="section-toggle" style="display:none;">
+              <div class="mb-2">
+                <label class="form-label fw-medium">Card Number (last 4)</label>
+                <input type="text" id="from-card-number" class="form-control" placeholder="Last 4 digits" maxlength="4">
+              </div>
+              <div class="mb-2">
+                <label class="form-label fw-medium">Card Holder</label>
+                <input type="text" id="from-card-holder" class="form-control" placeholder="Name on card">
+              </div>
+              <div>
+                <label class="form-label fw-medium">Card Bank</label>
+                <input type="text" id="from-card-bank" class="form-control" placeholder="Bank name" readonly>
+              </div>
+              <div id="from-card-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+                <div style="font-size:13px;font-weight:600;" id="from-card-info-name"></div>
+                <div style="font-size:12px;color:#6b7280;" id="from-card-info-detail"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========= TO ACCOUNT ========= -->
+        <div class="col-md-6">
+          <div class="border rounded p-3" style="background:#f8fafc;">
+            <h6 class="fw-bold mb-3"><i class="bi bi-arrow-down-circle text-success me-1"></i> To Account</h6>
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">Account Type</label>
+              {{ form.to_method }}
+            </div>
+
+            <div id="to-bank-section" class="section-toggle" style="display:none;">
+              <div class="mb-2">
+                <label class="form-label fw-medium">Select Bank</label>
+                {{ form.to_bank_name }}
+              </div>
+              <div style="position:relative;">
+                <label class="form-label fw-medium">Account Number</label>
+                <input type="text" id="to-account-number" class="form-control" placeholder="Type account number..." autocomplete="off">
+                <div id="to-acct-dropdown" class="acct-dropdown" style="display:none;"></div>
+              </div>
+              <div id="to-bank-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+                <div style="font-size:13px;font-weight:600;" id="to-bank-info-name"></div>
+                <div style="font-size:12px;color:#374151;"><span id="to-bank-info-holder"></span> · <span id="to-bank-info-type"></span></div>
+                <div style="font-size:12px;color:#6b7280;" id="to-bank-info-number"></div>
+              </div>
+            </div>
+
+            <div id="to-mobile-section" class="section-toggle" style="display:none;">
+              <div style="position:relative;">
+                <label class="form-label fw-medium">Account Number</label>
+                <input type="text" id="to-mobile-number" class="form-control" placeholder="Enter number..." autocomplete="off">
+                <div id="to-mobile-dropdown" class="acct-dropdown" style="display:none;"></div>
+              </div>
+              <div class="mt-2">
+                <label class="form-label fw-medium">Account Holder Name</label>
+                <input type="text" id="to-mobile-holder" class="form-control" placeholder="Auto-filled on selection..." readonly>
+              </div>
+              <div id="to-mobile-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+                <div style="font-size:13px;font-weight:600;" id="to-mobile-info-method"></div>
+                <div style="font-size:12px;color:#374151;" id="to-mobile-info-number"></div>
+                <div style="font-size:12px;color:#6b7280;" id="to-mobile-info-holder"></div>
+              </div>
+            </div>
+
+            <div id="to-card-section" class="section-toggle" style="display:none;">
+              <div class="mb-2">
+                <label class="form-label fw-medium">Card Number (last 4)</label>
+                <input type="text" id="to-card-number" class="form-control" placeholder="Last 4 digits" maxlength="4">
+              </div>
+              <div class="mb-2">
+                <label class="form-label fw-medium">Card Holder</label>
+                <input type="text" id="to-card-holder" class="form-control" placeholder="Name on card">
+              </div>
+              <div>
+                <label class="form-label fw-medium">Card Bank</label>
+                <input type="text" id="to-card-bank" class="form-control" placeholder="Bank name" readonly>
+              </div>
+              <div id="to-card-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+                <div style="font-size:13px;font-weight:600;" id="to-card-info-name"></div>
+                <div style="font-size:12px;color:#6b7280;" id="to-card-info-detail"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden PK fields -->
+        <input type="hidden" name="from_account" id="id_from_account" value="{{ form.from_account.value|default:'' }}">
+        <input type="hidden" name="to_account" id="id_to_account" value="{{ form.to_account.value|default:'' }}">
+
+        <div class="col-md-4">
+          <label class="form-label fw-medium">Amount <span class="text-danger">*</span></label>
+          {{ form.amount }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-medium">Transfer Date <span class="text-danger">*</span></label>
+          {{ form.transfer_date }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-medium">Reference</label>
+          {{ form.reference }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Receipt</label>
+          {{ form.receipt }}
+          {% if form.instance.receipt %}
+          <div class="mt-2"><a href="{{ form.instance.receipt.url }}" target="_blank" class="text-decoration-none">View current receipt</a></div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Description</label>
+          {{ form.description }}
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">{{ action|default:"Add" }} Transfer</button>
+        <a href="{% url 'transfer_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ─── All accounts pre-loaded for restoration on error ──
+const ALL_ACCOUNTS = [
+  {% for a in accounts %}
+  {
+    pk: {{ a.pk }},
+    category: "{{ a.category|escapejs }}",
+    bank_name: "{{ a.bank_name|escapejs }}",
+    account_name: "{{ a.account_name|escapejs }}",
+    account_number: "{{ a.account_number|escapejs }}",
+    mobile_number: "{{ a.mobile_number|escapejs }}",
+    holder_name: "{{ a.holder_name|escapejs }}",
+    card_number: "{{ a.card_number|escapejs }}",
+    card_holder: "{{ a.card_holder|escapejs }}",
+    card_bank: "{{ a.card_bank|escapejs }}",
+    display: "{{ a.display_name|escapejs }}",
+    branch: "{{ a.branch|escapejs }}",
+    available_balance: "{{ a.available_balance|escapejs }}",
+  },
+  {% endfor %}
+];
+
+const SIDES = ['from', 'to'];
+var bankAccounts = { from: [], to: [] };
+var mobileAccounts = { from: [], to: [] };
+var cardAccounts = { from: [], to: [] };
+
+function escHtml(str) {
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ─── Method toggle ────────────────────────────────────
+function toggleMethod(side) {
+  var method = document.getElementById('id_' + side + '_method').value;
+  var sections = {
+    'bank': side + '-bank-section',
+    'bkash': side + '-mobile-section',
+    'nagad': side + '-mobile-section',
+    'rocket': side + '-mobile-section',
+    'card': side + '-card-section',
+  };
+  Object.values(sections).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  var secId = sections[method];
+  if (secId) document.getElementById(secId).style.display = 'block';
+
+  if (method === 'bank') {
+    bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'bank'; });
+    var bankSelect = document.getElementById('id_' + side + '_bank_name');
+    if (bankSelect && bankSelect.value) {
+      bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'bank' && a.bank_name === bankSelect.value; });
+    }
+  } else if (['bkash','nagad','rocket'].includes(method)) {
+    mobileAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === method; });
+  } else if (method === 'card') {
+    cardAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'card'; });
+  }
+}
+
+// ─── Bank ──────────────────────────────────────────────
+function renderBankDropdown(side, accounts) {
+  var dropdown = document.getElementById(side + '-acct-dropdown');
+  if (!accounts || !accounts.length) { dropdown.style.display = 'none'; return; }
+  dropdown.innerHTML = '';
+  accounts.forEach(function(a) {
+    var item = document.createElement('div');
+    item.className = 'acct-dropdown-item';
+    item.innerHTML = '<div class="acct-num">' + escHtml(a.account_number) + '</div><div class="acct-detail">' + escHtml(a.account_name) + ' · ' + escHtml(a.bank_name) + (a.branch ? ' · ' + escHtml(a.branch) : '') + '</div>';
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      selectBankAccount(side, a);
+    });
+    dropdown.appendChild(item);
+  });
+  dropdown.style.display = 'block';
+}
+
+function selectBankAccount(side, a) {
+  document.getElementById(side + '-account-number').value = a.account_number;
+  document.getElementById('id_' + side + '_account').value = a.pk;
+  var info = document.getElementById(side + '-bank-info');
+  document.getElementById(side + '-bank-info-name').textContent = a.account_name;
+  document.getElementById(side + '-bank-info-holder').textContent = a.bank_name;
+  document.getElementById(side + '-bank-info-type').textContent = 'Bank';
+  document.getElementById(side + '-bank-info-number').textContent = 'A/C: ' + a.account_number + (a.branch ? ' · ' + a.branch : '');
+  info.style.display = 'block';
+  document.getElementById(side + '-acct-dropdown').style.display = 'none';
+}
+
+// ─── Mobile ────────────────────────────────────────────
+function renderMobileDropdown(side, matches) {
+  var dropdown = document.getElementById(side + '-mobile-dropdown');
+  if (!matches || !matches.length) { dropdown.style.display = 'none'; return; }
+  dropdown.innerHTML = '';
+  matches.forEach(function(a) {
+    var item = document.createElement('div');
+    item.className = 'acct-dropdown-item';
+    item.innerHTML = '<div class="acct-num">' + escHtml(a.mobile_number) + '</div><div class="acct-detail">' + escHtml(a.holder_name || '—') + '</div>';
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      selectMobileAccount(side, a);
+    });
+    dropdown.appendChild(item);
+  });
+  dropdown.style.display = 'block';
+}
+
+function selectMobileAccount(side, a) {
+  document.getElementById(side + '-mobile-number').value = a.mobile_number;
+  document.getElementById(side + '-mobile-holder').value = a.holder_name || '';
+  document.getElementById('id_' + side + '_account').value = a.pk;
+  var info = document.getElementById(side + '-mobile-info');
+  document.getElementById(side + '-mobile-info-method').textContent = a.category;
+  document.getElementById(side + '-mobile-info-number').textContent = 'Number: ' + a.mobile_number;
+  document.getElementById(side + '-mobile-info-holder').textContent = 'Name: ' + (a.holder_name || '—');
+  info.style.display = 'block';
+  document.getElementById(side + '-mobile-dropdown').style.display = 'none';
+}
+
+// ─── Restore selection on page load ────────────────────
+function restoreSelection(side) {
+  var pk = document.getElementById('id_' + side + '_account').value;
+  if (!pk) return;
+  var account = ALL_ACCOUNTS.find(function(a) { return a.pk == pk; });
+  if (!account) return;
+
+  var methodEl = document.getElementById('id_' + side + '_method');
+  methodEl.value = account.category;
+  toggleMethod(side);
+
+  if (account.category === 'bank') {
+    var bankEl = document.getElementById('id_' + side + '_bank_name');
+    if (bankEl && account.bank_name) bankEl.value = account.bank_name;
+    bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'bank' && a.bank_name === account.bank_name; });
+    selectBankAccount(side, account);
+  } else if (['bkash','nagad','rocket'].includes(account.category)) {
+    selectMobileAccount(side, account);
+  } else if (account.category === 'card') {
+    document.getElementById(side + '-card-number').value = account.card_number;
+    document.getElementById(side + '-card-holder').value = account.card_holder || '';
+    document.getElementById(side + '-card-bank').value = account.card_bank || '';
+    document.getElementById('id_' + side + '_account').value = account.pk;
+    var info = document.getElementById(side + '-card-info');
+    document.getElementById(side + '-card-info-name').textContent = 'Card: ' + account.card_number;
+    document.getElementById(side + '-card-info-detail').textContent = (account.card_holder || '') + (account.card_bank ? ' · ' + account.card_bank : '');
+    info.style.display = 'block';
+  }
+}
+
+// ─── Wire up DOM events ────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  SIDES.forEach(function(side) {
+    var methodEl = document.getElementById('id_' + side + '_method');
+    if (methodEl) {
+      methodEl.addEventListener('change', function() {
+        // Clear hidden PK when method changes
+        document.getElementById('id_' + side + '_account').value = '';
+        [side + '-bank-info', side + '-mobile-info', side + '-card-info'].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+        toggleMethod(side);
+      });
+    }
+
+    // Bank name change
+    var bankNameEl = document.getElementById('id_' + side + '_bank_name');
+    if (bankNameEl) {
+      bankNameEl.addEventListener('change', function() {
+        document.getElementById(side + '-account-number').value = '';
+        document.getElementById('id_' + side + '_account').value = '';
+        document.getElementById(side + '-bank-info').style.display = 'none';
+        document.getElementById(side + '-acct-dropdown').style.display = 'none';
+        bankAccounts[side] = ALL_ACCOUNTS.filter(function(a) { return a.category === 'bank' && a.bank_name === this.value; }.bind(this));
+        renderBankDropdown(side, bankAccounts[side]);
+      });
+    }
+
+    // Bank account number typing
+    var acctInput = document.getElementById(side + '-account-number');
+    if (acctInput) {
+      acctInput.addEventListener('input', function() {
+        var val = this.value.trim();
+        var exact = bankAccounts[side].find(function(a) { return a.account_number === val; });
+        if (exact) {
+          selectBankAccount(side, exact);
+          return;
+        }
+        document.getElementById('id_' + side + '_account').value = '';
+        document.getElementById(side + '-bank-info').style.display = 'none';
+        var fuzzy = val ? bankAccounts[side].filter(function(a) { return a.account_number.indexOf(val) !== -1; }) : bankAccounts[side];
+        renderBankDropdown(side, fuzzy);
+      });
+      acctInput.addEventListener('blur', function() {
+        setTimeout(function() { document.getElementById(side + '-acct-dropdown').style.display = 'none'; }, 200);
+      });
+    }
+
+    // Mobile number typing
+    var mobileInput = document.getElementById(side + '-mobile-number');
+    if (mobileInput) {
+      mobileInput.addEventListener('input', function() {
+        var val = this.value.trim();
+        var exact = mobileAccounts[side].find(function(a) { return a.mobile_number === val; });
+        if (exact) {
+          selectMobileAccount(side, exact);
+          return;
+        }
+        document.getElementById(side + '-mobile-info').style.display = 'none';
+        document.getElementById('id_' + side + '_account').value = '';
+        var fuzzy = val ? mobileAccounts[side].filter(function(a) { return a.mobile_number.indexOf(val) !== -1; }) : mobileAccounts[side];
+        renderMobileDropdown(side, fuzzy);
+      });
+      mobileInput.addEventListener('blur', function() {
+        setTimeout(function() { document.getElementById(side + '-mobile-dropdown').style.display = 'none'; }, 200);
+      });
+    }
+
+    // Card number typing
+    var cardInput = document.getElementById(side + '-card-number');
+    if (cardInput) {
+      cardInput.addEventListener('input', function() {
+        var val = this.value.trim();
+        var exact = cardAccounts[side].find(function(a) { return a.card_number === val; });
+        if (exact) {
+          document.getElementById('id_' + side + '_account').value = exact.pk;
+          document.getElementById(side + '-card-holder').value = exact.card_holder || '';
+          document.getElementById(side + '-card-bank').value = exact.card_bank || '';
+          var info = document.getElementById(side + '-card-info');
+          document.getElementById(side + '-card-info-name').textContent = 'Card: ' + exact.card_number;
+          document.getElementById(side + '-card-info-detail').textContent = (exact.card_holder || '') + (exact.card_bank ? ' · ' + exact.card_bank : '');
+          info.style.display = 'block';
+          return;
+        }
+        document.getElementById('id_' + side + '_account').value = '';
+        document.getElementById(side + '-card-info').style.display = 'none';
+      });
+    }
+  });
+
+  // Restore selections from submitted data after validation error
+  restoreSelection('from');
+  restoreSelection('to');
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', function(e) {
+    SIDES.forEach(function(side) {
+      if (!e.target.closest('#' + side + '-account-number') && !e.target.closest('#' + side + '-acct-dropdown')) {
+        var dd = document.getElementById(side + '-acct-dropdown');
+        if (dd) dd.style.display = 'none';
+      }
+      if (!e.target.closest('#' + side + '-mobile-number') && !e.target.closest('#' + side + '-mobile-dropdown')) {
+        var dd = document.getElementById(side + '-mobile-dropdown');
+        if (dd) dd.style.display = 'none';
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

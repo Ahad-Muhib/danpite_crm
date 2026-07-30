@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load crm_tags %}
+{% block title %}Balance Transfers{% endblock %}
+{% block page_title %}Balance Transfers{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header flex-wrap gap-2">
+    <div>
+      <span class="crm-card-title">All Transfers</span>
+      <div class="text-muted mt-1" style="font-size:13px;">
+        Total: <strong class="text-danger">{{ total|currency }}</strong>
+        {% if bank_id %}
+        | Sent: <strong class="text-success">{{ sent_total|currency }}</strong>
+        | Received: <strong class="text-info">{{ recv_total|currency }}</strong>
+        {% endif %}
+      </div>
+    </div>
+    <form class="d-flex gap-2 search-form flex-wrap" method="get">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search account or reference..." style="width:200px;">
+      <select name="bank" class="form-select form-select-sm" style="width:320px;">
+        <option value="">All Bank Accounts</option>
+        {% for a in bank_accounts %}
+        <option value="{{ a.pk }}" {% if bank_id == a.pk|stringformat:"s" %}selected{% endif %}>{{ a.display_name }}</option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="dir" value="{{ dir }}">
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search me-1"></i>Search</button>
+      {% if q or bank_id %}
+      <a href="{% url 'transfer_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>
+      {% endif %}
+    </form>
+    <div class="d-flex gap-2">
+      <form method="post" id="transfer-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
+      </form>
+      <a href="{% url 'transfer_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>New Transfer</a>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          {% if request.user.is_superuser %}<th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-transfers" aria-label="Select all"></th>{% endif %}
+          <th><a href="?sort=id&dir={% if sort == 'id' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}" class="text-decoration-none text-inherit"># {% if sort == 'id' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th>From Account</th>
+          <th>To Account</th>
+          <th><a href="?sort=amount&dir={% if sort == 'amount' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}" class="text-decoration-none text-inherit">Amount {% if sort == 'amount' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=date&dir={% if sort == 'date' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}" class="text-decoration-none text-inherit">Date {% if sort == 'date' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th>Reference</th>
+          <th>Receipt</th>
+          <th>Transferred By</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transfers %}
+        <tr>
+          {% if request.user.is_superuser %}<td><input type="checkbox" name="selected_transfers" value="{{ t.pk }}" class="form-check-input transfer-checkbox" form="transfer-bulk-form"></td>{% endif %}
+          <td class="text-muted">{{ t.pk }}</td>
+          <td class="fw-medium">{{ t.from_account.display_name }}</td>
+          <td class="fw-medium">{{ t.to_account.display_name }}</td>
+          <td class="fw-medium text-danger">{{ t.amount|currency }}</td>
+          <td class="text-muted" style="white-space:nowrap;">{{ t.transfer_date }}</td>
+          <td>{{ t.reference|default:"—" }}</td>
+          <td>{% if t.receipt %}<a href="{{ t.receipt.url }}" target="_blank" class="text-decoration-none"><i class="bi bi-paperclip"></i> View</a>{% else %}—{% endif %}</td>
+          <td>{{ t.created_by.username|default:"—" }}</td>
+          <td>
+            <a href="{% url 'transfer_detail' t.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
+            {% if request.user.is_superuser %}
+            <a href="{% url 'transfer_delete' t.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" title="Delete" onclick="return confirm('Delete this transfer?')"><i class="bi bi-trash"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="{% if request.user.is_superuser %}11{% else %}10{% endif %}" class="text-center text-muted py-5">No transfers recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include 'includes/pagination.html' with page_obj=transfers %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-transfers');
+  const checkboxes = document.querySelectorAll('.transfer-checkbox');
+  const bulkForm = document.getElementById('transfer-bulk-form');
+
+  selectAll?.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+  });
+
+  bulkForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var selected = document.querySelectorAll('.transfer-checkbox:checked').length;
+    if (!selected) { alert('Select at least one transfer.'); return; }
+    if (!confirm('Delete selected transfers?')) return;
+    bulkForm.submit();
+  });
+});
+</script>
+{% endblock %}
