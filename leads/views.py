@@ -205,13 +205,12 @@ def lead_detail(request, pk):
     today = timezone.now().date()
     comment_form = CommentForm()
     activity_form = ActivityQuickForm()
-    assignment_form = LeadAssignmentForm(initial={'lead_owner': lead.lead_owner})
     client = lead.converted_clients.first()
     return render(request, 'leads/lead_detail.html', {
         'lead': lead, 'deals': deals, 'followups': followups,
         'activities': activities, 'comments': comments, 'today': today,
         'comment_form': comment_form, 'activity_form': activity_form,
-        'assignment_form': assignment_form, 'client': client,
+        'client': client,
     })
 
 

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title"><i class="bi bi-person me-2"></i>Personal Info</span></div>
+      <div class="p-4">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3"><label class="form-label fw-medium">Full Name</label><input type="text" name="name" class="form-control" value="{{ employee.name|default:request.user.get_full_name }}"></div>
+          <div class="mb-3"><label class="form-label fw-medium">Email</label><input type="email" name="email" class="form-control" value="{{ employee.email|default:request.user.email }}"></div>
+          <div class="mb-3"><label class="form-label fw-medium">Phone</label><input type="text" name="phone" class="form-control" value="{{ employee.phone|default:'' }}"></div>
+          <div class="mb-3"><label class="form-label fw-medium">Username</label><input type="text" class="form-control" value="{{ request.user.username }}" disabled></div>
+          <div class="mb-3"><label class="form-label fw-medium">Role</label><input type="text" class="form-control" value="{% if request.user.is_superuser %}Superadmin{% elif employee %}{{ employee.get_role_display }}{% else %}Staff{% endif %}" disabled></div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title"><i class="bi bi-lock me-2"></i>Change Password</span></div>
+      <div class="p-4 text-center">
+        <p class="text-muted mb-3">Want to change your password?</p>
+        <a href="{% url 'password_change' %}" class="btn btn-outline-primary"><i class="bi bi-key me-1"></i>Change Password</a>
+      </div>
+    </div>
+    {% if staff %}
+    <div class="crm-card mt-4">
+      <div class="crm-card-header"><span class="crm-card-title"><i class="bi bi-people me-2"></i>Staff Management</span><a href="{% url 'employee_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Staff</a></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for s in staff %}
+            <tr>
+              <td class="fw-medium">{{ s.name }}</td>
+              <td class="text-muted">{{ s.email }}</td>
+              <td>{{ s.get_role_display }}</td>
+              <td><span class="badge {% if s.status == 'active' %}bg-success{% elif s.status == 'on_leave' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ s.get_status_display }}</span></td>
+              <td><a href="{% url 'employee_edit' s.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-3">No staff yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

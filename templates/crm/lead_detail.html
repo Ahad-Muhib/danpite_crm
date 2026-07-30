@@ -30,31 +30,22 @@
   </div>
   <div class="col-lg-8">
     <div class="crm-card">
-      <div class="crm-card-header">
-        <span class="crm-card-title">Deals</span>
-        <a href="{% url 'deal_create' %}" class="btn btn-sm btn-primary">+ New Deal</a>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead><tr><th>Deal Name</th><th>Pipeline</th><th>Stage</th><th>Value</th><th>Close Date</th></tr></thead>
-          <tbody>
-            {% for d in deals %}
-            <tr>
-              <td class="fw-medium">{{ d.deal_name }}</td>
-              <td>{{ d.get_pipeline_display }}</td>
-              <td>
-                {% if d.stage == 'won' %}<span class="badge bg-success">Won</span>
-                {% elif d.stage == 'lost' %}<span class="badge bg-danger">Lost</span>
-                {% else %}<span class="badge bg-primary">{{ d.get_stage_display }}</span>{% endif %}
-              </td>
-              <td class="fw-medium">{{ d.currency }} {{ d.value }}</td>
-              <td class="text-muted">{{ d.close_date|default:"—" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="text-center text-muted py-4">No deals yet.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="crm-card-header"><span class="crm-card-title">Lead Details</span></div>
+      <div class="p-4">
+        <div class="row g-2">
+          <div class="col-sm-4 text-muted" style="font-size:13px;">Email</div>
+          <div class="col-sm-8 fw-medium">{{ lead.email|default:"—" }}</div>
+          <div class="col-sm-4 text-muted" style="font-size:13px;">Phone</div>
+          <div class="col-sm-8 fw-medium">{{ lead.phone|default:"—" }}</div>
+          <div class="col-sm-4 text-muted" style="font-size:13px;">Company</div>
+          <div class="col-sm-8 fw-medium">{{ lead.company|default:"—" }}</div>
+          <div class="col-sm-4 text-muted" style="font-size:13px;">Source</div>
+          <div class="col-sm-8">{{ lead.get_lead_source_display }}</div>
+          <div class="col-sm-4 text-muted" style="font-size:13px;">Owner</div>
+          <div class="col-sm-8">{{ lead.lead_owner.get_full_name|default:lead.lead_owner.username|default:"Unassigned" }}</div>
+          <div class="col-sm-4 text-muted" style="font-size:13px;">Address</div>
+          <div class="col-sm-8">{{ lead.address|default:"—"|linebreaks }}</div>
+        </div>
       </div>
     </div>
   </div>

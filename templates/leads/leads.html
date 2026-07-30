@@ -24,16 +24,16 @@
       <a href="{% url 'lead_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>
       {% endif %}
     </form>
-    <div class="d-flex gap-2">
-      <form method="post" id="lead-bulk-form" class="d-flex gap-2">
-        {% csrf_token %}
-        <input type="hidden" name="bulk_action" id="bulk-action-input" value="delete">
-        {% if request.user.is_superuser %}
-        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
-        {% endif %}
-      </form>
-      <a href="{% url 'lead_import' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-upload me-1"></i>Import</a>
-      <div class="dropdown d-inline">
+        <div class="d-flex gap-2">
+          <form method="post" id="lead-bulk-form" class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="bulk_action" id="bulk-action-input" value="delete">
+            {% if request.user.is_superuser %}
+            <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+            {% endif %}
+          </form>
+          <a href="{% url 'lead_import' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-upload me-1"></i>Import</a>
+          <div class="dropdown d-inline">
         <button class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i>Export</button>
         <ul class="dropdown-menu">
           <li><a class="dropdown-item" href="{% url 'lead_export' %}?format=csv"><i class="bi bi-filetype-csv me-2"></i>CSV</a></li>
@@ -71,7 +71,7 @@
               <span class="fw-medium">
                 {{ l.name }}
                 {% if l.is_converted %}
-                <span class="badge bg-success rounded-circle ms-1" style="font-size:10px;padding:2px 5px;" title="Converted to Client">C</span>
+                <span class="badge bg-success ms-1" style="font-size:10px;padding:3px 6px;" title="Converted to Client"><i class="bi bi-person-check"></i></span>
                 {% endif %}
               </span>
               {% if l.is_converted and l.converted_clients.first %}
@@ -83,33 +83,35 @@
           </td>
           <td>{{ l.phone|default:"—" }}</td>
           <td class="text-muted">{{ l.email|default:"—" }}</td>
-          <td><span class="badge {% if l.contact_type == 'hot' %}bg-danger{% elif l.contact_type == 'cold' %}bg-info{% elif l.contact_type == 'mid' %}bg-warning text-dark{% else %}bg-light text-dark{% endif %}">{{ l.get_contact_type_display|default:"—" }}</span></td>
-          <td><span class="badge bg-light text-dark border">{{ l.lead_source_label }}</span></td>
           <td>
-            <select class="form-select state-select" data-pk="{{ l.pk }}" style="width:110px;font-size:13px;padding:4px 8px;">
-              <option value="open" {% if l.lead_state == 'open' %}selected{% endif %}>Open</option>
-              <option value="closed" {% if l.lead_state == 'closed' %}selected{% endif %}>Closed</option>
-            </select>
+            {% if l.contact_type == 'hot' %}
+            <span style="font-size:13px;">Hot</span>
+            {% elif l.contact_type == 'cold' %}
+            <span style="font-size:13px;">Cold</span>
+            {% elif l.contact_type == 'mid' %}
+            <span style="font-size:13px;">Mid</span>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
           </td>
+          <td><span style="font-size:13px;">{{ l.lead_source_label }}</span></td>
           <td>
-            <span class="badge
-              {% if l.lead_status == 'new_lead' %}bg-primary
-              {% elif l.lead_status == 'contacted' %}bg-info text-dark
-              {% elif l.lead_status == 'interested' %}bg-success
-              {% elif l.lead_status == 'meeting_scheduled' %}bg-warning text-dark
-              {% elif l.lead_status == 'negotiation' %}bg-dark
-              {% elif l.lead_status == 'convert_to_sale' %}bg-success
-              {% elif l.lead_status == 'lost' %}bg-danger
-              {% elif l.lead_status == 'not_interested' %}bg-secondary
-              {% else %}bg-light text-dark{% endif %}">
-              {{ l.get_lead_status_display }}
-            </span>
+            <div class="dropdown">
+              <button class="btn btn-sm dropdown-toggle state-btn {% if l.lead_state == 'open' %}btn-success{% else %}btn-secondary{% endif %}" data-bs-toggle="dropdown" data-bs-boundary="window">
+                {% if l.lead_state == 'open' %}Open{% else %}Closed{% endif %}
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item state-option" data-pk="{{ l.pk }}" data-value="open" href="#">Open</a></li>
+                <li><a class="dropdown-item state-option" data-pk="{{ l.pk }}" data-value="closed" href="#">Closed</a></li>
+              </ul>
+            </div>
           </td>
-          <td class="text-muted">{{ l.budget|default:"—" }}</td>
+          <td><span style="font-size:13px;">{{ l.get_lead_status_display }}</span></td>
+          <td class="fw-medium">{{ l.budget|default:"—" }}</td>
           <td>
             <div class="d-flex align-items-center gap-1">
               {% if l.next_followup_date %}
-              <span class="badge bg-primary text-white" style="font-size:11px;">{{ l.next_followup_date|date:"d M Y" }}</span>
+              <span style="font-size:13px;">{{ l.next_followup_date|date:"d M Y" }}</span>
               {% else %}
               <span class="text-muted" style="font-size:11px;">No date</span>
               {% endif %}
@@ -188,18 +190,25 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // State inline dropdown
-  document.querySelectorAll('.state-select').forEach(sel => {
-    sel.addEventListener('change', function() {
+  document.querySelectorAll('.state-option').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.preventDefault();
       const pk = this.dataset.pk;
-      const val = this.value;
+      const val = this.dataset.value;
+      const btn = this.closest('.dropdown').querySelector('.state-btn');
       const fd = new FormData();
       fd.append('lead_state', val);
       fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
       fetch(`/leads/${pk}/update-state/`, {
         method: 'POST', body: fd,
         headers: {'X-Requested-With': 'XMLHttpRequest'}
-      }).then(r => r.json()).then(data => {
-        if (!data.ok) alert('Failed to update state.');
+      }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.ok) {
+          btn.innerHTML = (val === 'open' ? 'Open' : 'Closed');
+          btn.className = 'btn btn-sm dropdown-toggle state-btn ' + (val === 'open' ? 'btn-success' : 'btn-secondary');
+        } else {
+          alert('Failed to update state.');
+        }
       });
     });
   });

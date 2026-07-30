@@ -487,3 +487,35 @@ def update_site_settings(request):
         settings.save()
         messages.success(request, 'Logo updated.')
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+
+
+@login_required
+def profile(request):
+    employee = getattr(request.user, 'employee_profile', None)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        if name and email:
+            request.user.first_name = name.split()[0] if name else ''
+            request.user.last_name = ' '.join(name.split()[1:]) if len(name.split()) > 1 else ''
+            request.user.email = email
+            request.user.save()
+            if employee:
+                employee.name = name
+                employee.email = email
+                if phone:
+                    employee.phone = phone
+                employee.save()
+            messages.success(request, 'Profile updated.')
+        else:
+            messages.error(request, 'Name and email are required.')
+        return redirect('profile')
+    staff = None
+    if request.user.is_superuser:
+        from hr.models import Employee as HrEmployee
+        staff = HrEmployee.objects.select_related('user', 'department', 'designation').all().order_by('name')
+    return render(request, 'core/profile.html', {
+        'employee': employee,
+        'staff': staff,
+    })

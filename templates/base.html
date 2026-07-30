@@ -36,7 +36,6 @@
   </a>
   <div class="collapse submenu {% if 'lead' in request.path %}show{% endif %}" id="leadsMenu">
     <a href="{% url 'lead_list' %}"  class="nav-link {% if request.resolver_match.url_name == 'lead_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Lead Contacts</a>
-    <a href="{% url 'lead_import' %}" class="nav-link {% if request.resolver_match.url_name == 'lead_import' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Import Leads</a>
   </div>
 
   <!-- Clients -->
@@ -129,7 +128,23 @@
     {% elif user_role == 'employee' %}
       <span class="badge" style="background:#6b7280;color:#fff;font-size:11px;">Staff</span>
     {% endif %}
-    <span class="text-muted" style="font-size:13px;"><i class="bi bi-person-circle me-1"></i>{{ request.user.get_full_name|default:request.user.username }}</span>
+    <!-- User Dropdown -->
+    <div class="dropdown">
+      <button class="btn btn-sm dropdown-toggle d-flex align-items-center gap-2" style="border:none;background:transparent;font-size:13px;padding:4px 8px;" data-bs-toggle="dropdown" data-bs-boundary="window">
+        <i class="bi bi-person-circle" style="font-size:18px;"></i>
+        <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person me-2"></i>Profile</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <form method="post" action="{% url 'logout' %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-left me-2"></i>Logout</button>
+          </form>
+        </li>
+      </ul>
+    </div>
   </div>
 </div>
 
