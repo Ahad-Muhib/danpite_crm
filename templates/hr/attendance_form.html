@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Record Attendance{% endblock %}
-{% block page_title %}Record Attendance{% endblock %}
+{% block title %}{{ action|default:"Record" }} Attendance{% endblock %}
+{% block page_title %}{{ action|default:"Record" }} Attendance{% endblock %}
 {% block content %}
 <div class="crm-card">
   <div class="crm-card-header"><span class="crm-card-title">Attendance Details</span></div>
@@ -16,7 +16,7 @@
         <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
       </div>
       <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary">Record Attendance</button>
+        <button type="submit" class="btn btn-primary">{{ action|default:"Record" }} Attendance</button>
         <a href="{% url 'attendance_list' %}" class="btn btn-outline-secondary">Cancel</a>
       </div>
     </form>

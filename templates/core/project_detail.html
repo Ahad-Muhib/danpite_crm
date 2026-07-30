@@ -5,10 +5,10 @@
 <div class="crm-card">
   <div class="crm-card-header">
     <span class="crm-card-title">{{ project.name }}</span>
-    {% if project.status == 'completed' %}<span class="badge bg-success fs-6">Completed</span>
-    {% elif project.status == 'in_progress' %}<span class="badge bg-primary fs-6">In Progress</span>
-    {% elif project.status == 'on_hold' %}<span class="badge bg-warning text-dark fs-6">On Hold</span>
-    {% else %}<span class="badge bg-secondary fs-6">Not Started</span>{% endif %}
+    {% if project.status == 'completed' %}<span class="badge bg-success fs-6 rounded-0">Completed</span>
+    {% elif project.status == 'in_progress' %}<span class="badge bg-primary fs-6 rounded-0">In Progress</span>
+    {% elif project.status == 'on_hold' %}<span class="badge bg-warning text-dark fs-6 rounded-0">On Hold</span>
+    {% else %}<span class="badge bg-secondary fs-6 rounded-0">Not Started</span>{% endif %}
   </div>
   <div class="p-4">
     <div class="row g-3 mb-4">

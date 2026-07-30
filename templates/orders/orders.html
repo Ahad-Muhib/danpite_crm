@@ -42,11 +42,11 @@
           <td class="text-muted">{{ o.order_date }}</td>
           <td class="text-muted">{{ o.delivery_date|default:"—" }}</td>
           <td>
-            {% if o.status == 'delivered' %}<span class="badge bg-success">Delivered</span>
-            {% elif o.status == 'cancelled' %}<span class="badge bg-danger">Cancelled</span>
-            {% elif o.status == 'shipped' %}<span class="badge bg-info text-dark">Shipped</span>
-            {% elif o.status == 'processing' %}<span class="badge bg-primary">Processing</span>
-            {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+            {% if o.status == 'delivered' %}<span class="badge bg-success rounded-0">Delivered</span>
+            {% elif o.status == 'cancelled' %}<span class="badge bg-danger rounded-0">Cancelled</span>
+            {% elif o.status == 'shipped' %}<span class="badge bg-info text-dark rounded-0">Shipped</span>
+            {% elif o.status == 'processing' %}<span class="badge bg-primary rounded-0">Processing</span>
+            {% else %}<span class="badge bg-warning text-dark rounded-0">Pending</span>{% endif %}
           </td>
           <td>
             <a href="{% url 'order_detail' o.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-eye"></i></a>

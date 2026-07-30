@@ -265,9 +265,9 @@ def invoice_edit(request, pk):
             after_discount = item_total - (item_total * (obj.discount or 0) / 100)
             obj.total = after_discount + (after_discount * (obj.tax or 0) / 100) + (obj.shipping or 0)
             obj.save(update_fields=['total'])
-            new_amount = float(form.cleaned_data.get('amount_paid') or 0)
-            current_paid = obj.payments.aggregate(s=Sum('amount'))['s'] or 0
-            diff = new_amount - float(current_paid)
+            new_amount = Decimal(form.cleaned_data.get('amount_paid') or 0)
+            current_paid = obj.payments.aggregate(s=Sum('amount'))['s'] or Decimal('0')
+            diff = new_amount - current_paid
             if diff > 0:
                 method = request.POST.get('payment_method', '') or 'cash'
                 account_pk = request.POST.get('payment_bank_account', '') or request.POST.get('payment_cash_account', '')
@@ -306,7 +306,7 @@ def invoice_edit(request, pk):
                     if diff >= 0:
                         break
                     if p.amount <= abs(diff):
-                        diff += float(p.amount)
+                        diff += p.amount
                         p.delete()
                     else:
                         p.amount += diff

@@ -14,5 +14,7 @@ urlpatterns = [
     path('hr/leaves/<int:pk>/status/', views.leave_status, name='leave_status'),
     path('hr/attendance/', views.attendance_list, name='attendance_list'),
     path('hr/attendance/new/', views.attendance_create, name='attendance_create'),
+    path('hr/attendance/<int:pk>/', views.attendance_detail, name='attendance_detail'),
+    path('hr/attendance/<int:pk>/edit/', views.attendance_edit, name='attendance_edit'),
 ]
 

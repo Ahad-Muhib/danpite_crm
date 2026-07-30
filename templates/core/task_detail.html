@@ -5,18 +5,18 @@
 <div class="crm-card">
   <div class="crm-card-header">
     <span class="crm-card-title">{{ task.title }}</span>
-    {% if task.status == 'completed' %}<span class="badge bg-success fs-6">Completed</span>
-    {% elif task.status == 'in_progress' %}<span class="badge bg-primary fs-6">In Progress</span>
-    {% else %}<span class="badge bg-secondary fs-6">Pending</span>{% endif %}
+    {% if task.status == 'completed' %}<span class="badge bg-success fs-6 rounded-0">Completed</span>
+    {% elif task.status == 'in_progress' %}<span class="badge bg-primary fs-6 rounded-0">In Progress</span>
+    {% else %}<span class="badge bg-secondary fs-6 rounded-0">Pending</span>{% endif %}
   </div>
   <div class="p-4">
     <div class="row g-3 mb-4">
       <div class="col-md-4">
         <div class="text-muted mb-1" style="font-size:12px;">PRIORITY</div>
         <div>
-          {% if task.priority == 'high' %}<span class="badge bg-danger">High</span>
-          {% elif task.priority == 'medium' %}<span class="badge bg-warning text-dark">Medium</span>
-          {% else %}<span class="badge bg-secondary">Low</span>{% endif %}
+          {% if task.priority == 'high' %}<span class="badge bg-danger rounded-0">High</span>
+          {% elif task.priority == 'medium' %}<span class="badge bg-warning text-dark rounded-0">Medium</span>
+          {% else %}<span class="badge bg-secondary rounded-0">Low</span>{% endif %}
         </div>
       </div>
       <div class="col-md-4">

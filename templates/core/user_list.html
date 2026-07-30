@@ -18,13 +18,13 @@
           <td class="text-muted">{{ u.email|default:"—" }}</td>
           <td>
             {% if u.employee_profile %}
-              <span class="badge bg-light text-dark border">{{ u.employee_profile.get_role_display }}</span>
+              <span class="badge bg-light text-dark border rounded-0">{{ u.employee_profile.get_role_display }}</span>
             {% else %}
-              <span class="badge bg-info text-dark">User</span>
+              <span class="badge bg-info text-dark rounded-0">User</span>
             {% endif %}
           </td>
           <td>
-            {% if u.is_staff %}<span class="badge bg-success">Yes</span>
+            {% if u.is_staff %}<span class="badge bg-success rounded-0">Yes</span>
             {% else %}<span class="text-muted">No</span>{% endif %}
           </td>
           <td class="text-muted">{{ u.date_joined|date:"d M Y" }}</td>

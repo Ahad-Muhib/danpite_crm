@@ -62,7 +62,7 @@
           <td>{% if p.invoice %}<a href="{% url 'invoice_detail' p.invoice.pk %}" class="text-primary text-decoration-none">{{ p.invoice.code }}</a>{% else %}—{% endif %}</td>
           <td class="fw-medium">{{ p.amount|currency }}</td>
           <td class="text-muted" style="white-space:nowrap;">{{ p.created_at|date:"d M Y H:i" }}</td>
-          <td><span class="badge bg-light text-dark border">{{ p.get_method_display }}</span></td>
+          <td>{{ p.get_method_display }}</td>
           <td>{% if p.account %}{{ p.account.display_name }}{% else %}—{% endif %}</td>
           <td class="text-muted">{{ p.reference|default:"—" }}</td>
           <td>

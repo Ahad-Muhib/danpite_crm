@@ -15,7 +15,7 @@
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Category</label>
-        <div><span class="badge bg-light text-dark border">{{ cat.name|default:"—" }}</span></div>
+        <div>{{ cat.name|default:"—" }}</div>
       </div>
 
       {% if cat.account_type == 'bank' and cat.name|lower == 'card' %}

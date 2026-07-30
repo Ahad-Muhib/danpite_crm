@@ -90,10 +90,41 @@ def employee_delete(request, pk):
 
 @login_required
 def leave_list(request):
-    qs = Leave.objects.all().order_by('-created_at')
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_leaves')
+        if not selected_ids:
+            messages.error(request, 'Select at least one leave first.')
+            return redirect('leave_list')
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can delete leaves.')
+            return redirect('leave_list')
+        for obj in Leave.objects.filter(pk__in=selected_ids):
+            log_action(request, 'delete', 'Leave', obj)
+            obj.delete()
+        messages.success(request, f'{len(selected_ids)} leave(s) deleted.')
+        return redirect('leave_list')
+    q = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
+    leave_type = request.GET.get('leave_type', '')
+    sort = request.GET.get('sort', 'date')
+    dir = request.GET.get('dir', 'desc')
+    sort_map = {'id': 'id', 'employee': 'employee__name', 'leave_type': 'leave_type', 'start': 'start_date', 'end': 'end_date', 'status': 'status', 'created': 'created_at'}
+    order = sort_map.get(sort, 'created_at')
+    if dir == 'desc':
+        order = '-' + order
+    qs = Leave.objects.select_related('employee', 'approved_by').all().order_by(order)
+    if q:
+        qs = qs.filter(Q(employee__name__icontains=q) | Q(reason__icontains=q))
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if leave_type:
+        qs = qs.filter(leave_type=leave_type)
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get('page'))
-    return render(request, 'hr/leaves.html', {'leaves': page})
+    return render(request, 'hr/leaves.html', {
+        'leaves': page, 'q': q, 'status_filter': status_filter,
+        'leave_type': leave_type, 'sort': sort, 'dir': dir,
+    })
 
 
 @login_required
@@ -122,10 +153,38 @@ def leave_status(request, pk):
 
 @login_required
 def attendance_list(request):
-    qs = Attendance.objects.all().order_by('-date')
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_attendances')
+        if not selected_ids:
+            messages.error(request, 'Select at least one attendance record first.')
+            return redirect('attendance_list')
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can delete attendance records.')
+            return redirect('attendance_list')
+        for obj in Attendance.objects.filter(pk__in=selected_ids):
+            log_action(request, 'delete', 'Attendance', obj)
+            obj.delete()
+        messages.success(request, f'{len(selected_ids)} attendance record(s) deleted.')
+        return redirect('attendance_list')
+    q = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
+    sort = request.GET.get('sort', 'date')
+    dir = request.GET.get('dir', 'desc')
+    sort_map = {'id': 'id', 'employee': 'employee__name', 'date': 'date', 'check_in': 'check_in', 'check_out': 'check_out', 'status': 'status'}
+    order = sort_map.get(sort, 'date')
+    if dir == 'desc':
+        order = '-' + order
+    qs = Attendance.objects.select_related('employee').all().order_by(order)
+    if q:
+        qs = qs.filter(employee__name__icontains=q)
+    if status_filter:
+        qs = qs.filter(status=status_filter)
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get('page'))
-    return render(request, 'hr/attendance.html', {'attendances': page})
+    return render(request, 'hr/attendance.html', {
+        'attendances': page, 'q': q,
+        'status_filter': status_filter, 'sort': sort, 'dir': dir,
+    })
 
 
 @login_required
@@ -136,7 +195,28 @@ def attendance_create(request):
         log_action(request, 'create', 'Attendance', obj)
         messages.success(request, 'Attendance recorded.')
         return redirect('attendance_list')
-    return render(request, 'hr/attendance_form.html', {'form': form})
+    return render(request, 'hr/attendance_form.html', {'form': form, 'action': 'Record'})
+
+
+@login_required
+def attendance_edit(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can edit attendance records.')
+        return redirect('attendance_list')
+    obj = get_object_or_404(Attendance, pk=pk)
+    form = AttendanceForm(request.POST or None, instance=obj)
+    if form.is_valid():
+        obj = form.save()
+        log_action(request, 'update', 'Attendance', obj)
+        messages.success(request, 'Attendance updated.')
+        return redirect('attendance_list')
+    return render(request, 'hr/attendance_form.html', {'form': form, 'action': 'Edit', 'attendance': obj})
+
+
+@login_required
+def attendance_detail(request, pk):
+    obj = get_object_or_404(Attendance, pk=pk)
+    return render(request, 'hr/attendance_detail.html', {'attendance': obj})
 
 
 @login_required

@@ -20,13 +20,6 @@
     </div>
   </div>
   <div class="col-lg-7">
-    <div class="crm-card">
-      <div class="crm-card-header"><span class="crm-card-title"><i class="bi bi-lock me-2"></i>Change Password</span></div>
-      <div class="p-4 text-center">
-        <p class="text-muted mb-3">Want to change your password?</p>
-        <a href="{% url 'password_change' %}" class="btn btn-outline-primary"><i class="bi bi-key me-1"></i>Change Password</a>
-      </div>
-    </div>
     {% if staff %}
     <div class="crm-card mt-4">
       <div class="crm-card-header"><span class="crm-card-title"><i class="bi bi-people me-2"></i>Staff Management</span><a href="{% url 'employee_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Staff</a></div>

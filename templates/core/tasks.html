@@ -29,14 +29,14 @@
           <td class="text-muted">{{ t.pk }}</td>
           <td class="fw-medium">{{ t.title }}</td>
           <td>
-            {% if t.priority == 'high' %}<span class="badge bg-danger">High</span>
-            {% elif t.priority == 'medium' %}<span class="badge bg-warning text-dark">Medium</span>
-            {% else %}<span class="badge bg-secondary">Low</span>{% endif %}
+            {% if t.priority == 'high' %}<span class="badge bg-danger rounded-0">High</span>
+            {% elif t.priority == 'medium' %}<span class="badge bg-warning text-dark rounded-0">Medium</span>
+            {% else %}<span class="badge bg-secondary rounded-0">Low</span>{% endif %}
           </td>
           <td>
-            {% if t.status == 'completed' %}<span class="badge bg-success">Completed</span>
-            {% elif t.status == 'in_progress' %}<span class="badge bg-primary">In Progress</span>
-            {% else %}<span class="badge bg-secondary">Pending</span>{% endif %}
+            {% if t.status == 'completed' %}<span class="badge bg-success rounded-0">Completed</span>
+            {% elif t.status == 'in_progress' %}<span class="badge bg-primary rounded-0">In Progress</span>
+            {% else %}<span class="badge bg-secondary rounded-0">Pending</span>{% endif %}
           </td>
           <td>{{ t.assigned_to.name|default:"—" }}</td>
           <td class="text-muted">{{ t.start_date|default:"—" }}</td>

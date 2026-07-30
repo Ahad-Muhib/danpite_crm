@@ -98,10 +98,10 @@
                 <small class="text-muted">{{ p.start_date|default:"—" }} → {{ p.end_date|default:"—" }}</small>
               </td>
               <td class="text-end">
-                {% if p.status == 'completed' %}<span class="badge bg-success">Done</span>
-                {% elif p.status == 'in_progress' %}<span class="badge bg-primary">Active</span>
-                {% elif p.status == 'on_hold' %}<span class="badge bg-warning text-dark">Hold</span>
-                {% else %}<span class="badge bg-secondary">Not Started</span>{% endif %}
+                {% if p.status == 'completed' %}<span class="badge bg-success rounded-0">Done</span>
+                {% elif p.status == 'in_progress' %}<span class="badge bg-primary rounded-0">Active</span>
+                {% elif p.status == 'on_hold' %}<span class="badge bg-warning text-dark rounded-0">Hold</span>
+                {% else %}<span class="badge bg-secondary rounded-0">Not Started</span>{% endif %}
               </td>
             </tr>
             {% empty %}

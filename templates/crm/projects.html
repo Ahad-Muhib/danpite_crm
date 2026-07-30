@@ -18,10 +18,10 @@
           <td class="text-muted">{{ p.start_date|default:"—" }}</td>
           <td class="text-muted">{{ p.end_date|default:"—" }}</td>
           <td>
-            {% if p.status == 'completed' %}<span class="badge bg-success">Completed</span>
-            {% elif p.status == 'in_progress' %}<span class="badge bg-primary">In Progress</span>
-            {% elif p.status == 'on_hold' %}<span class="badge bg-warning text-dark">On Hold</span>
-            {% else %}<span class="badge bg-secondary">Not Started</span>{% endif %}
+            {% if p.status == 'completed' %}<span class="badge bg-success rounded-0">Completed</span>
+            {% elif p.status == 'in_progress' %}<span class="badge bg-primary rounded-0">In Progress</span>
+            {% elif p.status == 'on_hold' %}<span class="badge bg-warning text-dark rounded-0">On Hold</span>
+            {% else %}<span class="badge bg-secondary rounded-0">Not Started</span>{% endif %}
           </td>
           <td>
             <a href="{% url 'project_edit' p.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action"><i class="bi bi-pencil"></i></a>

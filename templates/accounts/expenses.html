@@ -61,7 +61,7 @@
           {% if request.user.is_superuser %}<td><input type="checkbox" name="selected_expenses" value="{{ e.pk }}" class="form-check-input expense-checkbox" form="expense-bulk-form"></td>{% endif %}
           <td class="text-muted">{{ e.pk }}</td>
           <td class="fw-medium">{{ e.title }}</td>
-          <td><span class="badge bg-light text-dark border">{{ e.get_category_display }}</span></td>
+          <td>{{ e.get_category_display }}</td>
           <td class="fw-medium text-danger">{{ e.amount|currency }}</td>
           <td class="text-muted" style="white-space:nowrap;">{{ e.expense_date }}</td>
           <td>{% if e.bank_account %}{{ e.bank_account.display_name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>

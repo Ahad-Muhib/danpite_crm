@@ -34,10 +34,9 @@
         <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="add-category-btn" data-bs-toggle="modal" data-bs-target="#categoryModal"><i class="bi bi-plus-lg"></i></button>
       </div>
 
-      <div id="category-sub-select" class="row g-3 mb-3" style="display:none;">
-        <div class="col-md-6"><label class="form-label fw-medium">Category</label>
-          <select id="id_account_category_visible" class="form-select"></select>
-        </div>
+      <div id="category-sub-select" style="display:none;">
+        <label class="form-label fw-medium mb-2">Category</label>
+        <div id="id_account_category_visible" class="d-flex align-items-center gap-2 flex-wrap mb-3"></div>
       </div>
 
       <div class="row g-3">
@@ -180,7 +179,6 @@
   var categories = {{ categories_json|safe }};
   var types = {{ types_json|safe }};
   var hiddenInput = document.getElementById('id_account_category');
-  var visibleSelect = document.getElementById('id_account_category_visible');
   var catSubSelect = document.getElementById('category-sub-select');
   var selectedType = '{{ selected_type|default:"" }}';
   var typeLinks = document.querySelectorAll('.type-option');
@@ -206,26 +204,44 @@
     showFields(type);
   }
 
+  function selectCategory(pk) {
+    hiddenInput.value = pk;
+    var links = document.querySelectorAll('.category-option');
+    links.forEach(function(l) {
+      l.className = 'text-decoration-none category-option ' + (parseInt(l.dataset.pk) === parseInt(pk) ? 'fw-bold text-primary' : 'text-secondary');
+    });
+    if (selectedType) showFields(selectedType);
+  }
+
   function filterCategories(type) {
     var matching = categories.filter(function(c) { return c.account_type === type; });
-    var html = '';
+    var container = document.getElementById('id_account_category_visible');
+    container.innerHTML = '';
+    var selectedPk = parseInt(hiddenInput.value);
     for (var i = 0; i < matching.length; i++) {
-      var sel = parseInt(hiddenInput.value) === matching[i].pk ? 'selected' : '';
-      html += '<option value="' + matching[i].pk + '" ' + sel + '>' + matching[i].name + '</option>';
+      var a = document.createElement('a');
+      a.href = '#';
+      a.className = 'text-decoration-none category-option ' + (selectedPk === matching[i].pk ? 'fw-bold text-primary' : 'text-secondary');
+      a.dataset.pk = matching[i].pk;
+      a.textContent = matching[i].name;
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        selectCategory(this.dataset.pk);
+      });
+      container.appendChild(a);
     }
-    visibleSelect.innerHTML = html;
     if (matching.length > 1) {
       catSubSelect.style.display = '';
     } else {
       catSubSelect.style.display = 'none';
       if (matching.length === 1) {
-        hiddenInput.value = matching[0].pk;
+        selectCategory(matching[0].pk);
       } else {
         hiddenInput.value = '';
       }
     }
     if (matching.length > 0 && !hiddenInput.value) {
-      hiddenInput.value = matching[0].pk;
+      selectCategory(matching[0].pk);
     }
     return matching;
   }
@@ -399,11 +415,6 @@
       e.preventDefault();
       selectType(this.dataset.type);
     });
-  });
-
-  visibleSelect.addEventListener('change', function() {
-    hiddenInput.value = this.value;
-    if (selectedType) showFields(selectedType);
   });
 
   if (selectedType) {

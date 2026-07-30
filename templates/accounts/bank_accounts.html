@@ -55,7 +55,7 @@
         {% with cat=a.account_category %}
         <tr>
           <td><input type="checkbox" name="selected_accounts" value="{{ a.pk }}" class="form-check-input account-checkbox" form="account-bulk-form"></td>
-          <td><span class="badge bg-light text-dark">{{ cat.name|default:"—" }}</span></td>
+          <td>{{ cat.name|default:"—" }}</td>
           <td>{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.bank_name }}{% elif cat.account_type == 'bank' %}{{ a.bank_name }}{% endif %}</td>
           <td class="fw-medium">{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.card_holder_name }}{% else %}{{ a.account_name|default:a.holder_name }}{% endif %}</td>
           <td><code>{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.card_number }}{% else %}{{ a.account_number|default:a.mobile_number }}{% endif %}</code></td>
