@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load crm_tags %}
+{% block title %}Bank Details{% endblock %}
+{% block page_title %}Bank Details{% endblock %}
+{% block content %}
+
+<div class="crm-card">
+  <div class="crm-card-header"><span class="crm-card-title">Bank Accounts</span></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Account Name</th><th>Category</th><th>Bank / Provider</th><th>Account Number</th><th>Holder Name</th><th>Branch</th><th>Routing</th><th>Mobile</th><th>Balance</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for a in accounts %}
+        <tr>
+          <td class="fw-medium">{{ a.account_name|default:a.display_name }}</td>
+          <td>{% if a.account_category %}{{ a.account_category.name }}{% else %}—{% endif %}</td>
+          <td>{{ a.bank_name|default:a.get_mobile_provider_display|default:"—" }}</td>
+          <td>{{ a.account_number|default:a.mobile_number|default:"—" }}</td>
+          <td>{{ a.holder_name|default:a.card_holder_name|default:"—" }}</td>
+          <td>{{ a.branch|default:"—" }}</td>
+          <td>{{ a.routing_number|default:"—" }}</td>
+          <td>{{ a.mobile_number|default:"—" }}</td>
+          <td class="fw-bold {% if a.available_balance >= 0 %}text-success{% else %}text-danger{% endif %}">{{ a.available_balance|currency }}</td>
+          <td>{% if a.is_active %}<span class="badge bg-success rounded-0">Active</span>{% else %}<span class="badge bg-secondary rounded-0">Inactive</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="10" class="text-muted py-4 text-center">No bank accounts found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

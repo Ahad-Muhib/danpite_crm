@@ -122,7 +122,6 @@ class PaymentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if instance and instance.client:
             self.fields['client_name'].initial = instance.client.name
-        self.fields['payment_date'].initial = date.today()
         cats = AccountCategory.objects.filter(is_active=True).values_list('name', flat=True)
         method_choices = [('', '-- Select Method --')] + [(c.lower(), c) for c in cats]
         self.fields['method'] = forms.CharField(

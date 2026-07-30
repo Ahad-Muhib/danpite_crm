@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load crm_tags %}
+{% block title %}Expense Report{% endblock %}
+{% block page_title %}Expense Report{% endblock %}
+{% block content %}
+
+<div class="row g-3 mb-3">
+  <div class="col-md-12">
+    <div class="crm-card p-3 text-center"><small class="text-muted">Total Expenses</small><div class="fs-5 fw-bold text-danger">{{ total_expense|currency }}</div></div>
+  </div>
+</div>
+
+<div class="crm-card">
+  <div class="crm-card-header flex-wrap gap-2">
+    <form class="d-flex gap-2 flex-wrap" method="get">
+      <input type="date" name="from" value="{{ from }}" class="form-control form-control-sm" style="width:160px;">
+      <input type="date" name="to" value="{{ to }}" class="form-control form-control-sm" style="width:160px;">
+      <select name="category" class="form-select form-select-sm" style="width:160px;">
+        <option value="">All Categories</option>
+        {% for c in categories %}<option value="{{ c }}" {% if selected_category == c %}selected{% endif %}>{{ c|title }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
+      {% if from or to or selected_category %}<a href="{% url 'expense_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Date</th><th>Title</th><th>Category</th><th>Amount</th><th>Bank Account</th></tr></thead>
+      <tbody>
+        {% for e in expenses %}
+        <tr>
+          <td class="text-muted" style="white-space:nowrap;">{{ e.expense_date|date:"d M Y" }}</td>
+          <td>{{ e.title }}</td>
+          <td>{{ e.get_category_display }}</td>
+          <td class="fw-medium text-danger">{{ e.amount|currency }}</td>
+          <td>{% if e.bank_account %}{{ e.bank_account.display_name }}{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-muted py-4 text-center">No expenses found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

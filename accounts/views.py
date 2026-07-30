@@ -404,7 +404,7 @@ def payment_list(request):
 
 @login_required
 def payment_create(request):
-    initial = {}
+    initial = {'payment_date': date.today()}
     invoice_id = request.GET.get('invoice')
     client_name = request.GET.get('client_name')
     if invoice_id and not request.method == 'POST':

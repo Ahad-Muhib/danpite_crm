@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load crm_tags %}
+{% block title %}Sales Report{% endblock %}
+{% block page_title %}Sales Report{% endblock %}
+{% block content %}
+
+<div class="crm-card mb-3">
+  <div class="crm-card-header flex-wrap gap-2">
+    <form class="d-flex gap-2 flex-wrap" method="get">
+      <input type="date" name="from" value="{{ from }}" class="form-control form-control-sm" style="width:160px;">
+      <input type="date" name="to" value="{{ to }}" class="form-control form-control-sm" style="width:160px;">
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
+      {% if from or to %}<a href="{% url 'sales_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="crm-card">
+  <div class="crm-card-header"><span class="crm-card-title">Monthly Summary</span></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net</th><th>Projects</th></tr></thead>
+      <tbody>
+        {% for r in report_data %}
+        <tr>
+          <td class="fw-medium"><a href="?month={{ r.month|date:'Y-m-d' }}{% if from %}&from={{ from }}{% endif %}{% if to %}&to={{ to }}{% endif %}">{{ r.month|date:"F Y" }}</a></td>
+          <td class="text-success fw-medium">{{ r.income|currency }}</td>
+          <td class="text-danger fw-medium">{{ r.expense|currency }}</td>
+          <td class="fw-bold {% if r.net >= 0 %}text-success{% else %}text-danger{% endif %}">{{ r.net|currency }}</td>
+          <td>{{ r.projects }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-muted py-4 text-center">No data found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if selected_month %}
+{% with dt=selected_month %}
+<div class="crm-card mt-3">
+  <div class="crm-card-header"><span class="crm-card-title">Details for {{ selected_month_display }}</span></div>
+
+  {% if month_invoices %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Invoice</th><th>Client</th><th>Date</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for inv in month_invoices %}
+        <tr><td><a href="{% url 'invoice_detail' inv.pk %}">{{ inv.code }}</a></td><td>{% if inv.client %}{{ inv.client.name }}{% else %}{{ inv.bill_to_name|default:"—" }}{% endif %}</td><td>{{ inv.invoice_date|date:"d M Y" }}</td><td>{{ inv.total|currency }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if month_expenses %}
+  <div class="table-responsive mt-2">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Expense</th><th>Category</th><th>Date</th><th>Amount</th></tr></thead>
+      <tbody>
+        {% for e in month_expenses %}
+        <tr><td>{{ e.title }}</td><td>{{ e.get_category_display }}</td><td>{{ e.expense_date|date:"d M Y" }}</td><td class="text-danger">{{ e.amount|currency }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if month_projects %}
+  <div class="table-responsive mt-2">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Project</th><th>Manager</th><th>End Date</th></tr></thead>
+      <tbody>
+        {% for p in month_projects %}
+        <tr><td>{{ p.name }}</td><td>{% if p.manager %}{{ p.manager.get_full_name|default:p.manager.username }}{% else %}—{% endif %}</td><td>{{ p.end_date|date:"d M Y" }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if not month_invoices and not month_expenses and not month_projects %}
+  <p class="text-muted p-3 mb-0">No details for this month.</p>
+  {% endif %}
+</div>
+{% endwith %}
+{% endif %}
+{% endblock %}

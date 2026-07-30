@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import views, reports
 
 urlpatterns = [
     path('accounts/bank-accounts-by-bank/', views.bank_accounts_by_bank, name='bank_accounts_by_bank'),
@@ -44,5 +44,10 @@ urlpatterns = [
     path('accounts/transfers/new/', views.transfer_create, name='transfer_create'),
     path('accounts/transfers/<int:pk>/', views.transfer_detail, name='transfer_detail'),
     path('accounts/transfers/<int:pk>/delete/', views.transfer_delete, name='transfer_delete'),
+    path('accounts/reports/income/', reports.income_report, name='income_report'),
+    path('accounts/reports/expense/', reports.expense_report, name='expense_report'),
+    path('accounts/reports/balance/', reports.balance_report, name='balance_report'),
+    path('accounts/reports/bank-details/', reports.bank_details, name='bank_details_report'),
+    path('accounts/reports/sales/', reports.sales_report, name='sales_report'),
 ]
 
