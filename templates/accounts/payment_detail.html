@@ -26,12 +26,8 @@
         <div class="fw-medium">{{ payment.amount|currency }}</div>
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-medium text-muted">Payment Date</label>
-        <div>{{ payment.payment_date|date:"d M Y" }}</div>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label fw-medium text-muted">Created</label>
-        <div>{{ payment.created_at|date:"d M Y H:i" }}</div>
+        <label class="form-label fw-medium text-muted">Date</label>
+        <div>{{ payment.payment_date|date:"d M Y" }} <small class="text-muted">(created {{ payment.created_at|date:"d M Y H:i" }})</small></div>
       </div>
       <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Method</label>
