@@ -5,11 +5,10 @@
 <div class="crm-card">
   <div class="crm-card-header"><span class="crm-card-title">Employee Details</span></div>
   <div class="p-4">
-    <form method="post" enctype="multipart/form-data">
+    <form method="post">
       {% csrf_token %}
       <div class="row g-3">
-        <div class="col-md-8"><label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>{{ form.name }}</div>
-        <div class="col-md-4"><label class="form-label fw-medium">Avatar</label>{{ form.avatar }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>{{ form.name }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Email <span class="text-danger">*</span></label>{{ form.email }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Phone</label>{{ form.phone }}</div>
         <div class="col-md-4"><label class="form-label fw-medium">Role</label>{{ form.role }}</div>

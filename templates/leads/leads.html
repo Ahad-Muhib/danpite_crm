@@ -144,8 +144,17 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <input type="date" id="followup-date-input" class="form-control">
-        <div class="form-text">Leave empty to clear the follow-up date.</div>
+        <div class="mb-3"><label class="form-label fw-medium">Date</label><input type="date" id="followup-date-input" class="form-control"></div>
+        <div class="mb-2"><label class="form-label fw-medium">Type</label>
+          <select id="followup-type-input" class="form-select">
+            <option value="call">Call</option>
+            <option value="email">Email</option>
+            <option value="meeting">Meeting</option>
+            <option value="note">Note</option>
+            <option value="other" selected>Other</option>
+          </select>
+        </div>
+        <div class="form-text">Leave date empty to clear the follow-up date.</div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -199,11 +208,13 @@ document.addEventListener('DOMContentLoaded', function() {
   let currentLeadPk = null;
   const modal = new bootstrap.Modal(document.getElementById('followupModal'));
   const dateInput = document.getElementById('followup-date-input');
+  const typeInput = document.getElementById('followup-type-input');
 
   document.querySelectorAll('.followup-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       currentLeadPk = this.dataset.pk;
       dateInput.value = this.dataset.date || '';
+      typeInput.value = 'other';
       modal.show();
     });
   });
@@ -212,6 +223,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!currentLeadPk) return;
     const fd = new FormData();
     fd.append('next_followup_date', dateInput.value);
+    fd.append('followup_type', typeInput.value);
     fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
     fetch(`/leads/${currentLeadPk}/update-followup/`, {
       method: 'POST', body: fd,

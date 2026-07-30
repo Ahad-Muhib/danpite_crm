@@ -7,7 +7,6 @@
   <div class="col-lg-4">
     <div class="crm-card">
       <div class="p-4 text-center border-bottom">
-        <div class="avatar-sm mx-auto mb-3" style="width:60px;height:60px;font-size:22px;background:#6366f1;">{{ lead.name|slice:":1"|upper }}</div>
         <h5 class="fw-bold mb-0">{{ lead.name }}</h5>
         <div class="text-muted" style="font-size:13px;">{{ lead.company|default:"" }}</div>
         <div class="mt-2">
@@ -152,7 +151,6 @@
           <h6 class="fw-bold mb-3">Comments</h6>
           {% for c in comments %}
           <div class="d-flex gap-2 mb-3 p-2" style="background:#f8fafc;border-radius:8px;">
-            <div class="avatar-sm" style="background:#6366f1;width:32px;height:32px;font-size:12px;">{{ c.created_by.get_full_name|slice:":1"|upper|default:"?" }}</div>
             <div class="flex-grow-1">
               <div class="d-flex justify-content-between">
                 <span class="fw-medium" style="font-size:13px;">{{ c.created_by.get_full_name|default:c.created_by.username }}</span>

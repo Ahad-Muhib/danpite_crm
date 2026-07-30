@@ -25,10 +25,7 @@
         {% for l in leads %}
         <tr>
           <td>
-            <div class="d-flex align-items-center gap-2">
-              <div class="avatar-sm" style="background:#6366f1;">{{ l.name|slice:":1"|upper }}</div>
-              <span class="fw-medium">{{ l.name }}</span>
-            </div>
+<span class="fw-medium">{{ l.name }}</span>
           </td>
           <td class="text-muted">{{ l.email|default:"—" }}</td>
           <td>{{ l.company|default:"—" }}</td>

@@ -126,12 +126,9 @@
             {% for l in recent_leads %}
             <tr>
               <td>
-                <div class="d-flex align-items-center gap-2">
-                  <div class="avatar-sm" style="background:#3b82f6;">{{ l.name|slice:":1"|upper }}</div>
-                  <div>
-                    <div class="fw-medium" style="font-size:13px;">{{ l.name }}</div>
-                    <small class="text-muted">{{ l.company|default:l.email|default:"—" }}</small>
-                  </div>
+                <div>
+                  <div class="fw-medium" style="font-size:13px;">{{ l.name }}</div>
+                  <small class="text-muted">{{ l.company|default:l.email|default:"—" }}</small>
                 </div>
               </td>
               <td class="text-end">

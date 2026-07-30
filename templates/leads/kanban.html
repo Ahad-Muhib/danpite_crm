@@ -41,7 +41,7 @@
           <div class="d-flex justify-content-between align-items-center mt-1">
             <span class="fw-bold" style="font-size:14px;">{{ deal.currency }} {{ deal.value }}</span>
             {% if deal.deal_agent %}
-            <div class="avatar-sm" style="width:24px;height:24px;font-size:10px;background:#6366f1;" title="{{ deal.deal_agent.get_full_name }}">{{ deal.deal_agent.get_full_name|slice:":1"|upper }}</div>
+            <span style="font-size:10px;color:#6b7280;" title="{{ deal.deal_agent.get_full_name }}">{{ deal.deal_agent.get_full_name }}</span>
             {% endif %}
           </div>
           {% if deal.lead_contact %}

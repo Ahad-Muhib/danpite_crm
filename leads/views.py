@@ -145,19 +145,30 @@ def lead_edit(request, pk):
 def lead_update_followup(request, pk):
     lead = get_object_or_404(LeadContact, pk=pk)
     date_val = request.POST.get('next_followup_date', '').strip()
+    followup_type = request.POST.get('followup_type', 'other')
     if date_val:
         from datetime import date as _date
         try:
-            lead.next_followup_date = _date.fromisoformat(date_val)
+            followup_date = _date.fromisoformat(date_val)
         except ValueError:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'ok': False, 'error': 'Invalid date'}, status=400)
             messages.error(request, 'Invalid date format.')
             return redirect('lead_list')
     else:
-        lead.next_followup_date = None
+        followup_date = None
+    old_date = lead.next_followup_date
+    lead.next_followup_date = followup_date
     lead.save(update_fields=['next_followup_date', 'updated_at'])
-    _log_activity(lead=lead, activity_type='followup', title=f'Follow-up updated to {lead.next_followup_date or "cleared"}', user=request.user)
+    FollowUp.objects.create(
+        lead=lead,
+        followup_type=followup_type,
+        subject=f'Follow-up {"updated to " + str(followup_date) if followup_date else "cleared"}',
+        next_followup_date=followup_date,
+        created_by=request.user,
+        notes=f'Previous: {old_date or "none"} → {followup_date or "none"}',
+    )
+    _log_activity(lead=lead, activity_type='followup', title=f'Follow-up {"updated to " + str(followup_date) if followup_date else "cleared"}', user=request.user)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'ok': True, 'date': str(lead.next_followup_date) if lead.next_followup_date else ''})
     messages.success(request, 'Follow-up date updated.')

@@ -97,7 +97,7 @@ class ClientForm(forms.ModelForm):
 class EmployeeForm(forms.ModelForm):
     class Meta:
         model  = Employee
-        fields = ['name','email','phone','role','designation','department','reporting_to','status','joining_date','salary','address','avatar','is_new_hire']
+        fields = ['name','email','phone','role','designation','department','reporting_to','status','joining_date','salary','address','is_new_hire']
         widgets = {
             'name':         forms.TextInput(attrs={'class':'form-control'}),
             'email':        forms.EmailInput(attrs={'class':'form-control'}),
@@ -110,7 +110,6 @@ class EmployeeForm(forms.ModelForm):
             'joining_date': forms.DateInput(attrs={'class':'form-control','type':'date'}),
             'salary':       forms.NumberInput(attrs={'class':'form-control'}),
             'address':      forms.Textarea(attrs={'class':'form-control','rows':2}),
-            'avatar':       forms.FileInput(attrs={'class':'form-control'}),
             'is_new_hire':  forms.CheckboxInput(attrs={'class':'form-check-input'}),
         }
 

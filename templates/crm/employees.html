@@ -17,17 +17,8 @@
         {% for e in employees %}
         <tr>
           <td>
-            <div class="d-flex align-items-center gap-2">
-              {% if e.avatar %}
-                <img src="{{ e.avatar.url }}" class="rounded-circle" width="32" height="32" style="object-fit:cover;">
-              {% else %}
-                <div class="avatar-sm" style="background:#7c3aed;">{{ e.name|slice:":1"|upper }}</div>
-              {% endif %}
-              <div>
-                <div class="fw-medium">{{ e.name }}</div>
-                {% if e.designation %}<small class="text-muted">{{ e.designation.title }}</small>{% endif %}
-              </div>
-            </div>
+            <div class="fw-medium">{{ e.name }}</div>
+            {% if e.designation %}<small class="text-muted">{{ e.designation.title }}</small>{% endif %}
           </td>
           <td class="text-muted">{{ e.employee_id }}</td>
           <td class="text-muted">{{ e.email }}</td>
