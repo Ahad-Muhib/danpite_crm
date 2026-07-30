@@ -824,23 +824,14 @@ def transfer_list(request):
             obj.delete()
         messages.success(request, f'{len(selected_ids)} transfer(s) deleted.')
         return redirect('transfer_list')
-    q = request.GET.get('q', '')
     bank_id = request.GET.get('bank', '')
-    sort = request.GET.get('sort', 'date')
+    sort = request.GET.get('sort', 'created')
     dir = request.GET.get('dir', 'desc')
     sort_map = {'id': 'id', 'amount': 'amount', 'date': 'transfer_date', 'created': 'created_at'}
-    order = sort_map.get(sort, 'transfer_date')
+    order = sort_map.get(sort, 'created_at')
     if dir == 'desc':
         order = '-' + order
     qs = Transfer.objects.all().order_by(order)
-    if q:
-        qs = qs.filter(
-            Q(from_account__account_name__icontains=q) |
-            Q(from_account__bank_name__icontains=q) |
-            Q(to_account__account_name__icontains=q) |
-            Q(to_account__bank_name__icontains=q) |
-            Q(reference__icontains=q)
-        )
     if bank_id:
         qs = qs.filter(Q(from_account_id=bank_id) | Q(to_account_id=bank_id))
         sent_total = Transfer.objects.filter(from_account_id=bank_id).aggregate(s=Sum('amount'))['s'] or 0
@@ -853,7 +844,7 @@ def transfer_list(request):
     page = paginator.get_page(request.GET.get('page'))
     bank_accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
     return render(request, 'accounts/transfer_list.html', {
-        'transfers': page, 'total': total, 'q': q, 'bank_id': bank_id,
+        'transfers': page, 'total': total, 'bank_id': bank_id,
         'sent_total': sent_total, 'recv_total': recv_total,
         'sort': sort, 'dir': dir, 'bank_accounts': bank_accounts,
     })

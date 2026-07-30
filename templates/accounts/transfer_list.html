@@ -3,6 +3,14 @@
 {% block title %}Balance Transfers{% endblock %}
 {% block page_title %}Balance Transfers{% endblock %}
 {% block content %}
+<style>
+.acct-dropdown{position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:6px;max-height:220px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.acct-dropdown-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #f3f4f6}
+.acct-dropdown-item:last-child{border-bottom:0}
+.acct-dropdown-item:hover{background:#f0fdf4}
+.acct-dropdown-item .acct-num{font-weight:600;font-size:13px}
+.acct-dropdown-item .acct-detail{font-size:11px;color:#6b7280}
+</style>
 <div class="crm-card">
   <div class="crm-card-header flex-wrap gap-2">
     <div>
@@ -15,18 +23,15 @@
         {% endif %}
       </div>
     </div>
-    <form class="d-flex gap-2 search-form flex-wrap" method="get">
-      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search account or reference..." style="width:200px;">
-      <select name="bank" class="form-select form-select-sm" style="width:320px;">
-        <option value="">All Bank Accounts</option>
-        {% for a in bank_accounts %}
-        <option value="{{ a.pk }}" {% if bank_id == a.pk|stringformat:"s" %}selected{% endif %}>{{ a.display_name }}</option>
-        {% endfor %}
-      </select>
-      <input type="hidden" name="sort" value="{{ sort }}">
-      <input type="hidden" name="dir" value="{{ dir }}">
-      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search me-1"></i>Search</button>
-      {% if q or bank_id %}
+    <form class="d-flex gap-2 search-form flex-wrap" method="get" id="filter-form">
+      <div style="position:relative;width:320px;">
+        <input type="text" id="bank-search" class="form-control form-control-sm" placeholder="Type bank account name..." autocomplete="off" value="{% if bank_id %}{% for a in bank_accounts %}{% if a.pk|stringformat:'s' == bank_id %}{{ a.display_name }}{% endif %}{% endfor %}{% endif %}">
+        <input type="hidden" name="bank" id="bank-input" value="{{ bank_id }}">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <div id="bank-dropdown" class="acct-dropdown" style="display:none;"></div>
+      </div>
+      {% if bank_id %}
       <a href="{% url 'transfer_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>
       {% endif %}
     </form>
@@ -46,11 +51,11 @@
       <thead>
         <tr>
           {% if request.user.is_superuser %}<th style="width:42px;"><input type="checkbox" class="form-check-input" id="select-all-transfers" aria-label="Select all"></th>{% endif %}
-          <th><a href="?sort=id&dir={% if sort == 'id' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}" class="text-decoration-none text-inherit"># {% if sort == 'id' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=id&dir={% if sort == 'id' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if bank_id %}&bank={{ bank_id }}{% endif %}" class="text-decoration-none text-inherit"># {% if sort == 'id' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
           <th>From Account</th>
           <th>To Account</th>
-          <th><a href="?sort=amount&dir={% if sort == 'amount' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}" class="text-decoration-none text-inherit">Amount {% if sort == 'amount' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
-          <th><a href="?sort=date&dir={% if sort == 'date' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}" class="text-decoration-none text-inherit">Date {% if sort == 'date' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=amount&dir={% if sort == 'amount' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if bank_id %}&bank={{ bank_id }}{% endif %}" class="text-decoration-none text-inherit">Amount {% if sort == 'amount' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=created&dir={% if sort == 'created' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if bank_id %}&bank={{ bank_id }}{% endif %}" class="text-decoration-none text-inherit">Date &amp; Time {% if sort == 'created' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
           <th>Reference</th>
           <th>Receipt</th>
           <th>Transferred By</th>
@@ -65,7 +70,7 @@
           <td class="fw-medium">{{ t.from_account.display_name }}</td>
           <td class="fw-medium">{{ t.to_account.display_name }}</td>
           <td class="fw-medium text-danger">{{ t.amount|currency }}</td>
-          <td class="text-muted" style="white-space:nowrap;">{{ t.transfer_date }}</td>
+          <td class="text-muted" style="white-space:nowrap;">{{ t.created_at|date:"d M Y H:i" }}</td>
           <td>{{ t.reference|default:"—" }}</td>
           <td>{% if t.receipt %}<a href="{{ t.receipt.url }}" target="_blank" class="text-decoration-none"><i class="bi bi-paperclip"></i> View</a>{% else %}—{% endif %}</td>
           <td>{{ t.created_by.username|default:"—" }}</td>
@@ -86,10 +91,23 @@
 </div>
 
 <script>
+const ALL_ACCOUNTS = [
+  {% for a in bank_accounts %}
+  {pk: "{{ a.pk }}", display: "{{ a.display_name|escapejs }}"},
+  {% endfor %}
+];
+
+function escHtml(str) {
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-  const selectAll = document.getElementById('select-all-transfers');
-  const checkboxes = document.querySelectorAll('.transfer-checkbox');
-  const bulkForm = document.getElementById('transfer-bulk-form');
+  // ── Select all checkbox ──
+  var selectAll = document.getElementById('select-all-transfers');
+  var checkboxes = document.querySelectorAll('.transfer-checkbox');
+  var bulkForm = document.getElementById('transfer-bulk-form');
 
   selectAll?.addEventListener('change', function() {
     checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
@@ -102,6 +120,81 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!confirm('Delete selected transfers?')) return;
     bulkForm.submit();
   });
+
+  // ── Searchable bank dropdown ──
+  var bankSearch = document.getElementById('bank-search');
+  var bankInput = document.getElementById('bank-input');
+  var bankDropdown = document.getElementById('bank-dropdown');
+  var filterForm = document.getElementById('filter-form');
+
+  function renderBankDropdown(matches) {
+    bankDropdown.innerHTML = '';
+    if (!matches.length) { bankDropdown.style.display = 'none'; return; }
+    matches.forEach(function(a) {
+      var item = document.createElement('div');
+      item.className = 'acct-dropdown-item';
+      item.innerHTML = '<div class="acct-num">' + escHtml(a.display) + '</div>';
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        bankSearch.value = a.display;
+        bankInput.value = a.pk;
+        bankDropdown.style.display = 'none';
+        filterForm.submit();
+      });
+      bankDropdown.appendChild(item);
+    });
+    bankDropdown.style.display = 'block';
+  }
+
+  bankSearch.addEventListener('input', function() {
+    var val = this.value.trim().toLowerCase();
+    bankInput.value = '';
+    if (!val) {
+      // Show all if empty
+      renderBankDropdown(ALL_ACCOUNTS);
+      return;
+    }
+    var matches = ALL_ACCOUNTS.filter(function(a) { return a.display.toLowerCase().includes(val); });
+    renderBankDropdown(matches);
+  });
+
+  bankSearch.addEventListener('focus', function() {
+    var val = this.value.trim().toLowerCase();
+    if (!val) {
+      renderBankDropdown(ALL_ACCOUNTS);
+    } else {
+      var matches = ALL_ACCOUNTS.filter(function(a) { return a.display.toLowerCase().includes(val); });
+      renderBankDropdown(matches);
+    }
+  });
+
+  bankSearch.addEventListener('blur', function() {
+    setTimeout(function() { bankDropdown.style.display = 'none'; }, 200);
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#bank-search') && !e.target.closest('#bank-dropdown')) {
+      bankDropdown.style.display = 'none';
+    }
+  });
+
+  // If user clears the bank search text and hits enter without selecting, submit with empty bank
+  bankSearch.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // If there's an exact match, select it; otherwise submit as-is
+      var val = this.value.trim().toLowerCase();
+      var exact = ALL_ACCOUNTS.find(function(a) { return a.display.toLowerCase() === val; });
+      if (exact) {
+        bankInput.value = exact.pk;
+      } else {
+        bankInput.value = '';
+      }
+      bankDropdown.style.display = 'none';
+      filterForm.submit();
+    }
+  });
+
 });
 </script>
 {% endblock %}

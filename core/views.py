@@ -127,7 +127,8 @@ def dashboard(request):
 
     # Financial summary
     try:
-        from accounts.models import Invoice, Payment, Expense
+        from accounts.models import Invoice, Payment, Expense, BankAccount, Transfer
+        from django.db.models import Sum as SumAgg
         total_revenue = Payment.objects.aggregate(s=Sum('amount'))['s'] or 0
         outstanding = Invoice.objects.exclude(status__in=['paid', 'cancelled']).aggregate(s=Sum('total'))['s'] or 0
         total_paid_invoices = Payment.objects.aggregate(s=Sum('amount'))['s'] or 0
@@ -136,10 +137,14 @@ def dashboard(request):
         monthly_expenses = Expense.objects.filter(
             expense_date__year=now.year, expense_date__month=now.month
         ).aggregate(s=Sum('amount'))['s'] or 0
+        company_cash = 0
+        for ba in BankAccount.objects.filter(is_active=True):
+            company_cash += ba.available_balance
         ctx.update({
             'total_revenue': total_revenue,
             'outstanding_amount': outstanding,
             'monthly_expenses': monthly_expenses,
+            'company_cash': company_cash,
         })
     except Exception:
         pass

@@ -64,18 +64,34 @@
 
 <!-- Financial Summary -->
 <div class="row g-3 mb-4">
-  <div class="col-sm-6 col-xl-4">
+  <div class="col-sm-6 col-xl-3">
+    <a href="{% url 'bank_account_list' %}" class="text-decoration-none">
     <div class="crm-card p-3">
       <div class="d-flex align-items-center gap-3">
-        <div class="avatar-sm" style="background:#059669;width:44px;height:44px;font-size:18px;"><i class="bi bi-wallet2"></i></div>
+        <div class="avatar-sm" style="background:#059669;width:44px;height:44px;font-size:18px;"><i class="bi bi-cash-stack"></i></div>
+        <div>
+          <div class="text-muted" style="font-size:11px;">COMPANY CASH</div>
+          <div class="fw-bold" style="font-size:20px;">{{ company_cash|currency }}</div>
+        </div>
+      </div>
+    </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{% url 'payment_list' %}" class="text-decoration-none">
+    <div class="crm-card p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-sm" style="background:#2563eb;width:44px;height:44px;font-size:18px;"><i class="bi bi-wallet2"></i></div>
         <div>
           <div class="text-muted" style="font-size:11px;">TOTAL REVENUE</div>
           <div class="fw-bold" style="font-size:20px;">{{ total_revenue|currency }}</div>
         </div>
       </div>
     </div>
+    </a>
   </div>
-  <div class="col-sm-6 col-xl-4">
+  <div class="col-sm-6 col-xl-3">
+    <a href="{% url 'invoice_list' %}?status=draft&status=sent&status=overdue" class="text-decoration-none">
     <div class="crm-card p-3">
       <div class="d-flex align-items-center gap-3">
         <div class="avatar-sm" style="background:#dc2626;width:44px;height:44px;font-size:18px;"><i class="bi bi-exclamation-triangle"></i></div>
@@ -85,8 +101,10 @@
         </div>
       </div>
     </div>
+    </a>
   </div>
-  <div class="col-sm-6 col-xl-4">
+  <div class="col-sm-6 col-xl-3">
+    <a href="{% url 'expense_list' %}" class="text-decoration-none">
     <div class="crm-card p-3">
       <div class="d-flex align-items-center gap-3">
         <div class="avatar-sm" style="background:#ea580c;width:44px;height:44px;font-size:18px;"><i class="bi bi-receipt"></i></div>
@@ -96,6 +114,7 @@
         </div>
       </div>
     </div>
+    </a>
   </div>
 </div>
 
