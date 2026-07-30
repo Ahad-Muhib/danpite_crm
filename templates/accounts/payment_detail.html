@@ -41,6 +41,10 @@
         <label class="form-label fw-medium text-muted">Reference</label>
         <div>{{ payment.reference|default:"—" }}</div>
       </div>
+      <div class="col-md-6">
+        <label class="form-label fw-medium text-muted">Receipt</label>
+        <div>{% if payment.receipt %}<a href="{{ payment.receipt.url }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i>View Receipt</a>{% else %}—{% endif %}</div>
+      </div>
       <div class="col-12">
         <label class="form-label fw-medium text-muted">Notes</label>
         <div>{{ payment.notes|default:"—" }}</div>

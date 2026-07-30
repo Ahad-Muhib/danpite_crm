@@ -161,7 +161,7 @@
       <tbody>
         {% for p in account.payments.all %}
         <tr>
-          <td>{{ p.payment_date }}</td>
+          <td style="white-space:nowrap;">{{ p.created_at|date:"d M Y H:i" }}</td>
           <td><span class="badge bg-success">Payment</span></td>
           <td>{{ p.reference|default:"" }} {% if p.invoice %}({{ p.invoice.code }}){% endif %}</td>
           <td class="fw-medium text-success">+{{ p.amount }}</td>
@@ -169,7 +169,7 @@
         {% endfor %}
         {% for e in account.expenses.all %}
         <tr>
-          <td>{{ e.expense_date }}</td>
+          <td style="white-space:nowrap;">{{ e.created_at|date:"d M Y H:i" }}</td>
           <td><span class="badge bg-danger">Expense</span></td>
           <td>{{ e.title }}</td>
           <td class="fw-medium text-danger">-{{ e.amount }}</td>

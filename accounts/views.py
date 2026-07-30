@@ -416,7 +416,7 @@ def payment_create(request):
             pass
     if client_name and not request.method == 'POST':
         initial['client_name'] = client_name
-    form = PaymentForm(request.POST or None, initial=initial or None)
+    form = PaymentForm(request.POST or None, request.FILES or None, initial=initial or None)
     accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     invoices = Invoice.objects.all().order_by('-created_at')[:100]
     clients = Client.objects.all().order_by('name')
@@ -448,7 +448,7 @@ def payment_detail(request, pk):
 @login_required
 def payment_edit(request, pk):
     obj = get_object_or_404(Payment, pk=pk)
-    form = PaymentForm(request.POST or None, instance=obj)
+    form = PaymentForm(request.POST or None, request.FILES or None, instance=obj)
     if form.is_valid():
         obj = form.save(commit=False)
         obj.updated_by = request.user

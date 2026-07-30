@@ -41,7 +41,7 @@ class InvoiceForm(forms.ModelForm):
             max_digits=12, decimal_places=2, required=False, initial=0,
             widget=forms.NumberInput(attrs={
                 'class': 'form-control', 'id': 'id_amount_paid',
-                'min': '0', 'step': '0.01', 'style': 'text-align:right',
+                'min': '0', 'step': '0.01',
             }),
             label='Amount Paid',
         )
@@ -105,15 +105,16 @@ class PaymentForm(forms.ModelForm):
 
     class Meta:
         model = Payment
-        fields = ['invoice', 'account', 'amount', 'payment_date', 'method', 'reference', 'notes']
+        fields = ['invoice', 'account', 'amount', 'payment_date', 'method', 'reference', 'notes', 'receipt']
         widgets = {
             'invoice': forms.HiddenInput(attrs={'id': 'id_invoice'}),
             'account': forms.HiddenInput(attrs={'id': 'id_account'}),
-            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01', 'style': 'text-align:right'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
             'payment_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'method': forms.Select(attrs={'class': 'form-select', 'id': 'id_method'}),
             'reference': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Transaction ID / Ref'}),
             'notes': forms.HiddenInput(attrs={'id': 'id_notes'}),
+            'receipt': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -122,6 +123,23 @@ class PaymentForm(forms.ModelForm):
         if instance and instance.client:
             self.fields['client_name'].initial = instance.client.name
         self.fields['payment_date'].initial = date.today()
+        cats = AccountCategory.objects.filter(is_active=True).values_list('name', flat=True)
+        method_choices = [('', '-- Select Method --')] + [(c.lower(), c) for c in cats]
+        self.fields['method'] = forms.CharField(
+            widget=forms.Select(choices=method_choices, attrs={'class': 'form-select', 'id': 'id_method'}),
+            required=False,
+        )
+        if instance and instance.method:
+            existing = instance.method.lower()
+            if existing not in [c[0] for c in method_choices]:
+                method_choices.append((existing, instance.method))
+                self.fields['method'].widget.choices = method_choices
+            self.fields['method'].initial = existing
+
+    def _get_validation_exclusions(self):
+        exclude = super()._get_validation_exclusions()
+        exclude.add('method')
+        return exclude
 
 
 class ExpenseForm(forms.ModelForm):
@@ -131,7 +149,7 @@ class ExpenseForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Expense title...'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
-            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01', 'style': 'text-align:right'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
             'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'bank_account': forms.HiddenInput(attrs={'id': 'id_bank_account'}),
             'description': forms.HiddenInput(attrs={'id': 'id_description'}),
@@ -212,7 +230,7 @@ class TransferForm(forms.ModelForm):
         widgets = {
             'from_account': forms.HiddenInput(attrs={'id': 'id_from_account'}),
             'to_account': forms.HiddenInput(attrs={'id': 'id_to_account'}),
-            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01', 'style': 'text-align:right'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
             'transfer_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'reference': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Transaction ID / Ref'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional notes...'}),

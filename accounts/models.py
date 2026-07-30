@@ -213,6 +213,7 @@ class Payment(models.Model):
     method = models.CharField(max_length=20, choices=METHOD, default='cash')
     reference = models.CharField(max_length=100, blank=True)
     notes = models.TextField(blank=True)
+    receipt = models.FileField(upload_to='receipts/', null=True, blank=True)
     created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')

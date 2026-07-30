@@ -15,7 +15,20 @@
 <div class="crm-card">
   <div class="crm-card-header"><span class="crm-card-title">Payment Details</span></div>
   <div class="p-4">
-    <form method="post" id="payment-form">
+    {% if form.errors %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <strong><i class="bi bi-exclamation-triangle me-1"></i>Please fix the following:</strong>
+      <ul class="mb-0 mt-1">
+        {% for field, errors in form.errors.items %}
+        {% for error in errors %}
+        <li>{% if field != '__all__' %}<strong>{{ field|title }}:</strong> {% endif %}{{ error }}</li>
+        {% endfor %}
+        {% endfor %}
+      </ul>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    <form method="post" id="payment-form" enctype="multipart/form-data">
       {% csrf_token %}
       <div class="row g-3">
         <!-- Invoice -->
@@ -51,13 +64,21 @@
           <input type="text" id="account-search" class="form-control" placeholder="Type account name or number..." autocomplete="off" value="{% if form.instance.account %}{{ form.instance.account.display_name }}{% endif %}">
           {{ form.account }}
           <div id="acct-dropdown" class="acct-dropdown" style="display:none;"></div>
-          <div id="account-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+          <div id="account-info" class="mt-2 p-3 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
             <div style="font-size:13px;font-weight:600;" id="acct-info-name"></div>
-            <div style="font-size:12px;color:#6b7280;" id="acct-info-detail"></div>
+            <div style="font-size:12px;color:#374151;margin-top:4px;" id="acct-info-detail"></div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px;" id="acct-info-extra"></div>
           </div>
         </div>
         <!-- Reference -->
         <div class="col-md-6"><label class="form-label fw-medium">Reference</label>{{ form.reference }}</div>
+        <!-- Receipt -->
+        <div class="col-md-6"><label class="form-label fw-medium">Receipt</label>
+          {{ form.receipt }}
+          {% if form.instance.pk and form.instance.receipt %}
+          <div class="mt-2"><a href="{{ form.instance.receipt.url }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i>View Current Receipt</a></div>
+          {% endif %}
+        </div>
         <!-- Notes (Quill) -->
         <div class="col-12"><label class="form-label fw-medium">Notes</label><div id="quill-editor" style="height:200px;background:#fff;border:1px solid #dee2e6;border-radius:6px;"></div>{{ form.notes }}</div>
       </div>
@@ -73,7 +94,7 @@
 const accounts = [
   {% for a in accounts %}
   {% with cat=a.account_category %}
-  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ cat.name|escapejs }}", method: "{{ cat.name|lower|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}", category_type: "{{ cat.account_type|escapejs }}"},
+  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ cat.name|escapejs }}", method: "{{ cat.name|lower|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}", category_type: "{{ cat.account_type|escapejs }}", holder: "{{ a.holder_name|escapejs }}", bank: "{{ a.bank_name|escapejs }}", acct_num: "{{ a.account_number|escapejs }}", mobile: "{{ a.mobile_number|escapejs }}", branch: "{{ a.branch|escapejs }}", routing: "{{ a.routing_number|escapejs }}", contact: "{{ a.contact_number|escapejs }}", currency: "{{ a.currency|escapejs }}"},
   {% endwith %}
   {% endfor %}
 ];
@@ -128,6 +149,7 @@ function selectInvoice(inv) {
   invClient.textContent = inv.client;
   invAmount.textContent = 'Total: ৳' + inv.total + ' | Due: ৳' + inv.due;
   invInfo.style.display = 'block';
+  clientInput.value = inv.client;
 }
 
 invSearch.addEventListener('input', function() {
@@ -190,7 +212,7 @@ const acctInfoDetail = document.getElementById('acct-info-detail');
 var selectedAcctPk = acctPk.value || '';
 
 function methodNeedsAccount(method) {
-  return ['bank_transfer', 'bkash', 'nagad', 'rocket', 'upay', 'cash'].includes(method);
+  return method && accounts.some(function(a) { return a.method === method; });
 }
 
 function filterAccountsByMethod(method, query) {
@@ -219,8 +241,19 @@ function selectAccount(a) {
   acctPk.value = a.pk;
   acctSearch.value = a.display;
   acctDropdown.style.display = 'none';
+  methodSelect.value = a.method;
   acctInfoName.textContent = a.display;
   acctInfoDetail.textContent = a.category + ' — ' + a.number;
+  var extra = '';
+  if (a.holder) extra += 'Holder: ' + a.holder;
+  if (a.bank) extra += (extra ? ' | ' : '') + 'Bank: ' + a.bank;
+  if (a.acct_num) extra += (extra ? ' | ' : '') + 'A/C: ' + a.acct_num;
+  if (a.mobile) extra += (extra ? ' | ' : '') + 'Mobile: ' + a.mobile;
+  if (a.branch) extra += (extra ? ' | ' : '') + 'Branch: ' + a.branch;
+  if (a.routing) extra += (extra ? ' | ' : '') + 'Routing: ' + a.routing;
+  if (a.contact) extra += (extra ? ' | ' : '') + 'Contact: ' + a.contact;
+  if (a.currency) extra += (extra ? ' | ' : '') + 'Currency: ' + a.currency;
+  document.getElementById('acct-info-extra').textContent = extra;
   acctInfoBox.style.display = 'block';
 }
 
@@ -267,6 +300,23 @@ acctSearch.addEventListener('focus', function() {
 {% if form.instance.account %}
 (function() {
   var a = accounts.find(function(x) { return x.pk == {{ form.instance.account.pk|default:0 }}; });
+  if (a) {
+    methodSelect.value = a.method;
+    toggleAccountSection();
+    selectAccount(a);
+  }
+})();
+{% elif form.is_bound and form.data.invoice %}
+(function() {
+  var invPkVal = parseInt('{{ form.data.invoice|escapejs }}');
+  var inv = invoicesData.find(function(x) { return x.pk === invPkVal; });
+  if (inv) selectInvoice(inv);
+})();
+{% endif %}
+{% if form.is_bound and form.data.account %}
+(function() {
+  var acctPkVal = parseInt('{{ form.data.account|escapejs }}');
+  var a = accounts.find(function(x) { return x.pk === acctPkVal; });
   if (a) {
     methodSelect.value = a.method;
     toggleAccountSection();
