@@ -195,6 +195,7 @@ def invoice_create(request):
                 status='processing' if obj.status == 'sent' else 'pending',
                 total=obj.total,
                 notes=f'Auto-created from {obj.code}',
+                delivery_date=obj.delivery_date,
                 assigned_to=request.user,
             )
             for item in obj.items.all():
@@ -287,6 +288,7 @@ def invoice_edit(request, pk):
                         p.save()
                         diff = 0
             _update_invoice_paid_status(obj)
+            Order.objects.filter(notes__contains=obj.code).update(delivery_date=obj.delivery_date)
             log_action(request, 'update', 'Invoice', obj, description=f'{obj.code} — Total: {obj.total}')
             messages.success(request, 'Invoice updated.')
             return redirect('invoice_list')
@@ -498,10 +500,6 @@ def expense_list(request):
 
 @login_required
 def expense_create(request):
-    if not ExpenseCategory.objects.exists():
-        defaults = ['Office Supplies', 'Travel', 'Marketing', 'Utilities', 'Salary', 'Rent', 'Equipment', 'Other']
-        for name in defaults:
-            ExpenseCategory.objects.get_or_create(name=name)
     form = ExpenseForm(request.POST or None, request.FILES or None)
     accounts = BankAccount.objects.filter(is_active=True).order_by('category', 'account_name')
     if form.is_valid():
@@ -546,14 +544,88 @@ def expense_delete(request, pk):
 
 
 @login_required
-def add_expense_category(request):
-    name = request.POST.get('name', '').strip()
-    if not name:
-        return JsonResponse({'ok': False, 'error': 'Category name is required.'})
-    cat, created = ExpenseCategory.objects.get_or_create(name=name)
-    if not created:
-        return JsonResponse({'ok': False, 'error': 'Category already exists.'})
-    return JsonResponse({'ok': True, 'name': cat.name})
+def expense_category_list(request):
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_categories')
+        if not selected_ids:
+            messages.error(request, 'Select at least one category first.')
+            return redirect('expense_category_list')
+        if not request.user.is_superuser:
+            messages.error(request, 'Only superusers can delete categories.')
+            return redirect('expense_category_list')
+        ExpenseCategory.objects.filter(pk__in=selected_ids).delete()
+        messages.success(request, f'{len(selected_ids)} category(ies) deleted.')
+        return redirect('expense_category_list')
+    q = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '')
+    sort = request.GET.get('sort', 'name')
+    dir = request.GET.get('dir', 'asc')
+    qs = ExpenseCategory.objects.all()
+    if q:
+        qs = qs.filter(name__icontains=q)
+    if status_filter:
+        qs = qs.filter(is_active=(status_filter == 'active'))
+    if sort in ('name', 'created_at'):
+        qs = qs.order_by(sort if dir == 'asc' else f'-{sort}')
+    else:
+        qs = qs.order_by('name')
+    return render(request, 'accounts/expense_category_list.html', {
+        'categories': qs, 'q': q, 'status_filter': status_filter, 'sort': sort, 'dir': dir,
+    })
+
+
+@login_required
+def expense_category_create(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        is_active = request.POST.get('is_active') == '1'
+        if not name:
+            messages.error(request, 'Category name is required.')
+            return redirect('expense_category_create')
+        ExpenseCategory.objects.create(name=name, is_active=is_active)
+        messages.success(request, f'Category "{name}" created.')
+        return redirect('expense_category_list')
+    return render(request, 'accounts/expense_category_form.html', {'action': 'Add', 'category': None})
+
+
+@login_required
+def expense_category_detail(request, pk):
+    cat = get_object_or_404(ExpenseCategory, pk=pk)
+    return render(request, 'accounts/expense_category_detail.html', {'category': cat})
+
+
+@login_required
+def expense_category_update_status(request, pk):
+    if request.method == 'POST':
+        cat = get_object_or_404(ExpenseCategory, pk=pk)
+        is_active = request.POST.get('is_active')
+        if is_active in ('1', 'true'):
+            cat.is_active = True
+        elif is_active in ('0', 'false'):
+            cat.is_active = False
+        else:
+            return JsonResponse({'ok': False, 'error': 'Invalid value.'}, status=400)
+        cat.save(update_fields=['is_active'])
+        log_action(request, 'update', 'ExpenseCategory', cat, description=f'status={"active" if cat.is_active else "inactive"}')
+        return JsonResponse({'ok': True, 'is_active': cat.is_active})
+    return JsonResponse({'ok': False, 'error': 'POST required.'}, status=405)
+
+
+@login_required
+def expense_category_edit(request, pk):
+    cat = get_object_or_404(ExpenseCategory, pk=pk)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        is_active = request.POST.get('is_active') == '1'
+        if not name:
+            messages.error(request, 'Category name is required.')
+            return redirect('expense_category_edit', pk=pk)
+        cat.name = name
+        cat.is_active = is_active
+        cat.save()
+        messages.success(request, f'Category updated.')
+        return redirect('expense_category_list')
+    return render(request, 'accounts/expense_category_form.html', {'action': 'Edit', 'category': cat})
 
 
 @login_required

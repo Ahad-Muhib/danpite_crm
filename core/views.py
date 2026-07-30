@@ -14,7 +14,7 @@ from leads.models import Deal, LeadContact
 from orders.models import Order
 
 from .forms import CurrencySettingsForm, ProjectForm, ScheduleForm, TaskForm
-from .models import CurrencySettings, Log, Project, Schedule, Task, log_action
+from .models import CurrencySettings, Log, Project, Schedule, SiteSettings, Task, log_action
 
 
 # ── Role helpers ───────────────────────────────────────────────
@@ -474,3 +474,16 @@ def activity_logs(request):
     paginator = Paginator(qs, 50)
     page = paginator.get_page(request.GET.get('page'))
     return render(request, 'core/activity_logs.html', {'logs': page, 'q': q, 'action': action})
+
+
+@login_required
+def update_site_settings(request):
+    if not request.user.is_superuser:
+        messages.error(request, 'Only superusers can change site settings.')
+        return redirect('dashboard')
+    settings = SiteSettings.load()
+    if request.method == 'POST' and request.FILES.get('logo_image'):
+        settings.logo_image = request.FILES['logo_image']
+        settings.save()
+        messages.success(request, 'Logo updated.')
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))

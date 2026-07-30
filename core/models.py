@@ -70,6 +70,24 @@ class CurrencySettings(models.Model):
         return obj
 
 
+class SiteSettings(models.Model):
+    logo_image = models.ImageField(upload_to='logos/', blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Site Settings'
+        verbose_name_plural = 'Site Settings'
+
+    def save(self, *args, **kwargs):
+        if not self.pk and SiteSettings.objects.exists():
+            raise ValueError('Only one site settings instance is allowed.')
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class Task(models.Model):
     PRIORITY = [('low', 'Low'), ('medium', 'Medium'), ('high', 'High')]
     STATUS = [('pending', 'Pending'), ('in_progress', 'In Progress'), ('completed', 'Completed')]

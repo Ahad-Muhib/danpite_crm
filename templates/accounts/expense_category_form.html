@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Expense Category{% endblock %}
+{% block page_title %}{{ action }} Expense Category{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header"><span class="crm-card-title">{{ action }} Category</span></div>
+  <div class="p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label fw-medium">Title <span class="text-danger">*</span></label><input type="text" name="name" class="form-control" placeholder="Category name..." value="{{ category.name|default:'' }}" required></div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Status</label>
+          <select name="is_active" class="form-select">
+            <option value="1" {% if category.is_active or not category %}selected{% endif %}>Active</option>
+            <option value="0" {% if category and not category.is_active %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">{{ action }} Category</button>
+        <a href="{% url 'expense_category_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ category.name }}{% endblock %}
+{% block page_title %}Category Details{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header"><span class="crm-card-title">{{ category.name }}</span></div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <tbody>
+        <tr><th class="text-muted fw-normal" style="width:140px;">Title</th><td class="fw-medium">{{ category.name }}</td></tr>
+        <tr><th class="text-muted fw-normal">Status</th><td><span class="badge {% if category.is_active %}bg-success{% else %}bg-secondary{% endif %}">{% if category.is_active %}Active{% else %}Inactive{% endif %}</span></td></tr>
+        <tr><th class="text-muted fw-normal">Created</th><td>{{ category.created_at|date:"d M Y, h:i A" }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="p-3 d-flex gap-2">
+    <a href="{% url 'expense_category_edit' category.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
+    <a href="{% url 'expense_category_list' %}" class="btn btn-outline-secondary">Back</a>
+  </div>
+</div>
+{% endblock %}

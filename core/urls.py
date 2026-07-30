@@ -25,5 +25,6 @@ urlpatterns = [
     path('schedules/<int:pk>/edit/', views.schedule_edit, name='schedule_edit'),
     path('schedules/<int:pk>/delete/', views.schedule_delete, name='schedule_delete'),
     path('activity-logs/', views.activity_logs, name='activity_logs'),
+    path('settings/site/', views.update_site_settings, name='update_site_settings'),
 ]
 

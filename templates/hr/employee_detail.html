@@ -12,8 +12,14 @@
           {% elif employee.status == 'on_leave' %}<span class="badge bg-warning text-dark">On Leave</span>
           {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
           {% if employee.is_new_hire %}<span class="badge bg-info text-dark">New Hire</span>{% endif %}
-        </div>
-      </div>
+    </div>
+    {% if employee.notes %}
+    <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Notes</span></div>
+      <div class="p-3">{% autoescape off %}{{ employee.notes }}{% endautoescape %}</div>
+    </div>
+    {% endif %}
+  </div>
       <ul class="list-group list-group-flush" style="font-size:13px;">
         <li class="list-group-item d-flex gap-2"><i class="bi bi-credit-card text-muted"></i>{{ employee.employee_id }}</li>
         <li class="list-group-item d-flex gap-2"><i class="bi bi-envelope text-muted"></i>{{ employee.email }}</li>

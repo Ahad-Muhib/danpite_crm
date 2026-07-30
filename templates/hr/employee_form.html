@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}{{ action }} Employee{% endblock %}
 {% block page_title %}{{ action }} Employee{% endblock %}
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+{% endblock %}
 {% block content %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -61,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="col-md-6"><label class="form-label fw-medium">Joining Date</label>{{ form.joining_date }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Salary</label>{{ form.salary }}</div>
         <div class="col-12"><label class="form-label fw-medium">Address</label>{{ form.address }}</div>
-        <div class="col-12"><label class="form-label fw-medium">Notes</label>{{ form.notes }}</div>
+        <div class="col-12"><label class="form-label fw-medium">Notes</label><div id="quill-editor" style="height:200px;background:#fff;border:1px solid #dee2e6;border-radius:6px;"></div>{{ form.notes }}</div>
         <div class="col-12">
           <div class="form-check">{{ form.is_new_hire }}<label class="form-check-label ms-2">Mark as New Hire</label></div>
         </div>
@@ -103,4 +106,29 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var notesField = document.getElementById('id_notes');
+  var quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    placeholder: 'Write employee notes here...',
+    modules: {
+      toolbar: [
+        [{ 'header': [1,2,3,false] }],
+        ['bold','italic','underline','strike'],
+        [{ 'list': 'ordered' },{ 'list': 'bullet' }],
+        ['link','clean']
+      ]
+    }
+  });
+  quill.root.innerHTML = notesField.value;
+  document.querySelector('form').addEventListener('submit', function() {
+    notesField.value = quill.root.innerHTML;
+  });
+});
+</script>
 {% endblock %}

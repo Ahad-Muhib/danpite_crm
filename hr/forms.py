@@ -31,7 +31,7 @@ class EmployeeForm(forms.ModelForm):
             'joining_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'salary': forms.NumberInput(attrs={'class': 'form-control'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'notes': forms.HiddenInput(attrs={'class': 'form-control', 'id': 'id_notes'}),
             'avatar': forms.FileInput(attrs={'class': 'form-control'}),
             'is_new_hire': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

@@ -142,7 +142,7 @@ class ExpenseForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['expense_date'].initial = date.today()
         self.fields['description'].label = 'Notes'
-        cats = ExpenseCategory.objects.all()
+        cats = ExpenseCategory.objects.filter(is_active=True)
         if cats:
             self.fields['category'].choices = [(c.name, c.name) for c in cats]
 

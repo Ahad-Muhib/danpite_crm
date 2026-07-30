@@ -1,4 +1,9 @@
 from hr.models import Employee
+from core.models import SiteSettings
+
+
+def site_settings_processor(request):
+    return {'site_settings': SiteSettings.load()}
 
 
 def user_role_processor(request):
