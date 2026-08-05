@@ -23,8 +23,13 @@
       <input type="date" name="from" value="{{ from }}" class="form-control form-control-sm" style="width:150px;">
       <span class="text-muted small">to</span>
       <input type="date" name="to" value="{{ to }}" class="form-control form-control-sm" style="width:150px;">
+      <select name="method" class="form-select form-select-sm" style="width:150px;">
+        <option value="">All Methods</option>
+        {% for v, l in methods %}<option value="{{ v }}" {% if selected_method == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
       <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
-      {% if from or to %}<a href="{% url 'income_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+      {% if from or to or selected_method %}<a href="{% url 'income_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+      <a href="{% url 'income_report_pdf' %}?{% if from %}from={{ from }}&{% endif %}{% if to %}to={{ to }}&{% endif %}{% if selected_method %}method={{ selected_method }}{% endif %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success"><i class="bi bi-filetype-pdf me-1"></i>Download PDF</a>
     </form>
   </div>
   <div class="table-responsive">
@@ -37,7 +42,7 @@
           <td>{% if p.client %}{{ p.client.name }}{% elif p.invoice and p.invoice.client %}{{ p.invoice.client.name }}{% else %}—{% endif %}</td>
           <td>{% if p.invoice %}<a href="{% url 'invoice_detail' p.invoice.pk %}">{{ p.invoice.code }}</a>{% else %}—{% endif %}</td>
           <td class="fw-medium text-success">{{ p.amount|currency }}</td>
-          <td>{{ p.get_method_display }}</td>
+          <td>{{ p.report_method_label }}</td>
           <td>{% if p.account %}{{ p.account.display_name }}{% else %}—{% endif %}</td>
           <td class="text-muted">{{ p.reference|default:"—" }}</td>
         </tr>

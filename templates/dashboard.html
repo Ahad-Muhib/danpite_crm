@@ -65,23 +65,10 @@
 <!-- Financial Summary -->
 <div class="row g-3 mb-4">
   <div class="col-sm-6 col-xl-3">
-    <a href="{% url 'bank_account_list' %}" class="text-decoration-none">
-    <div class="crm-card p-3">
-      <div class="d-flex align-items-center gap-3">
-        <div class="avatar-sm" style="background:#059669;width:44px;height:44px;font-size:18px;"><i class="bi bi-cash-stack"></i></div>
-        <div>
-          <div class="text-muted" style="font-size:11px;">COMPANY CASH</div>
-          <div class="fw-bold" style="font-size:20px;">{{ company_cash|currency }}</div>
-        </div>
-      </div>
-    </div>
-    </a>
-  </div>
-  <div class="col-sm-6 col-xl-3">
     <a href="{% url 'payment_list' %}" class="text-decoration-none">
     <div class="crm-card p-3">
       <div class="d-flex align-items-center gap-3">
-        <div class="avatar-sm" style="background:#2563eb;width:44px;height:44px;font-size:18px;"><i class="bi bi-wallet2"></i></div>
+        <div class="avatar-sm" style="background:#059669;width:44px;height:44px;font-size:18px;"><i class="bi bi-cash-stack"></i></div>
         <div>
           <div class="text-muted" style="font-size:11px;">TOTAL REVENUE</div>
           <div class="fw-bold" style="font-size:20px;">{{ total_revenue|currency }}</div>
@@ -91,26 +78,39 @@
     </a>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <a href="{% url 'invoice_list' %}?status=draft&status=sent&status=overdue" class="text-decoration-none">
+    <a href="{% url 'expense_list' %}" class="text-decoration-none">
     <div class="crm-card p-3">
       <div class="d-flex align-items-center gap-3">
-        <div class="avatar-sm" style="background:#dc2626;width:44px;height:44px;font-size:18px;"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="avatar-sm" style="background:#dc2626;width:44px;height:44px;font-size:18px;"><i class="bi bi-receipt"></i></div>
         <div>
-          <div class="text-muted" style="font-size:11px;">OUTSTANDING</div>
-          <div class="fw-bold" style="font-size:20px;">{{ outstanding_amount|currency }}</div>
+          <div class="text-muted" style="font-size:11px;">TOTAL EXPENSES</div>
+          <div class="fw-bold" style="font-size:20px;">{{ total_expenses|currency }}</div>
         </div>
       </div>
     </div>
     </a>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <a href="{% url 'expense_list' %}" class="text-decoration-none">
+    <a href="{% url 'balance_report' %}" class="text-decoration-none">
     <div class="crm-card p-3">
       <div class="d-flex align-items-center gap-3">
-        <div class="avatar-sm" style="background:#ea580c;width:44px;height:44px;font-size:18px;"><i class="bi bi-receipt"></i></div>
+        <div class="avatar-sm" style="background:#2563eb;width:44px;height:44px;font-size:18px;"><i class="bi bi-graph-up-arrow"></i></div>
         <div>
-          <div class="text-muted" style="font-size:11px;">MONTHLY EXPENSES</div>
-          <div class="fw-bold" style="font-size:20px;">{{ monthly_expenses|currency }}</div>
+          <div class="text-muted" style="font-size:11px;">NET BALANCE</div>
+          <div class="fw-bold {% if net_balance >= 0 %}text-success{% else %}text-danger{% endif %}" style="font-size:20px;">{{ net_balance|currency }}</div>
+        </div>
+      </div>
+    </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{% url 'payment_list' %}" class="text-decoration-none">
+    <div class="crm-card p-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-sm" style="background:#7c3aed;width:44px;height:44px;font-size:18px;"><i class="bi bi-wallet2"></i></div>
+        <div>
+          <div class="text-muted" style="font-size:11px;">TOTAL PAYMENTS</div>
+          <div class="fw-bold" style="font-size:20px;">{{ payment_count }}</div>
         </div>
       </div>
     </div>

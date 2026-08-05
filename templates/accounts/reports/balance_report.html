@@ -18,11 +18,15 @@
 
 <div class="crm-card mb-3">
   <div class="crm-card-header flex-wrap gap-2">
-    <form class="d-flex gap-2 flex-wrap" method="get">
+    <form class="d-flex gap-2 flex-wrap align-items-center" method="get">
       <input type="date" name="from" value="{{ from }}" class="form-control form-control-sm" style="width:160px;">
       <input type="date" name="to" value="{{ to }}" class="form-control form-control-sm" style="width:160px;">
+      <select name="method" class="form-select form-select-sm" style="width:160px;">
+        <option value="">All Categories</option>
+        {% for v, l in methods %}<option value="{{ v }}" {% if selected_method == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
       <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
-      {% if from or to %}<a href="{% url 'balance_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+      {% if from or to or selected_method %}<a href="{% url 'balance_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
     </form>
   </div>
 </div>

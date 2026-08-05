@@ -12,31 +12,48 @@
 
 <div class="crm-card">
   <div class="crm-card-header flex-wrap gap-2">
-    <form class="d-flex gap-2 flex-wrap" method="get">
-      <input type="date" name="from" value="{{ from }}" class="form-control form-control-sm" style="width:160px;">
-      <input type="date" name="to" value="{{ to }}" class="form-control form-control-sm" style="width:160px;">
-      <select name="category" class="form-select form-select-sm" style="width:160px;">
+    <form class="d-flex gap-2 flex-wrap align-items-center" method="get">
+      <label class="form-label mb-0 text-muted small">Filter by payment date:</label>
+      <input type="date" name="from" value="{{ from }}" class="form-control form-control-sm" style="width:150px;">
+      <span class="text-muted small">to</span>
+      <input type="date" name="to" value="{{ to }}" class="form-control form-control-sm" style="width:150px;">
+      <select name="category" class="form-select form-select-sm" style="width:150px;">
         <option value="">All Categories</option>
-        {% for c in categories %}<option value="{{ c }}" {% if selected_category == c %}selected{% endif %}>{{ c|title }}</option>{% endfor %}
+        {% for v, l in categories %}<option value="{{ v }}" {% if selected_category == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+      <select name="method" class="form-select form-select-sm" style="width:150px;">
+        <option value="">All Methods</option>
+        {% for v, l in methods %}<option value="{{ v }}" {% if selected_method == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
       </select>
       <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
-      {% if from or to or selected_category %}<a href="{% url 'expense_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+      {% if from or to or selected_category or selected_method %}<a href="{% url 'expense_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+      <a href="{% url 'expense_report_pdf' %}?{% if from %}from={{ from }}&{% endif %}{% if to %}to={{ to }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_method %}method={{ selected_method }}{% endif %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success"><i class="bi bi-filetype-pdf me-1"></i>Download PDF</a>
     </form>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Date</th><th>Title</th><th>Category</th><th>Amount</th><th>Bank Account</th></tr></thead>
+      <thead>
+        <tr>
+          <th><a href="?sort=date&dir={% if sort == 'date' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if from %}&from={{ from }}{% endif %}{% if to %}&to={{ to }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}" class="text-decoration-none text-inherit">Date {% if sort == 'date' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=title&dir={% if sort == 'title' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if from %}&from={{ from }}{% endif %}{% if to %}&to={{ to }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}" class="text-decoration-none text-inherit">Title {% if sort == 'title' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=category&dir={% if sort == 'category' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if from %}&from={{ from }}{% endif %}{% if to %}&to={{ to }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}" class="text-decoration-none text-inherit">Category {% if sort == 'category' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=method&dir={% if sort == 'method' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if from %}&from={{ from }}{% endif %}{% if to %}&to={{ to }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}" class="text-decoration-none text-inherit">Method {% if sort == 'method' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th class="text-end"><a href="?sort=amount&dir={% if sort == 'amount' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if from %}&from={{ from }}{% endif %}{% if to %}&to={{ to }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}" class="text-decoration-none text-inherit">Amount {% if sort == 'amount' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th>Account</th>
+        </tr>
+      </thead>
       <tbody>
         {% for e in expenses %}
         <tr>
           <td class="text-muted" style="white-space:nowrap;">{{ e.expense_date|date:"d M Y" }}</td>
-          <td>{{ e.title }}</td>
-          <td>{{ e.get_category_display }}</td>
-          <td class="fw-medium text-danger">{{ e.amount|currency }}</td>
+          <td class="fw-medium">{{ e.title }}</td>
+          <td>{{ e.report_category }}</td>
+          <td>{{ e.report_method_label }}</td>
+          <td class="fw-medium text-danger text-end">{{ e.amount|currency }}</td>
           <td>{% if e.bank_account %}{{ e.bank_account.display_name }}{% else %}—{% endif %}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" class="text-muted py-4 text-center">No expenses found.</td></tr>
+        <tr><td colspan="6" class="text-muted py-4 text-center">No expenses found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -5,7 +5,6 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, Avg
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
 from functools import wraps
 
 from clients.models import Client
@@ -130,21 +129,14 @@ def dashboard(request):
         from accounts.models import Invoice, Payment, Expense, BankAccount, Transfer
         from django.db.models import Sum as SumAgg
         total_revenue = Payment.objects.aggregate(s=Sum('amount'))['s'] or 0
-        outstanding = Invoice.objects.exclude(status__in=['paid', 'cancelled']).aggregate(s=Sum('total'))['s'] or 0
-        total_paid_invoices = Payment.objects.aggregate(s=Sum('amount'))['s'] or 0
-        outstanding = max(outstanding - total_paid_invoices, 0)
-        now = timezone.now()
-        monthly_expenses = Expense.objects.filter(
-            expense_date__year=now.year, expense_date__month=now.month
-        ).aggregate(s=Sum('amount'))['s'] or 0
-        company_cash = 0
-        for ba in BankAccount.objects.filter(is_active=True):
-            company_cash += ba.available_balance
+        total_expenses = Expense.objects.aggregate(s=Sum('amount'))['s'] or 0
+        net_balance = total_revenue - total_expenses
+        payment_count = Payment.objects.count()
         ctx.update({
             'total_revenue': total_revenue,
-            'outstanding_amount': outstanding,
-            'monthly_expenses': monthly_expenses,
-            'company_cash': company_cash,
+            'total_expenses': total_expenses,
+            'net_balance': net_balance,
+            'payment_count': payment_count,
         })
     except Exception:
         pass

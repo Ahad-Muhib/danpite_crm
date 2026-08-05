@@ -5,10 +5,28 @@
 {% block content %}
 
 <div class="crm-card">
-  <div class="crm-card-header"><span class="crm-card-title">Bank Accounts</span></div>
+  <div class="crm-card-header flex-wrap gap-2">
+    <span class="crm-card-title">Bank Accounts</span>
+    <form class="d-flex gap-2 flex-wrap align-items-center" method="get">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="dir" value="{{ dir }}">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search name, number, bank..." style="width:220px;">
+      <select name="category" class="form-select form-select-sm" style="width:140px;">
+        <option value="">All Categories</option>
+        {% for v, l in categories %}<option value="{{ v }}" {% if selected_category == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+      <select name="status" class="form-select form-select-sm" style="width:130px;">
+        <option value="">All Status</option>
+        <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
+      {% if q or selected_category or status %}<a href="{% url 'bank_details_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+    </form>
+  </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Account Name</th><th>Category</th><th>Bank / Provider</th><th>Account Number</th><th>Holder Name</th><th>Branch</th><th>Routing</th><th>Mobile</th><th>Balance</th><th>Status</th></tr></thead>
+      <thead><tr><th>Account Name</th><th>Category</th><th>Bank / Provider</th><th>Account Number</th><th>Holder Name</th><th>Branch</th><th>Routing</th><th>Mobile</th><th><a href="?sort=balance&dir={% if sort == 'balance' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="text-decoration-none text-inherit">Balance {% if sort == 'balance' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th><th>Status</th></tr></thead>
       <tbody>
         {% for a in accounts %}
         <tr>

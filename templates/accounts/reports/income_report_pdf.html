@@ -1,0 +1,75 @@
+{% load crm_tags %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Income Report</title>
+<style>
+:root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff;--green:#16a34a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@page{size:A4;margin:14mm 16mm}
+.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:10px}
+.title{font-size:24px;font-weight:700;letter-spacing:.5px}
+.subtitle{font-size:12px;color:var(--muted);margin-top:3px}
+.period{text-align:right;font-size:11px;color:var(--muted)}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.sum-card{border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.sum-card .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+.sum-card .val{font-size:17px;font-weight:800}
+.s-green{color:var(--green)}
+.s-blue{color:#2563eb}
+.s-info{color:#0891b2}
+table{width:100%;border-collapse:collapse;margin-top:18px}
+th{background:#1f2937;color:#fff;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px;padding:7px 8px}
+th.right,td.right{text-align:right}
+td{padding:6px 8px;border-bottom:1px solid #f0f0f0;font-size:11.5px}
+tr:last-child td{border-bottom:none}
+.muted{color:var(--muted)}
+.total-row td{border-top:2px solid var(--line);font-weight:800;font-size:13px;background:var(--soft)}
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid var(--line);font-size:10px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">Income Report</div>
+      <div class="subtitle">All recorded payments</div>
+    </div>
+    <div class="period">
+      {% if from or to %}Period: {{ from|default:"Start" }} — {{ to|default:"End" }}{% else %}Period: All time{% endif %}
+      {% if selected_method %}<br>Method: {{ selected_method|title }}{% endif %}
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="sum-card"><div class="lbl">Total Income</div><div class="val s-green">{{ total_income|currency }}</div></div>
+    <div class="sum-card"><div class="lbl">Invoiced Income</div><div class="val s-blue">{{ invoiced_income|currency }}</div></div>
+    <div class="sum-card"><div class="lbl">Direct Income</div><div class="val s-info">{{ direct_income|currency }}</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Client</th><th>Invoice</th><th class="right">Amount</th><th>Method</th><th>Account</th><th>Reference</th></tr>
+    </thead>
+    <tbody>
+      {% for p in payments %}
+      <tr>
+        <td class="muted" style="white-space:nowrap;">{{ p.payment_date|date:"d M Y" }}</td>
+        <td>{% if p.client %}{{ p.client.name }}{% elif p.invoice and p.invoice.client %}{{ p.invoice.client.name }}{% else %}—{% endif %}</td>
+        <td>{% if p.invoice %}{{ p.invoice.code }}{% else %}—{% endif %}</td>
+        <td class="right" style="color:var(--green);font-weight:600;">{{ p.amount|currency }}</td>
+        <td>{{ p.report_method_label }}</td>
+        <td>{% if p.account %}{{ p.account.display_name }}{% else %}—{% endif %}</td>
+        <td class="muted">{{ p.reference|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="muted" style="padding:20px;text-align:center;">No payments found.</td></tr>
+      {% endfor %}
+      <tr class="total-row"><td colspan="3">Total Income</td><td class="right">{{ total_income|currency }}</td><td colspan="3"></td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">Generated on {% now "j M Y H:i" %}</div>
+</body>
+</html>

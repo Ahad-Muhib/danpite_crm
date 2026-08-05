@@ -3,9 +3,12 @@ from datetime import datetime
 
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth
+from django.conf import settings
+from django.http import HttpResponse
 from django.shortcuts import render
+from django.template.loader import render_to_string
 
-from accounts.models import Invoice, Payment, Expense, BankAccount
+from accounts.models import Invoice, Payment, Expense, BankAccount, ExpenseCategory, AccountCategory
 from core.models import Project
 
 
@@ -15,63 +18,203 @@ def _dates(request):
     return f, t
 
 
-def income_report(request):
+METHOD_LABELS = {
+    'cash': 'Cash', 'bank': 'Bank', 'bank_transfer': 'Bank Transfer', 'cheque': 'Cheque', 'check': 'Check',
+    'card': 'Card', 'online': 'Online', 'bkash': 'bKash', 'nagad': 'Nagad', 'rocket': 'Rocket',
+    'upay': 'Upay', 'mobile': 'Mobile', 'other': 'Other',
+}
+METHOD_ORDER = ['cash', 'bank', 'bank_transfer', 'check', 'cheque', 'card', 'online', 'bkash', 'nagad', 'rocket', 'upay', 'mobile', 'other']
+
+
+def _method_choices_from(keys):
+    methods = sorted(keys, key=lambda m: (METHOD_ORDER.index(m) if m in METHOD_ORDER else len(METHOD_ORDER), m))
+    return [(m, METHOD_LABELS.get(m, m.title())) for m in methods]
+
+
+def _income_report_context(request):
     f, t = _dates(request)
+    method = request.GET.get('method', '')
     payments = Payment.objects.all().order_by('-payment_date')
     if f:
         payments = payments.filter(payment_date__gte=f)
     if t:
         payments = payments.filter(payment_date__lte=t)
+    if method:
+        payments = payments.filter(method=method)
     total_income = payments.aggregate(Sum('amount'))['amount__sum'] or 0
     invoiced_income = payments.filter(invoice__isnull=False).aggregate(Sum('amount'))['amount__sum'] or 0
     direct_income = total_income - invoiced_income
-    return render(request, 'accounts/reports/income_report.html', {
+    method_keys = set(Payment.objects.values_list('method', flat=True))
+    for cat in AccountCategory.objects.filter(is_active=True):
+        method_keys.add(cat.name.lower())
+    for p in payments:
+        p.report_method_label = METHOD_LABELS.get(p.method, p.get_method_display())
+    return {
         'payments': payments, 'total_income': total_income, 'invoiced_income': invoiced_income,
         'direct_income': direct_income, 'from': f, 'to': t,
-    })
+        'methods': _method_choices_from(method_keys), 'selected_method': method,
+    }
+
+
+def income_report(request):
+    return render(request, 'accounts/reports/income_report.html', _income_report_context(request))
+
+
+def income_report_pdf(request):
+    from weasyprint import HTML
+    context = _income_report_context(request)
+    html_string = render_to_string('accounts/reports/income_report_pdf.html', context, request=request)
+    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="income-report.pdf"'
+    return response
+
+
+def _expense_method(expense):
+    acct = expense.bank_account
+    if not acct or not acct.account_category:
+        return 'cash'
+    return acct.account_category.name.lower()
+
+
+def _category_method(cat):
+    return cat.name.lower()
+
+
+def _expense_category_choices():
+    choices = OrderedDict(Expense.CATEGORY)
+    for c in ExpenseCategory.objects.filter(is_active=True):
+        key = c.name.lower()
+        if key not in choices:
+            choices[key] = c.name
+    return list(choices.items())
+
+
+def _expense_report_context(request):
+    f, t = _dates(request)
+    cat = request.GET.get('category', '')
+    method = request.GET.get('method', '')
+    sort = request.GET.get('sort', 'date')
+    dir = request.GET.get('dir', 'desc')
+
+    expenses = list(Expense.objects.all())
+    if f:
+        expenses = [e for e in expenses if str(e.expense_date) >= f]
+    if t:
+        expenses = [e for e in expenses if str(e.expense_date) <= t]
+    if cat:
+        expenses = [e for e in expenses if e.category == cat]
+
+    method_keys = set()
+    for e in expenses:
+        method_keys.add(_expense_method(e))
+    for cat in AccountCategory.objects.filter(is_active=True):
+        method_keys.add(_category_method(cat))
+    methods = _method_choices_from(method_keys)
+    if method:
+        expenses = [e for e in expenses if _expense_method(e) == method]
+
+    for e in expenses:
+        key = _expense_method(e)
+        e.report_method = key
+        e.report_method_label = METHOD_LABELS.get(key, key.title())
+
+    cat_map = dict(_expense_category_choices())
+    for e in expenses:
+        e.report_category = cat_map.get(e.category, e.get_category_display())
+
+    sort_keys = {'date': 'expense_date', 'title': 'title', 'category': 'category', 'amount': 'amount', 'method': 'report_method'}
+    skey = sort_keys.get(sort, 'expense_date')
+    expenses.sort(key=lambda e: getattr(e, skey), reverse=(dir == 'desc'))
+
+    total = sum(e.amount for e in expenses) or 0
+
+    return {
+        'expenses': expenses, 'total_expense': total,
+        'categories': _expense_category_choices(), 'selected_category': cat,
+        'methods': methods, 'selected_method': method,
+        'from': f, 'to': t, 'sort': sort, 'dir': dir,
+    }
 
 
 def expense_report(request):
-    f, t = _dates(request)
-    cat = request.GET.get('category', '')
-    expenses = Expense.objects.all().order_by('-expense_date')
-    if f:
-        expenses = expenses.filter(expense_date__gte=f)
-    if t:
-        expenses = expenses.filter(expense_date__lte=t)
-    if cat:
-        expenses = expenses.filter(category=cat)
-    total = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
-    categories = Expense.objects.values_list('category', flat=True).distinct().order_by('category')
-    return render(request, 'accounts/reports/expense_report.html', {
-        'expenses': expenses, 'total_expense': total, 'categories': categories,
-        'from': f, 'to': t, 'selected_category': cat,
-    })
+    return render(request, 'accounts/reports/expense_report.html', _expense_report_context(request))
+
+
+def expense_report_pdf(request):
+    from weasyprint import HTML
+    context = _expense_report_context(request)
+    html_string = render_to_string('accounts/reports/expense_report_pdf.html', context, request=request)
+    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="expense-report.pdf"'
+    return response
 
 
 def balance_report(request):
     f, t = _dates(request)
+    method = request.GET.get('method', '')
     payments = Payment.objects.all()
-    expenses = Expense.objects.all()
+    expenses = list(Expense.objects.all())
     if f:
         payments = payments.filter(payment_date__gte=f)
-        expenses = expenses.filter(expense_date__gte=f)
+        expenses = [e for e in expenses if str(e.expense_date) >= f]
     if t:
         payments = payments.filter(payment_date__lte=t)
-        expenses = expenses.filter(expense_date__lte=t)
+        expenses = [e for e in expenses if str(e.expense_date) <= t]
+
+    method_keys = set(Payment.objects.values_list('method', flat=True))
+    for cat in AccountCategory.objects.filter(is_active=True):
+        method_keys.add(cat.name.lower())
+    for e in expenses:
+        method_keys.add(_expense_method(e))
+
+    if method:
+        payments = payments.filter(method=method)
+        expenses = [e for e in expenses if _expense_method(e) == method]
+
     total_income = payments.aggregate(Sum('amount'))['amount__sum'] or 0
-    total_expense = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+    total_expense = sum(e.amount for e in expenses) or 0
     net = total_income - total_expense
     bank_accounts = BankAccount.objects.filter(is_active=True)
+    if method:
+        bank_accounts = bank_accounts.filter(account_category__name__iexact=method)
     return render(request, 'accounts/reports/balance_report.html', {
         'total_income': total_income, 'total_expense': total_expense, 'net_balance': net,
         'bank_accounts': bank_accounts, 'from': f, 'to': t,
+        'methods': _method_choices_from(method_keys), 'selected_method': method,
     })
 
 
 def bank_details(request):
-    accounts = BankAccount.objects.all().order_by('bank_name', 'account_name')
-    return render(request, 'accounts/reports/bank_details.html', {'accounts': accounts})
+    q = request.GET.get('q', '')
+    status = request.GET.get('status', '')
+    category = request.GET.get('category', '')
+    sort = request.GET.get('sort', 'balance')
+    dir = request.GET.get('dir', 'desc')
+
+    accounts = BankAccount.objects.select_related('account_category').all()
+    if status:
+        accounts = accounts.filter(is_active=(status == 'active'))
+    if category:
+        accounts = accounts.filter(account_category__name__iexact=category)
+    accounts = list(accounts)
+    if q:
+        ql = q.lower()
+        accounts = [a for a in accounts if any(
+            ql in (f or '').lower() for f in (
+                a.account_name, a.bank_name, a.holder_name, a.card_holder_name,
+                a.account_number, a.mobile_number, a.branch, a.routing_number,
+                a.display_name, a.account_category.name if a.account_category else '',
+            )
+        )]
+    accounts.sort(key=lambda a: a.available_balance, reverse=(dir == 'desc'))
+
+    categories = [(c.name.lower(), c.name) for c in AccountCategory.objects.filter(is_active=True).order_by('name')]
+    return render(request, 'accounts/reports/bank_details.html', {
+        'accounts': accounts, 'q': q, 'status': status, 'selected_category': category,
+        'categories': categories, 'sort': sort, 'dir': dir,
+    })
 
 
 def sales_report(request):

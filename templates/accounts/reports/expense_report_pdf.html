@@ -1,0 +1,70 @@
+{% load crm_tags %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Expense Report</title>
+<style>
+:root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff;--red:#dc2626}
+*{box-sizing:border-box;margin:0;padding:0}
+body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@page{size:A4;margin:14mm 16mm}
+.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:10px}
+.title{font-size:24px;font-weight:700;letter-spacing:.5px}
+.subtitle{font-size:12px;color:var(--muted);margin-top:3px}
+.meta{text-align:right;font-size:11px;color:var(--muted)}
+.summary{margin-top:16px}
+.sum-card{border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.sum-card .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+.sum-card .val{font-size:17px;font-weight:800}
+table{width:100%;border-collapse:collapse;margin-top:18px}
+th{background:#1f2937;color:#fff;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px;padding:7px 8px}
+th.right,td.right{text-align:right}
+td{padding:6px 8px;border-bottom:1px solid #f0f0f0;font-size:11.5px}
+tr:last-child td{border-bottom:none}
+.muted{color:var(--muted)}
+.total-row td{border-top:2px solid var(--line);font-weight:800;font-size:13px;background:var(--soft)}
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid var(--line);font-size:10px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">Expense Report</div>
+      <div class="subtitle">All recorded expenses</div>
+    </div>
+    <div class="meta">
+      {% if from or to %}Period: {{ from|default:"Start" }} — {{ to|default:"End" }}{% else %}Period: All time{% endif %}
+      {% if selected_category %}<br>Category: {{ selected_category|title }}{% endif %}
+      {% if selected_method %}<br>Method: {{ selected_method|title }}{% endif %}
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="sum-card"><div class="lbl">Total Expenses</div><div class="val" style="color:var(--red)">{{ total_expense|currency }}</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Title</th><th>Category</th><th>Method</th><th class="right">Amount</th><th>Account</th></tr>
+    </thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr>
+        <td class="muted" style="white-space:nowrap;">{{ e.expense_date|date:"d M Y" }}</td>
+        <td>{{ e.title }}</td>
+        <td>{{ e.report_category }}</td>
+        <td>{{ e.report_method_label }}</td>
+        <td class="right" style="color:var(--red);font-weight:600;">{{ e.amount|currency }}</td>
+        <td>{% if e.bank_account %}{{ e.bank_account.display_name }}{% else %}—{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="muted" style="padding:20px;text-align:center;">No expenses found.</td></tr>
+      {% endfor %}
+      <tr class="total-row"><td colspan="4">Total Expenses</td><td class="right">{{ total_expense|currency }}</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">Generated on {% now "j M Y H:i" %}</div>
+</body>
+</html>
