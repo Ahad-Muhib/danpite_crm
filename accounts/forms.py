@@ -5,7 +5,7 @@ from django.forms import inlineformset_factory
 
 from clients.models import Client
 
-from .models import AccountCategory, BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, Transfer, CURRENCY_CHOICES
+from .models import AccountCategory, BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, Transfer, CURRENCY_CHOICES, METHOD_CHOICES
 
 
 class InvoiceForm(forms.ModelForm):
@@ -144,10 +144,11 @@ class PaymentForm(forms.ModelForm):
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
-        fields = ['title', 'category', 'amount', 'expense_date', 'bank_account', 'description', 'receipt']
+        fields = ['title', 'category', 'method', 'amount', 'expense_date', 'bank_account', 'description', 'receipt']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Expense title...'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
+            'method': forms.Select(attrs={'class': 'form-select', 'id': 'id_method'}),
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
             'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'bank_account': forms.HiddenInput(attrs={'id': 'id_bank_account'}),
@@ -155,19 +156,8 @@ class ExpenseForm(forms.ModelForm):
             'receipt': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
-    def clean(self):
-        cleaned = super().clean()
-        amount = cleaned.get('amount')
-        account = cleaned.get('bank_account')
-        if amount and account:
-            balance = account.available_balance
-            if self.instance and self.instance.pk:
-                balance += float(self.instance.amount or 0)
-            if float(amount) > balance:
-                raise forms.ValidationError(f'Insufficient balance in {account.display_name}. Available: {balance:.2f}')
-        return cleaned
-
     def __init__(self, *args, **kwargs):
+        instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
         self.fields['expense_date'].initial = date.today()
         self.fields['description'].label = 'Notes'
@@ -181,6 +171,29 @@ class ExpenseForm(forms.ModelForm):
                     choices.append((key, c.name))
                     seen.add(key)
             self.fields['category'].choices = choices
+        method_choices = [('', '-- Select Method --')] + list(METHOD_CHOICES)
+        self.fields['method'] = forms.CharField(
+            widget=forms.Select(choices=method_choices, attrs={'class': 'form-select', 'id': 'id_method'}),
+            required=False,
+        )
+        if instance and instance.method:
+            existing = instance.method.lower()
+            if existing not in [c[0] for c in method_choices]:
+                method_choices.append((existing, instance.method))
+                self.fields['method'].widget.choices = method_choices
+            self.fields['method'].initial = existing
+
+    def clean(self):
+        cleaned = super().clean()
+        amount = cleaned.get('amount')
+        account = cleaned.get('bank_account')
+        if amount and account:
+            balance = account.available_balance
+            if self.instance and self.instance.pk:
+                balance += float(self.instance.amount or 0)
+            if float(amount) > balance:
+                raise forms.ValidationError(f'Insufficient balance in {account.display_name}. Available: {balance:.2f}')
+        return cleaned
 
 
 class BankAccountForm(forms.ModelForm):

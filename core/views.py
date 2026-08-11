@@ -234,6 +234,7 @@ def user_create(request):
 def user_delete(request, pk):
     if not is_admin(request.user):
         return HttpResponseForbidden('Only administrators can delete users.')
+    from django.contrib.auth.models import User
     user = get_object_or_404(User, pk=pk)
     if user == request.user:
         messages.error(request, 'You cannot delete your own account.')

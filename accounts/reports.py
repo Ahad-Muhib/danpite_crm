@@ -1,15 +1,29 @@
 from collections import OrderedDict
 from datetime import datetime
+from functools import wraps
 
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
 from django.template.loader import render_to_string
 
 from accounts.models import Invoice, Payment, Expense, BankAccount, ExpenseCategory, AccountCategory
 from core.models import Project
+
+
+def financial_required(view_func):
+    @wraps(view_func)
+    @login_required
+    def _wrapped(request, *args, **kwargs):
+        from core.views import get_user_role
+        if get_user_role(request.user) not in ('admin', 'manager', 'staff'):
+            return HttpResponseForbidden('You do not have permission to view financial reports.')
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 
 def _dates(request):
@@ -31,6 +45,12 @@ def _method_choices_from(keys):
     return [(m, METHOD_LABELS.get(m, m.title())) for m in methods]
 
 
+def _annotate_payments(payments):
+    for p in payments:
+        p.report_method_label = METHOD_LABELS.get(p.method, p.get_method_display())
+    return payments
+
+
 def _income_report_context(request):
     f, t = _dates(request)
     method = request.GET.get('method', '')
@@ -47,8 +67,6 @@ def _income_report_context(request):
     method_keys = set(Payment.objects.values_list('method', flat=True))
     for cat in AccountCategory.objects.filter(is_active=True):
         method_keys.add(cat.name.lower())
-    for p in payments:
-        p.report_method_label = METHOD_LABELS.get(p.method, p.get_method_display())
     return {
         'payments': payments, 'total_income': total_income, 'invoiced_income': invoiced_income,
         'direct_income': direct_income, 'from': f, 'to': t,
@@ -56,13 +74,20 @@ def _income_report_context(request):
     }
 
 
+@financial_required
 def income_report(request):
-    return render(request, 'accounts/reports/income_report.html', _income_report_context(request))
+    context = _income_report_context(request)
+    paginator = Paginator(context['payments'], 25)
+    page = paginator.get_page(request.GET.get('page'))
+    context['payments'] = _annotate_payments(page.object_list)
+    return render(request, 'accounts/reports/income_report.html', context)
 
 
+@financial_required
 def income_report_pdf(request):
     from weasyprint import HTML
     context = _income_report_context(request)
+    context['payments'] = _annotate_payments(context['payments'])
     html_string = render_to_string('accounts/reports/income_report_pdf.html', context, request=request)
     pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
     response = HttpResponse(pdf, content_type='application/pdf')
@@ -71,6 +96,8 @@ def income_report_pdf(request):
 
 
 def _expense_method(expense):
+    if expense.method:
+        return expense.method.lower()
     acct = expense.bank_account
     if not acct or not acct.account_category:
         return 'cash'
@@ -137,10 +164,15 @@ def _expense_report_context(request):
     }
 
 
+@financial_required
 def expense_report(request):
-    return render(request, 'accounts/reports/expense_report.html', _expense_report_context(request))
+    context = _expense_report_context(request)
+    paginator = Paginator(context['expenses'], 25)
+    context['expenses'] = paginator.get_page(request.GET.get('page'))
+    return render(request, 'accounts/reports/expense_report.html', context)
 
 
+@financial_required
 def expense_report_pdf(request):
     from weasyprint import HTML
     context = _expense_report_context(request)
@@ -151,7 +183,7 @@ def expense_report_pdf(request):
     return response
 
 
-def balance_report(request):
+def _balance_report_context(request):
     f, t = _dates(request)
     method = request.GET.get('method', '')
     payments = Payment.objects.all()
@@ -176,17 +208,36 @@ def balance_report(request):
     total_income = payments.aggregate(Sum('amount'))['amount__sum'] or 0
     total_expense = sum(e.amount for e in expenses) or 0
     net = total_income - total_expense
-    bank_accounts = BankAccount.objects.filter(is_active=True)
+    bank_accounts = BankAccount.objects.filter(is_active=True).order_by('account_name')
     if method:
         bank_accounts = bank_accounts.filter(account_category__name__iexact=method)
-    return render(request, 'accounts/reports/balance_report.html', {
+    return {
         'total_income': total_income, 'total_expense': total_expense, 'net_balance': net,
         'bank_accounts': bank_accounts, 'from': f, 'to': t,
         'methods': _method_choices_from(method_keys), 'selected_method': method,
-    })
+    }
 
 
-def bank_details(request):
+@financial_required
+def balance_report(request):
+    context = _balance_report_context(request)
+    paginator = Paginator(context['bank_accounts'], 25)
+    context['bank_accounts'] = paginator.get_page(request.GET.get('page'))
+    return render(request, 'accounts/reports/balance_report.html', context)
+
+
+@financial_required
+def balance_report_pdf(request):
+    from weasyprint import HTML
+    context = _balance_report_context(request)
+    html_string = render_to_string('accounts/reports/balance_report_pdf.html', context, request=request)
+    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="balance-report.pdf"'
+    return response
+
+
+def _bank_details_context(request):
     q = request.GET.get('q', '')
     status = request.GET.get('status', '')
     category = request.GET.get('category', '')
@@ -211,12 +262,32 @@ def bank_details(request):
     accounts.sort(key=lambda a: a.available_balance, reverse=(dir == 'desc'))
 
     categories = [(c.name.lower(), c.name) for c in AccountCategory.objects.filter(is_active=True).order_by('name')]
-    return render(request, 'accounts/reports/bank_details.html', {
+    return {
         'accounts': accounts, 'q': q, 'status': status, 'selected_category': category,
         'categories': categories, 'sort': sort, 'dir': dir,
-    })
+    }
 
 
+@financial_required
+def bank_details(request):
+    context = _bank_details_context(request)
+    paginator = Paginator(context['accounts'], 25)
+    context['accounts'] = paginator.get_page(request.GET.get('page'))
+    return render(request, 'accounts/reports/bank_details.html', context)
+
+
+@financial_required
+def bank_details_pdf(request):
+    from weasyprint import HTML
+    context = _bank_details_context(request)
+    html_string = render_to_string('accounts/reports/bank_details_pdf.html', context, request=request)
+    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="bank-details.pdf"'
+    return response
+
+
+@financial_required
 def sales_report(request):
     f, t = _dates(request)
     sel_month = request.GET.get('month', '')

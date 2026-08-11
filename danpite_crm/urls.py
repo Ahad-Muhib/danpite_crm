@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -44,3 +45,8 @@ urlpatterns = [
         template_name='registration/password_change_done.html',
     ), name='password_change_done'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Serve uploaded media files when no external web server is handling MEDIA_URL.
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+]

@@ -22,6 +22,7 @@
       </select>
       <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
       {% if q or selected_category or status %}<a href="{% url 'bank_details_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+      <a href="{% url 'bank_details_report_pdf' %}?{% if q %}q={{ q }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if status %}status={{ status }}{% endif %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success ms-auto"><i class="bi bi-filetype-pdf me-1"></i>Download PDF</a>
     </form>
   </div>
   <div class="table-responsive">
@@ -47,5 +48,6 @@
       </tbody>
     </table>
   </div>
+  {% include 'includes/pagination.html' with page_obj=accounts %}
 </div>
 {% endblock %}

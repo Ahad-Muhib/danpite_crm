@@ -24,6 +24,12 @@ CURRENCY_SYMBOLS = {
     'AED': 'د.إ', 'SAR': 'ر.س',
 }
 
+METHOD_CHOICES = [
+    ('cash', 'Cash'), ('bank', 'Bank'), ('bank_transfer', 'Bank Transfer'), ('check', 'Check'),
+    ('cheque', 'Cheque'), ('card', 'Card'), ('online', 'Online'), ('bkash', 'bKash'),
+    ('nagad', 'Nagad'), ('rocket', 'Rocket'), ('upay', 'Upay'),
+]
+
 
 class Invoice(models.Model):
     STATUS = [('draft', 'Draft'), ('sent', 'Sent'), ('paid', 'Paid'), ('overdue', 'Overdue'), ('cancelled', 'Cancelled')]
@@ -191,6 +197,7 @@ class Expense(models.Model):
     CATEGORY = [('office', 'Office Supplies'), ('travel', 'Travel'), ('marketing', 'Marketing'), ('utilities', 'Utilities'), ('salary', 'Salary'), ('rent', 'Rent'), ('equipment', 'Equipment'), ('other', 'Other')]
     title = models.CharField(max_length=200)
     category = models.CharField(max_length=30, choices=CATEGORY, default='other')
+    method = models.CharField(max_length=20, choices=METHOD_CHOICES, default='cash')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     expense_date = models.DateField()
     bank_account = models.ForeignKey('BankAccount', null=True, blank=True, on_delete=models.SET_NULL, related_name='expenses')
@@ -204,7 +211,7 @@ class Expense(models.Model):
 
 
 class Payment(models.Model):
-    METHOD = [('cash', 'Cash'), ('bank_transfer', 'Bank Transfer'), ('cheque', 'Cheque'), ('card', 'Card'), ('online', 'Online'), ('bkash', 'bKash'), ('nagad', 'Nagad'), ('rocket', 'Rocket')]
+    METHOD = METHOD_CHOICES
     invoice = models.ForeignKey(Invoice, null=True, blank=True, on_delete=models.SET_NULL, related_name='payments')
     client = models.ForeignKey(Client, null=True, blank=True, on_delete=models.SET_NULL, related_name='payments')
     account = models.ForeignKey('BankAccount', null=True, blank=True, on_delete=models.SET_NULL, related_name='payments')
