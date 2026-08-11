@@ -398,7 +398,7 @@ def deal_update_stage(request, pk):
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'ok': True, 'stage': new_stage})
-    return redirect('deal_kanban', pipeline=deal.pipeline)
+    return redirect('deal_kanban')
 
 
 @login_required

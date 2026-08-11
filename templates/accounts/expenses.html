@@ -48,6 +48,7 @@
           <th><a href="?sort=id&dir={% if sort == 'id' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit"># {% if sort == 'id' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
           <th><a href="?sort=title&dir={% if sort == 'title' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit">Title {% if sort == 'title' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
           <th><a href="?sort=category&dir={% if sort == 'category' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit">Category {% if sort == 'category' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th><a href="?sort=method&dir={% if sort == 'method' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit">Method {% if sort == 'method' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
           <th><a href="?sort=amount&dir={% if sort == 'amount' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit">Amount {% if sort == 'amount' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
           <th><a href="?sort=date&dir={% if sort == 'date' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}" class="text-decoration-none text-inherit">Date {% if sort == 'date' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
           <th>Bank Account</th>
@@ -62,6 +63,7 @@
           <td class="text-muted">{{ e.pk }}</td>
           <td class="fw-medium">{{ e.title }}</td>
           <td>{{ e.get_category_display }}</td>
+          <td>{{ e.get_method_display }}</td>
           <td class="fw-medium text-danger">{{ e.amount|currency }}</td>
           <td class="text-muted" style="white-space:nowrap;">{{ e.expense_date }}</td>
           <td>{% if e.bank_account %}{{ e.bank_account.display_name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
@@ -72,7 +74,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="{% if request.user.is_superuser %}10{% else %}9{% endif %}" class="text-center text-muted py-5">No expenses recorded.</td></tr>
+        <tr><td colspan="{% if request.user.is_superuser %}11{% else %}10{% endif %}" class="text-center text-muted py-5">No expenses recorded.</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -511,7 +511,7 @@ def expense_list(request):
     category = request.GET.get('category', '')
     sort = request.GET.get('sort', 'date')
     dir = request.GET.get('dir', 'desc')
-    sort_map = {'id': 'id', 'title': 'title', 'category': 'category', 'amount': 'amount', 'date': 'expense_date', 'created': 'created_at'}
+    sort_map = {'id': 'id', 'title': 'title', 'category': 'category', 'method': 'method', 'amount': 'amount', 'date': 'expense_date', 'created': 'created_at'}
     order = sort_map.get(sort, 'expense_date')
     if dir == 'desc':
         order = '-' + order

@@ -27,6 +27,7 @@
       <div class="row g-3">
         <div class="col-12"><label class="form-label fw-medium">Title <span class="text-danger">*</span></label>{{ form.title }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Category</label>{{ form.category }}</div>
+        <div class="col-md-6"><label class="form-label fw-medium">Method</label>{{ form.method }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Amount <span class="text-danger">*</span></label>{{ form.amount }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Expense Date <span class="text-danger">*</span></label>{{ form.expense_date }}</div>
         <div class="col-md-6" style="position:relative;">
@@ -62,6 +63,7 @@ const dropdown = document.getElementById('acct-dropdown');
 const infoBox = document.getElementById('account-info');
 const infoName = document.getElementById('acct-info-name');
 const infoDetail = document.getElementById('acct-info-detail');
+const methodSelect = document.getElementById('id_method');
 
 var selectedPk = pkInput.value || '';
 
@@ -93,6 +95,9 @@ function selectAccount(a) {
   infoName.textContent = a.display;
   infoDetail.textContent = a.category + ' — ' + a.number;
   infoBox.style.display = 'block';
+  if (methodSelect && a.category && !methodSelect.value) {
+    methodSelect.value = a.category.toLowerCase();
+  }
 }
 
 function escHtml(str) {

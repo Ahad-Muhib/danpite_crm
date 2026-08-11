@@ -49,7 +49,9 @@ urlpatterns = [
     path('accounts/reports/expense/', reports.expense_report, name='expense_report'),
     path('accounts/reports/expense/pdf/', reports.expense_report_pdf, name='expense_report_pdf'),
     path('accounts/reports/balance/', reports.balance_report, name='balance_report'),
+    path('accounts/reports/balance/pdf/', reports.balance_report_pdf, name='balance_report_pdf'),
     path('accounts/reports/bank-details/', reports.bank_details, name='bank_details_report'),
+    path('accounts/reports/bank-details/pdf/', reports.bank_details_pdf, name='bank_details_report_pdf'),
     path('accounts/reports/sales/', reports.sales_report, name='sales_report'),
 ]
 

@@ -94,6 +94,10 @@ class FollowUpForm(forms.ModelForm):
             'recurrence_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['recurrence_days'].required = False
+
 
 class CommentForm(forms.ModelForm):
     class Meta:

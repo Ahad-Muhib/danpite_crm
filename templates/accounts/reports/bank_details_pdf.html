@@ -1,0 +1,67 @@
+{% load crm_tags %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bank Details</title>
+<style>
+:root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@page{size:A4 landscape;margin:12mm 14mm}
+.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:10px}
+.title{font-size:24px;font-weight:700;letter-spacing:.5px}
+.subtitle{font-size:12px;color:var(--muted);margin-top:3px}
+.meta{text-align:right;font-size:11px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin-top:18px}
+th{background:#1f2937;color:#fff;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px;padding:7px 8px}
+th.right,td.right{text-align:right}
+td{padding:6px 8px;border-bottom:1px solid #f0f0f0;font-size:11.5px}
+tr:last-child td{border-bottom:none}
+.muted{color:var(--muted)}
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700}
+.b-active{background:#dcfce7;color:#15803d}
+.b-inactive{background:#e5e7eb;color:#4b5563}
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid var(--line);font-size:10px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">Bank Details</div>
+      <div class="subtitle">All registered bank / mobile / card accounts</div>
+    </div>
+    <div class="meta">
+      {% if q %}Search: {{ q }}<br>{% endif %}
+      {% if selected_category %}Category: {{ selected_category|title }}<br>{% endif %}
+      {% if status %}Status: {{ status|title }}{% endif %}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Account Name</th><th>Category</th><th>Bank / Provider</th><th>Account Number</th><th>Holder Name</th><th>Branch</th><th>Routing</th><th>Mobile</th><th class="right">Balance</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for a in accounts %}
+      <tr>
+        <td>{{ a.account_name|default:a.display_name }}</td>
+        <td>{% if a.account_category %}{{ a.account_category.name }}{% else %}—{% endif %}</td>
+        <td>{{ a.bank_name|default:a.get_mobile_provider_display|default:"—" }}</td>
+        <td>{{ a.account_number|default:a.mobile_number|default:"—" }}</td>
+        <td>{{ a.holder_name|default:a.card_holder_name|default:"—" }}</td>
+        <td>{{ a.branch|default:"—" }}</td>
+        <td>{{ a.routing_number|default:"—" }}</td>
+        <td>{{ a.mobile_number|default:"—" }}</td>
+        <td class="right" style="font-weight:700;">{{ a.available_balance|currency }}</td>
+        <td>{% if a.is_active %}<span class="badge b-active">Active</span>{% else %}<span class="badge b-inactive">Inactive</span>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="10" class="muted" style="padding:20px;text-align:center;">No bank accounts found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="footer">Generated on {% now "j M Y H:i" %}</div>
+</body>
+</html>
