@@ -33,11 +33,11 @@ def _dates(request):
 
 
 METHOD_LABELS = {
-    'cash': 'Cash', 'bank': 'Bank', 'bank_transfer': 'Bank Transfer', 'cheque': 'Cheque', 'check': 'Check',
+    'cash': 'Cash', 'bank': 'Bank', 'cheque': 'Cheque', 'check': 'Check',
     'card': 'Card', 'online': 'Online', 'bkash': 'bKash', 'nagad': 'Nagad', 'rocket': 'Rocket',
     'upay': 'Upay', 'mobile': 'Mobile', 'other': 'Other',
 }
-METHOD_ORDER = ['cash', 'bank', 'bank_transfer', 'check', 'cheque', 'card', 'online', 'bkash', 'nagad', 'rocket', 'upay', 'mobile', 'other']
+METHOD_ORDER = ['cash', 'bank', 'check', 'cheque', 'card', 'online', 'bkash', 'nagad', 'rocket', 'upay', 'mobile', 'other']
 
 
 def _method_choices_from(keys):

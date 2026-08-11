@@ -148,7 +148,7 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
             <select name="payment_method" id="payment-method" class="form-select form-select-sm">
               <option value="">-- Select Method --</option>
               <option value="cash">Cash</option>
-              <option value="bank_transfer">Bank Transfer</option>
+              <option value="bank">Bank</option>
               <option value="bkash">bKash</option>
               <option value="nagad">Nagad</option>
               <option value="rocket">Rocket</option>
@@ -161,7 +161,7 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
             <label class="form-label fw-medium" style="font-size:12px;">Amount</label>
             <input type="number" name="payment_amount" id="payment-amount" class="form-control form-control-sm" step="0.01" min="0" style="background:#f9fafb;">
           </div>
-          <!-- Bank Account (bank_transfer) -->
+          <!-- Bank Account (bank) -->
           <div class="col-12" id="payment-bank-section" style="display:none;">
             <div class="row g-3">
               <div class="col-md-6">
@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function(){
     ['payment-bank-section', 'payment-mobile-section', 'payment-card-section', 'payment-cash-section', 'payment-other-section'].forEach(function(id) {
       document.getElementById(id).style.display = 'none';
     });
-    if (val === 'bank_transfer') {
+    if (val === 'bank') {
       document.getElementById('payment-bank-section').style.display = 'block';
     } else if (['bkash','nagad','rocket'].includes(val)) {
       document.getElementById('payment-mobile-section').style.display = 'block';

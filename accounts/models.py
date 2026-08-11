@@ -25,7 +25,7 @@ CURRENCY_SYMBOLS = {
 }
 
 METHOD_CHOICES = [
-    ('cash', 'Cash'), ('bank', 'Bank'), ('bank_transfer', 'Bank Transfer'), ('check', 'Check'),
+    ('cash', 'Cash'), ('bank', 'Bank'), ('check', 'Check'),
     ('cheque', 'Cheque'), ('card', 'Card'), ('online', 'Online'), ('bkash', 'bKash'),
     ('nagad', 'Nagad'), ('rocket', 'Rocket'), ('upay', 'Upay'),
 ]
