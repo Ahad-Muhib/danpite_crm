@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -6,6 +8,7 @@ from django.db.models import Q, Sum, Count, Avg
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from functools import wraps
 
 from clients.models import Client
@@ -125,6 +128,10 @@ def dashboard(request):
         'monthly_points': [],
         'latest_payments': [],
         'latest_invoices': [],
+        'revenue_delta': 0,
+        'expense_delta': 0,
+        'order_delta': 0,
+        'net_delta': 0,
         'user_role': get_user_role(request.user),
     }
 
@@ -153,12 +160,12 @@ def dashboard(request):
 
         month_map = {}
         for row in monthly_payment_rows:
-            month_map[row['month'].date().replace(day=1)] = {
+            month_map[row['month'].replace(day=1)] = {
                 'revenue': float(row['total'] or 0),
                 'expense': 0.0,
             }
         for row in monthly_expense_rows:
-            key = row['month'].date().replace(day=1)
+            key = row['month'].replace(day=1)
             month_map.setdefault(key, {'revenue': 0.0, 'expense': 0.0})
             month_map[key]['expense'] = float(row['total'] or 0)
 
@@ -173,6 +180,32 @@ def dashboard(request):
         latest_payments = Payment.objects.select_related('client', 'invoice', 'account').order_by('-created_at')[:5]
         latest_invoices = Invoice.objects.select_related('client').order_by('-created_at')[:5]
 
+        def pct_change(current, previous):
+            previous = float(previous)
+            if not previous:
+                return 0.0
+            return round((float(current) - previous) / previous * 100, 1)
+
+        today = timezone.localdate()
+        cur_start = today - timedelta(days=30)
+        prev_start = today - timedelta(days=60)
+
+        revenue_cur = Payment.objects.filter(payment_date__gte=cur_start).aggregate(s=Sum('amount'))['s'] or 0
+        revenue_prev = Payment.objects.filter(
+            payment_date__gte=prev_start, payment_date__lt=cur_start
+        ).aggregate(s=Sum('amount'))['s'] or 0
+
+        expense_cur = Expense.objects.filter(expense_date__gte=cur_start).aggregate(s=Sum('amount'))['s'] or 0
+        expense_prev = Expense.objects.filter(
+            expense_date__gte=prev_start, expense_date__lt=cur_start
+        ).aggregate(s=Sum('amount'))['s'] or 0
+
+        order_cur = Order.objects.filter(order_date__gte=cur_start).count()
+        order_prev = Order.objects.filter(order_date__gte=prev_start, order_date__lt=cur_start).count()
+
+        net_cur = float(revenue_cur) - float(expense_cur)
+        net_prev = float(revenue_prev) - float(expense_prev)
+
         ctx.update({
             'total_revenue': total_revenue,
             'total_expenses': total_expenses,
@@ -181,6 +214,10 @@ def dashboard(request):
             'monthly_points': monthly_points,
             'latest_payments': latest_payments,
             'latest_invoices': latest_invoices,
+            'revenue_delta': pct_change(revenue_cur, revenue_prev),
+            'expense_delta': pct_change(expense_cur, expense_prev),
+            'order_delta': pct_change(order_cur, order_prev),
+            'net_delta': pct_change(net_cur, net_prev),
         })
     except Exception:
         pass

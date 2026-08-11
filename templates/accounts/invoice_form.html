@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function(){
   // Client autocomplete
   var clientsData = [
     {% for c in clients %}
-    {pk: {{ c.pk }}, name: "{{ c.name|escapejs }}", phone: "{{ c.phone|escapejs }}", address: "{{ c.address|escapejs }}"},
+    {pk: {{ c.pk|default_if_none:'null' }}, name: "{{ c.name|escapejs }}", phone: "{{ c.phone|escapejs }}", address: "{{ c.address|escapejs }}"},
     {% endfor %}
   ];
   var billToInput = document.getElementById('id_bill_to_name');

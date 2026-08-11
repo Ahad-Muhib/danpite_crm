@@ -11,23 +11,6 @@
   gap: 18px;
 }
 
-.reveal {
-  opacity: 0;
-  transform: translateY(18px) scale(0.99);
-}
-
-body.dashboard-ready .reveal {
-  animation: dashRise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  animation-delay: var(--d, 0ms);
-}
-
-@keyframes dashRise {
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 @keyframes glowSweep {
   0% {
     transform: translateX(-160%) skewX(-18deg);
@@ -299,8 +282,8 @@ body.dashboard-ready .reveal {
         <div class="stat-card is-emerald">
           <div class="stat-label">Total Revenue</div>
           <div class="stat-value">{{ total_revenue|currency }}</div>
-          <div class="stat-meta up">
-            <i class="bi bi-arrow-up-right"></i><span class="delta">+9.2%</span><span>from previous period</span>
+          <div class="stat-meta {% if revenue_delta >= 0 %}up{% else %}down{% endif %}">
+            <i class="bi {% if revenue_delta >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i><span class="delta">{{ revenue_delta|signed }}%</span><span>from previous period</span>
           </div>
           <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
         </div>
@@ -311,8 +294,8 @@ body.dashboard-ready .reveal {
         <div class="stat-card is-rose">
           <div class="stat-label">Total Expenses</div>
           <div class="stat-value">{{ total_expenses|currency }}</div>
-          <div class="stat-meta down">
-            <i class="bi bi-arrow-down-right"></i><span class="delta">-1.1%</span><span>from previous period</span>
+          <div class="stat-meta {% if expense_delta >= 0 %}up{% else %}down{% endif %}">
+            <i class="bi {% if expense_delta >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i><span class="delta">{{ expense_delta|signed }}%</span><span>from previous period</span>
           </div>
           <div class="stat-icon"><i class="bi bi-receipt"></i></div>
         </div>
@@ -323,8 +306,8 @@ body.dashboard-ready .reveal {
         <div class="stat-card is-blue">
           <div class="stat-label">New Orders</div>
           <div class="stat-value">{{ order_count }}</div>
-          <div class="stat-meta up">
-            <i class="bi bi-arrow-up-right"></i><span class="delta">+16.2%</span><span>from previous period</span>
+          <div class="stat-meta {% if order_delta >= 0 %}up{% else %}down{% endif %}">
+            <i class="bi {% if order_delta >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i><span class="delta">{{ order_delta|signed }}%</span><span>from previous period</span>
           </div>
           <div class="stat-icon"><i class="bi bi-cart3"></i></div>
         </div>
@@ -335,9 +318,9 @@ body.dashboard-ready .reveal {
         <div class="stat-card is-violet">
           <div class="stat-label">Net Balance</div>
           <div class="stat-value">{{ net_balance|currency }}</div>
-          <div class="stat-meta {% if net_balance >= 0 %}up{% else %}down{% endif %}">
-            <i class="bi {% if net_balance >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
-            <span class="delta">{% if net_balance >= 0 %}+11.7%{% else %}-3.4%{% endif %}</span>
+          <div class="stat-meta {% if net_delta >= 0 %}up{% else %}down{% endif %}">
+            <i class="bi {% if net_delta >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
+            <span class="delta">{{ net_delta|signed }}%</span>
             <span>from previous period</span>
           </div>
           <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
@@ -581,10 +564,6 @@ body.dashboard-ready .reveal {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  requestAnimationFrame(function() {
-    document.body.classList.add('dashboard-ready');
-  });
-
   const monthlyData = JSON.parse(document.getElementById('dashboard-monthly-points').textContent || '[]');
   const sourceData = JSON.parse(document.getElementById('dashboard-source-stats').textContent || '[]');
 

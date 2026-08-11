@@ -52,6 +52,26 @@
       </div>
     </div>
     <div class="crm-card">
+      <div class="crm-card-header"><span class="crm-card-title">Recent Payments</span><a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-primary">View All</a></div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Invoice</th><th>Amount</th><th>Date</th><th>Method</th></tr></thead>
+          <tbody>
+            {% for p in payments %}
+            <tr>
+              <td>{% if p.invoice %}<span class="fw-medium text-primary">{{ p.invoice.code }}</span>{% else %}—{% endif %}</td>
+              <td class="fw-medium text-success">{{ p.amount }}</td>
+              <td class="text-muted">{{ p.payment_date }}</td>
+              <td><span class="badge bg-light text-dark border">{{ p.get_method_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No payments.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="crm-card">
       <div class="crm-card-header"><span class="crm-card-title">Recent Orders</span><a href="{% url 'order_list' %}" class="btn btn-sm btn-outline-primary">View All</a></div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">

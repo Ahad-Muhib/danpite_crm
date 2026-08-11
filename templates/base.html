@@ -10,6 +10,29 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
+<style>
+.crm-card {
+  transition: box-shadow 0.25s ease;
+}
+.crm-card:hover {
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(18px) scale(0.99);
+}
+body.dashboard-ready .reveal {
+  animation: dashRise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes dashRise {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+  body.dashboard-ready .reveal { animation: none; }
+}
+</style>
 {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -214,6 +237,46 @@ document.getElementById('sidebar-logo-btn')?.addEventListener('click', function(
 });
 </script>
 {% endif %}
+<script>
+(function() {
+  function markReveals() {
+    var main = document.getElementById('main');
+    if (!main || main.dataset.revealed) return;
+    main.dataset.revealed = '1';
+    var idx = 0;
+    function mark(el) {
+      if (!el || el.classList.contains('reveal')) return;
+      if (getComputedStyle(el).display === 'none') return;
+      el.classList.add('reveal');
+      el.style.setProperty('--d', (idx * 50 + 40) + 'ms');
+      idx++;
+    }
+    Array.prototype.forEach.call(main.children, function(child) {
+      if (child.tagName === 'SCRIPT' || child.tagName === 'TEMPLATE') return;
+      if (child.classList.contains('modal')) return;
+      if (child.querySelector('.reveal')) return;
+      var nested = child.querySelectorAll(':scope > [class*="col"] > .crm-card, :scope > [class*="col"] > .metric-card');
+      if (nested.length) {
+        Array.prototype.forEach.call(nested, mark);
+      } else {
+        mark(child);
+      }
+    });
+  }
+
+  markReveals();
+
+  function go() {
+    if (document.body.classList.contains('dashboard-ready')) return;
+    requestAnimationFrame(function() {
+      markReveals();
+      document.body.classList.add('dashboard-ready');
+    });
+  }
+  document.addEventListener('DOMContentLoaded', go);
+  setTimeout(go, 1200);
+})();
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

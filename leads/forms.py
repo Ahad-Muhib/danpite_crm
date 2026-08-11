@@ -11,7 +11,7 @@ class LeadContactForm(forms.ModelForm):
                   'lead_state', 'lead_status', 'budget', 'next_followup_date', 'followup_action']
         widgets = {
             'salutation': forms.Select(attrs={'class': 'form-select'}, choices=[('', '--'), ('Mr.', 'Mr.'), ('Ms.', 'Ms.'), ('Mrs.', 'Mrs.'), ('Dr.', 'Dr.')]),
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full name'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full name', 'list': 'lead-name-suggestions'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email address'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone number'}),
             'company': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Company name'}),

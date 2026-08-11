@@ -11,11 +11,25 @@ from django.template.loader import render_to_string
 
 from core.models import log_action
 from clients.models import Client
+from leads.models import LeadContact
 
 from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm, TransferForm
 from .models import AccountCategory, AccountType, BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer
 from orders.models import Order, OrderItem
 from datetime import date
+
+
+def _client_suggestions():
+    data = [
+        {'pk': c.pk, 'name': c.name, 'phone': c.phone or '', 'address': c.address or ''}
+        for c in Client.objects.all().order_by('name')
+    ]
+    seen = {d['name'] for d in data}
+    for lead in LeadContact.objects.exclude(name='').order_by('name'):
+        if lead.name not in seen:
+            data.append({'pk': None, 'name': lead.name, 'phone': lead.phone or '', 'address': lead.address or ''})
+            seen.add(lead.name)
+    return data
 
 
 def _update_invoice_paid_status(invoice):
@@ -223,7 +237,7 @@ def invoice_create(request):
                     unit_price=item.unit_price,
                 )
             return redirect('invoice_list')
-    clients = Client.objects.all().order_by('name')
+    clients = _client_suggestions()
     bank_cats = AccountCategory.objects.filter(is_active=True, account_type='bank').values_list('pk', flat=True)
     banks = list(
         BankAccount.objects.filter(is_active=True, account_category__in=bank_cats)
@@ -317,7 +331,7 @@ def invoice_edit(request, pk):
             log_action(request, 'update', 'Invoice', obj, description=f'{obj.code} — Total: {obj.total}')
             messages.success(request, 'Invoice updated.')
             return redirect('invoice_list')
-    clients = Client.objects.all().order_by('name')
+    clients = _client_suggestions()
     bank_cats = AccountCategory.objects.filter(is_active=True, account_type='bank').values_list('pk', flat=True)
     banks = list(
         BankAccount.objects.filter(is_active=True, account_category__in=bank_cats)

@@ -103,6 +103,12 @@ def _lead_source_options():
     return sorted(set(LeadContact.SOURCE_SUGGESTIONS) | set(saved))
 
 
+def _name_suggestions():
+    lead_names = LeadContact.objects.exclude(name='').values_list('name', flat=True)
+    client_names = Client.objects.exclude(name='').values_list('name', flat=True)
+    return sorted(set(lead_names) | set(client_names))
+
+
 @login_required
 def lead_create(request):
     form = LeadContactForm(request.POST or None)
@@ -119,6 +125,7 @@ def lead_create(request):
     form.fields['lead_owner'].initial = request.user.pk
     return render(request, 'leads/lead_form.html', {
         'form': form, 'action': 'Add', 'lead_source_options': _lead_source_options(),
+        'suggestions': _name_suggestions(),
     })
 
 
@@ -137,6 +144,7 @@ def lead_edit(request, pk):
         return redirect('lead_list')
     return render(request, 'leads/lead_form.html', {
         'form': form, 'action': 'Edit', 'lead': obj, 'lead_source_options': _lead_source_options(),
+        'suggestions': _name_suggestions(),
     })
 
 

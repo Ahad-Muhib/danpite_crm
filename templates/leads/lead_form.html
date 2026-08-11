@@ -18,7 +18,16 @@
     <div class="p-4">
       <div class="row g-3">
         <div class="col-md-2"><label class="form-label fw-medium">Salutation</label>{{ form.salutation }}</div>
-        <div class="col-md-10"><label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>{{ form.name }}</div>
+        <div class="col-md-10">
+          <label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label>
+          {{ form.name }}
+          <datalist id="lead-name-suggestions">
+            {% for name in suggestions %}
+            <option value="{{ name }}"></option>
+            {% endfor %}
+          </datalist>
+          <div class="form-text">Type a name, or pick an existing lead/client. This name is used as the client name when the lead is converted.</div>
+        </div>
 
         <div class="col-md-6"><label class="form-label fw-medium">Email</label>{{ form.email }}</div>
         <div class="col-md-6"><label class="form-label fw-medium">Phone <span class="text-danger">*</span></label>{{ form.phone }}</div>

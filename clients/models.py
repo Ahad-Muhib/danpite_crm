@@ -48,7 +48,7 @@ class Client(models.Model):
     address = models.TextField(blank=True)
     category = models.CharField(max_length=30, choices=CATEGORY, blank=True)
     sub_category = models.CharField(max_length=100, blank=True)
-    status = models.CharField(max_length=20, choices=STATE, default='open')
+    status = models.CharField(max_length=20, choices=STATE, default='active')
     account_manager = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='managed_clients')
     lead_contact = models.ForeignKey('leads.LeadContact', null=True, blank=True, on_delete=models.SET_NULL, related_name='converted_clients')
     notes = models.TextField(blank=True)

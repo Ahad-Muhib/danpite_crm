@@ -46,3 +46,13 @@ def url_replace(context, **kwargs):
 @register.filter
 def next_order(order):
     return 'asc' if order == 'desc' else 'desc'
+
+
+@register.filter
+def signed(value):
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return value
+    sign = '+' if v > 0 else ''
+    return f"{sign}{v:.1f}"

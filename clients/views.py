@@ -72,8 +72,15 @@ def client_detail(request, pk):
     client = get_object_or_404(Client, pk=pk)
     invoices = client.invoices.all()[:5]
     orders = client.orders.all()[:5]
+    payments = client.payments.all()[:5]
     deals = client.lead_contact.deals.all() if client.lead_contact else []
-    return render(request, 'clients/client_detail.html', {'client': client, 'invoices': invoices, 'orders': orders, 'deals': deals})
+    return render(request, 'clients/client_detail.html', {
+        'client': client,
+        'invoices': invoices,
+        'orders': orders,
+        'payments': payments,
+        'deals': deals,
+    })
 
 
 @login_required
@@ -116,23 +123,28 @@ def client_update_state(request, pk):
 @login_required
 def client_statement(request, pk):
     from django.db.models import Sum
+    from django.utils.html import strip_tags
     client = get_object_or_404(Client, pk=pk)
     invoices = client.invoices.all().order_by('created_at')
     payments = client.payments.all().order_by('created_at')
     transactions = []
     for inv in invoices:
+        notes = (strip_tags(inv.notes or '') if inv.notes else '').strip()
+        description = notes or f'{inv.code} — {inv.get_status_display()}'
         transactions.append({
             'date': inv.created_at,
             'type': 'Invoice',
-            'description': f'{inv.code} — {inv.get_status_display}',
+            'description': description,
             'debit': float(inv.total),
             'credit': 0,
         })
     for p in payments:
+        notes = (strip_tags(p.notes or '') if p.notes else '').strip()
+        description = notes or f'{p.get_method_display()}' + (f' ({p.invoice.code})' if p.invoice else '')
         transactions.append({
             'date': p.created_at,
             'type': 'Payment',
-            'description': f'{p.get_method_display}' + (f' ({p.invoice.code})' if p.invoice else ''),
+            'description': description,
             'debit': 0,
             'credit': float(p.amount),
         })
