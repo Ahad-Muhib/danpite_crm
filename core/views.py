@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, Avg
+from django.db.models.functions import TruncMonth
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from functools import wraps
@@ -121,22 +122,65 @@ def dashboard(request):
         'pipeline_stages': pipeline_stages,
         'pipeline_max_count': max_count,
         'source_stats': source_stats,
+        'monthly_points': [],
+        'latest_payments': [],
+        'latest_invoices': [],
         'user_role': get_user_role(request.user),
     }
 
     # Financial summary
     try:
         from accounts.models import Invoice, Payment, Expense, BankAccount, Transfer
-        from django.db.models import Sum as SumAgg
         total_revenue = Payment.objects.aggregate(s=Sum('amount'))['s'] or 0
         total_expenses = Expense.objects.aggregate(s=Sum('amount'))['s'] or 0
         net_balance = total_revenue - total_expenses
         payment_count = Payment.objects.count()
+
+        monthly_payment_rows = (
+            Payment.objects.filter(payment_date__isnull=False)
+            .annotate(month=TruncMonth('payment_date'))
+            .values('month')
+            .annotate(total=Sum('amount'))
+            .order_by('month')
+        )
+        monthly_expense_rows = (
+            Expense.objects.filter(expense_date__isnull=False)
+            .annotate(month=TruncMonth('expense_date'))
+            .values('month')
+            .annotate(total=Sum('amount'))
+            .order_by('month')
+        )
+
+        month_map = {}
+        for row in monthly_payment_rows:
+            month_map[row['month'].date().replace(day=1)] = {
+                'revenue': float(row['total'] or 0),
+                'expense': 0.0,
+            }
+        for row in monthly_expense_rows:
+            key = row['month'].date().replace(day=1)
+            month_map.setdefault(key, {'revenue': 0.0, 'expense': 0.0})
+            month_map[key]['expense'] = float(row['total'] or 0)
+
+        monthly_points = []
+        for month_key in sorted(month_map.keys())[-12:]:
+            monthly_points.append({
+                'label': month_key.strftime('%b %Y'),
+                'revenue': month_map[month_key]['revenue'],
+                'expense': month_map[month_key]['expense'],
+            })
+
+        latest_payments = Payment.objects.select_related('client', 'invoice', 'account').order_by('-created_at')[:5]
+        latest_invoices = Invoice.objects.select_related('client').order_by('-created_at')[:5]
+
         ctx.update({
             'total_revenue': total_revenue,
             'total_expenses': total_expenses,
             'net_balance': net_balance,
             'payment_count': payment_count,
+            'monthly_points': monthly_points,
+            'latest_payments': latest_payments,
+            'latest_invoices': latest_invoices,
         })
     except Exception:
         pass
