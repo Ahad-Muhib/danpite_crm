@@ -1,14 +1,34 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.sessions.models import Session
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.models import log_action
 from .forms import AttendanceForm, EmployeeForm, LeaveForm
 from .models import Attendance, Designation, Employee, EmployeeRole, Leave
+
+
+def _disable_employee_user_account(employee):
+    """Disable linked auth account so removed employees cannot log in again."""
+    user = getattr(employee, 'user', None)
+    if not user:
+        return None
+
+    username = user.username
+    user.is_active = False
+    user.set_unusable_password()
+    user.save(update_fields=['is_active', 'password'])
+
+    for session in Session.objects.filter(expire_date__gte=timezone.now()):
+        data = session.get_decoded()
+        if str(data.get('_auth_user_id')) == str(user.pk):
+            session.delete()
+    return username
 
 
 @login_required
@@ -21,10 +41,16 @@ def employee_list(request):
         if not request.user.is_superuser:
             messages.error(request, 'Only superusers can delete employees.')
             return redirect('employee_list')
-        for emp in Employee.objects.filter(pk__in=selected_ids):
+        disabled_user_count = 0
+        for emp in Employee.objects.filter(pk__in=selected_ids).select_related('user'):
+            if _disable_employee_user_account(emp):
+                disabled_user_count += 1
             log_action(request, 'delete', 'Employee', emp)
             emp.delete()
-        messages.success(request, f'{len(selected_ids)} employee(s) deleted.')
+        messages.success(
+            request,
+            f'{len(selected_ids)} employee(s) deleted. {disabled_user_count} linked login account(s) disabled.',
+        )
         return redirect('employee_list')
     q = request.GET.get('q', '')
     qs = Employee.objects.select_related('user').all().order_by('-id')
@@ -82,9 +108,13 @@ def employee_delete(request, pk):
         messages.error(request, 'Only superusers can delete employees.')
         return redirect('employee_list')
     obj = get_object_or_404(Employee, pk=pk)
+    disabled_username = _disable_employee_user_account(obj)
     log_action(request, 'delete', 'Employee', obj)
     obj.delete()
-    messages.success(request, 'Employee deleted.')
+    if disabled_username:
+        messages.success(request, f'Employee deleted. Login "{disabled_username}" disabled.')
+    else:
+        messages.success(request, 'Employee deleted.')
     return redirect('employee_list')
 
 
