@@ -77,7 +77,9 @@ def _parse_payment_rows(request, invoice_code):
                 account.save()
 
         pid = request.POST.get(p + 'id', '').strip()
-        reference = request.POST.get(p + 'reference', '').strip() or f'Invoice {invoice_code}'
+        reference = request.POST.get(p + 'reference', '').strip()
+        if not reference:
+            reference = f'Invoice {invoice_code}' if invoice_code else ''
         rows.append({
             'id': pid,
             'method': method,
@@ -122,6 +124,63 @@ def _update_invoice_paid_status(invoice):
     elif not invoice.is_fully_paid and invoice.status == 'paid':
         invoice.status = 'sent'
         invoice.save(update_fields=['status'])
+
+
+def _serialize_parsed_rows(rows):
+    """Convert parsed payment rows back into the JS-serialized payment shape (for re-render)."""
+    data = []
+    for row in rows:
+        account = None
+        if row.get('account'):
+            acc = row['account']
+            cat = acc.account_category
+            account = {
+                'pk': acc.pk,
+                'category_name': cat.name if cat else '',
+                'category_type': cat.account_type if cat else '',
+                'bank_name': acc.bank_name,
+                'account_number': acc.account_number,
+                'mobile_number': acc.mobile_number,
+                'mobile_holder': acc.holder_name,
+                'holder_name': acc.holder_name,
+            }
+        data.append({
+            'id': row.get('id') or '',
+            'method': row.get('method', ''),
+            'amount': str(row.get('amount', 0)),
+            'reference': row.get('reference', ''),
+            'account': account,
+        })
+    return data
+
+
+def _invoice_form_context(request, form, formset, obj, action, existing_payments_json):
+    clients = _client_suggestions()
+    bank_cats = AccountCategory.objects.filter(is_active=True, account_type='bank').values_list('pk', flat=True)
+    banks = list(
+        BankAccount.objects.filter(is_active=True, account_category__in=bank_cats)
+        .values_list('bank_name', flat=True).distinct().order_by('bank_name')
+    )
+    categories = AccountCategory.objects.filter(is_active=True)
+    return {
+        'form': form, 'formset': formset, 'action': action,
+        'invoice': obj, 'clients': clients, 'banks': banks,
+        'categories': categories, 'method_choices': METHOD_CHOICES,
+        'existing_payments_json': existing_payments_json,
+    }
+
+
+def _formset_item_total(formset):
+    total = 0
+    for f in formset:
+        if not f.cleaned_data or f.cleaned_data.get('DELETE'):
+            continue
+        total += (f.cleaned_data.get('quantity') or 0) * (f.cleaned_data.get('unit_price') or 0)
+    return total
+
+
+def _invoice_overpaid(total, paid):
+    return paid > total
 
 
 @login_required
@@ -259,6 +318,15 @@ def invoice_create(request):
                 obj.client = client
             if save_as_draft:
                 obj.status = 'draft'
+            rows = _parse_payment_rows(request, '')
+            item_total = _formset_item_total(formset)
+            after_discount = item_total - (item_total * (obj.discount or 0) / 100)
+            obj.total = after_discount + (after_discount * (obj.tax or 0) / 100) + (obj.shipping or 0)
+            paid = sum(r['amount'] for r in rows)
+            if _invoice_overpaid(obj.total, paid):
+                messages.error(request, f'Paid amount ({paid}) is greater than the invoice total ({obj.total}). Please reduce the paid amount so it does not exceed the total.')
+                context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps(_serialize_parsed_rows(rows)))
+                return render(request, 'accounts/invoice_form.html', context)
             obj.save()
             formset.instance = obj
             formset.save()
@@ -292,19 +360,8 @@ def invoice_create(request):
                     unit_price=item.unit_price,
                 )
             return redirect('invoice_list')
-    clients = _client_suggestions()
-    bank_cats = AccountCategory.objects.filter(is_active=True, account_type='bank').values_list('pk', flat=True)
-    banks = list(
-        BankAccount.objects.filter(is_active=True, account_category__in=bank_cats)
-        .values_list('bank_name', flat=True).distinct().order_by('bank_name')
-    )
-    categories = AccountCategory.objects.filter(is_active=True)
-    return render(request, 'accounts/invoice_form.html', {
-        'form': form, 'formset': formset, 'action': 'Create',
-        'invoice': form.instance, 'clients': clients, 'banks': banks,
-        'categories': categories, 'method_choices': METHOD_CHOICES,
-        'existing_payments_json': json.dumps([]),
-    })
+    return render(request, 'accounts/invoice_form.html',
+                  _invoice_form_context(request, form, formset, form.instance, 'Create', json.dumps([])))
 
 
 @login_required
@@ -328,6 +385,15 @@ def invoice_edit(request, pk):
                 obj.client = None
             if save_as_draft:
                 obj.status = 'draft'
+            rows = _parse_payment_rows(request, obj.code)
+            item_total = _formset_item_total(formset)
+            after_discount = item_total - (item_total * (obj.discount or 0) / 100)
+            obj.total = after_discount + (after_discount * (obj.tax or 0) / 100) + (obj.shipping or 0)
+            paid = sum(r['amount'] for r in rows)
+            if _invoice_overpaid(obj.total, paid):
+                messages.error(request, f'Paid amount ({paid}) is greater than the invoice total ({obj.total}). Please reduce the paid amount so it does not exceed the total.')
+                context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_parsed_rows(rows)))
+                return render(request, 'accounts/invoice_form.html', context)
             obj.save()
             formset.instance = obj
             formset.save()
@@ -335,7 +401,6 @@ def invoice_edit(request, pk):
             after_discount = item_total - (item_total * (obj.discount or 0) / 100)
             obj.total = after_discount + (after_discount * (obj.tax or 0) / 100) + (obj.shipping or 0)
             obj.save(update_fields=['total'])
-            rows = _parse_payment_rows(request, obj.code)
             existing = {p.pk: p for p in obj.payments.all()}
             submitted = []
             for row in rows:
@@ -367,19 +432,8 @@ def invoice_edit(request, pk):
             log_action(request, 'update', 'Invoice', obj, description=f'{obj.code} — Total: {obj.total}')
             messages.success(request, 'Invoice updated.')
             return redirect('invoice_list')
-    clients = _client_suggestions()
-    bank_cats = AccountCategory.objects.filter(is_active=True, account_type='bank').values_list('pk', flat=True)
-    banks = list(
-        BankAccount.objects.filter(is_active=True, account_category__in=bank_cats)
-        .values_list('bank_name', flat=True).distinct().order_by('bank_name')
-    )
-    categories = AccountCategory.objects.filter(is_active=True)
-    return render(request, 'accounts/invoice_form.html', {
-        'form': form, 'formset': formset, 'action': 'Edit',
-        'invoice': obj, 'clients': clients, 'banks': banks,
-        'categories': categories, 'method_choices': METHOD_CHOICES,
-        'existing_payments_json': json.dumps(_serialize_payments(obj)),
-    })
+    return render(request, 'accounts/invoice_form.html',
+                  _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_payments(obj))))
 
 
 @login_required
@@ -453,6 +507,11 @@ def payment_list(request):
     return render(request, 'accounts/payments.html', {'payments': page, 'total': total, 'q': q, 'method': method, 'sort': sort, 'dir': dir})
 
 
+def _payment_overflows(invoice, new_amount, subtract=0):
+    current_paid = invoice.total - invoice.balance_due
+    return current_paid - subtract + new_amount > invoice.total
+
+
 @login_required
 def payment_create(request):
     initial = {'payment_date': date.today()}
@@ -478,6 +537,11 @@ def payment_create(request):
         if client_name:
             client, _ = Client.objects.get_or_create(name=client_name)
             obj.client = client
+        if obj.invoice and _payment_overflows(obj.invoice, obj.amount):
+            messages.error(request, f'This payment ({obj.amount}) would exceed the invoice total ({obj.invoice.total}). Please fix the amount.')
+            return render(request, 'accounts/payment_form.html', {
+                'form': form, 'action': 'Record', 'accounts': accounts, 'invoices': invoices, 'clients': clients,
+            })
         obj.save()
         if obj.invoice:
             _update_invoice_paid_status(obj.invoice)
@@ -510,6 +574,13 @@ def payment_edit(request, pk):
         else:
             obj.client = None
         old_invoice = Payment.objects.get(pk=pk).invoice
+        if obj.invoice:
+            subtract = old_invoice.amount if old_invoice and old_invoice.pk == obj.invoice.pk else 0
+            if _payment_overflows(obj.invoice, obj.amount, subtract=subtract):
+                messages.error(request, f'This payment ({obj.amount}) would exceed the invoice total ({obj.invoice.total}). Please fix the amount.')
+                return render(request, 'accounts/payment_form.html', {
+                    'form': form, 'action': 'Edit', 'accounts': accounts, 'invoices': invoices, 'clients': clients,
+                })
         obj.save()
         if obj.invoice:
             _update_invoice_paid_status(obj.invoice)
