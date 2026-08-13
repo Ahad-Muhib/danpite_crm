@@ -41,6 +41,8 @@
           <th><a href="?sort=name&dir={% if sort == 'name' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-inherit">Bill To {% if sort == 'name' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
           <th>Phone</th>
           <th><a href="?sort=total&dir={% if sort == 'total' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-inherit">Total {% if sort == 'total' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+          <th class="text-success">Paid</th>
+          <th class="text-danger">Due</th>
           <th><a href="?sort=date&dir={% if sort == 'date' and dir == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-inherit">Date {% if sort == 'date' %}<i class="bi bi-arrow-{% if dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
           <th>Status</th>
           <th>Actions</th>
@@ -56,6 +58,8 @@
           <td>{% if inv.client %}{{ inv.client.name }}{% else %}{{ inv.bill_to_name|default:"—" }}{% endif %}</td>
           <td class="text-muted">{{ inv.phone|default:"—" }}</td>
           <td class="fw-medium">{{ inv.total|currency }}</td>
+          <td class="fw-medium text-success">{{ inv.paid|currency }}</td>
+          <td class="fw-medium text-danger">{{ inv.due|currency }}</td>
           <td class="text-muted" style="white-space:nowrap;">{{ inv.created_at|date:"d M Y H:i" }}</td>
           <td>
             <div class="dropdown">

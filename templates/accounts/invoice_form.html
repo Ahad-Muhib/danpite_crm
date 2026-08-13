@@ -160,7 +160,7 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
 
     {{ form.currency }}
     <div style="display:flex;gap:10px;margin-top:24px;justify-content:flex-end;">
-      <button type="submit" class="btn btn-primary" style="border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:#111827;color:#fff;font-weight:700;">{{ action }} Invoice</button>
+      <button type="submit" class="btn btn-primary" style="border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:#111827;color:#fff;font-weight:700;">{% if action == 'Edit' %}Save Invoice{% else %}{{ action }} Invoice{% endif %}</button>
       <button type="submit" name="save_as_draft" value="true" style="border:0;border-radius:6px;padding:10px 16px;cursor:pointer;background:#6b7280;color:#fff;font-weight:700;">Save as Draft</button>
       <a href="{% url 'invoice_list' %}" style="border:1px solid var(--line);border-radius:6px;padding:10px 16px;text-decoration:none;color:#374151;font-weight:600;">Cancel</a>
     </div>
