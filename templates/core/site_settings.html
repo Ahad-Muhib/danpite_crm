@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Site Settings{% endblock %}
+{% block page_title %}Site Settings{% endblock %}
+{% block content %}
+<div class="crm-card">
+  <div class="crm-card-header"><span class="crm-card-title">Site Settings</span></div>
+  <div class="p-4">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label fw-medium">Company Logo</label>
+        <div class="mb-2 d-flex align-items-center gap-3">
+          <div style="background:#fff;border:1px solid var(--dash-line, #deded8);border-radius:8px;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;max-width:220px;min-height:58px;">
+            <img src="{% if settings.logo_image %}{{ settings.logo_image.url }}{% else %}{{ MEDIA_URL }}invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg{% endif %}" alt="Logo" style="max-height:38px;width:auto;border-radius:3px;">
+          </div>
+        </div>
+        <input type="file" name="logo_image" class="form-control" accept="image/*" required style="max-width:320px;">
+        <div class="form-text">This logo is shown in the sidebar and on invoices. Recommended size: 200x60px. PNG or JPEG.</div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Update Logo</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

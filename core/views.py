@@ -5,7 +5,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, Avg
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncDay, TruncMonth, TruncWeek, TruncYear
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -143,38 +143,56 @@ def dashboard(request):
         net_balance = total_revenue - total_expenses
         payment_count = Payment.objects.count()
 
+        period = request.GET.get('period', 'month')
+        if period == 'day':
+            trunc = TruncDay
+            limit = 30
+            label_format = '%d %b'
+        elif period == 'week':
+            trunc = TruncWeek
+            limit = 12
+            label_format = '%d %b'
+        elif period == 'year':
+            trunc = TruncYear
+            limit = 5
+            label_format = '%Y'
+        else:
+            trunc = TruncMonth
+            limit = 12
+            label_format = '%b %Y'
+
         monthly_payment_rows = (
             Payment.objects.filter(payment_date__isnull=False)
-            .annotate(month=TruncMonth('payment_date'))
-            .values('month')
+            .annotate(period=trunc('payment_date'))
+            .values('period')
             .annotate(total=Sum('amount'))
-            .order_by('month')
+            .order_by('period')
         )
         monthly_expense_rows = (
             Expense.objects.filter(expense_date__isnull=False)
-            .annotate(month=TruncMonth('expense_date'))
-            .values('month')
+            .annotate(period=trunc('expense_date'))
+            .values('period')
             .annotate(total=Sum('amount'))
-            .order_by('month')
+            .order_by('period')
         )
 
-        month_map = {}
+        period_map = {}
         for row in monthly_payment_rows:
-            month_map[row['month'].replace(day=1)] = {
+            period_map[row['period']] = {
                 'revenue': float(row['total'] or 0),
                 'expense': 0.0,
             }
         for row in monthly_expense_rows:
-            key = row['month'].replace(day=1)
-            month_map.setdefault(key, {'revenue': 0.0, 'expense': 0.0})
-            month_map[key]['expense'] = float(row['total'] or 0)
+            key = row['period']
+            period_map.setdefault(key, {'revenue': 0.0, 'expense': 0.0})
+            period_map[key]['expense'] = float(row['total'] or 0)
 
         monthly_points = []
-        for month_key in sorted(month_map.keys())[-12:]:
+        for period_key in sorted(period_map.keys())[-limit:]:
             monthly_points.append({
-                'label': month_key.strftime('%b %Y'),
-                'revenue': month_map[month_key]['revenue'],
-                'expense': month_map[month_key]['expense'],
+                'label': period_key.strftime(label_format),
+                'revenue': period_map[period_key]['revenue'],
+                'expense': period_map[period_key]['expense'],
             })
 
         latest_payments = Payment.objects.select_related('client', 'invoice', 'account').order_by('-created_at')[:5]
@@ -556,16 +574,18 @@ def activity_logs(request):
 
 
 @login_required
-def update_site_settings(request):
+def site_settings(request):
     if not request.user.is_superuser:
-        messages.error(request, 'Only superusers can change site settings.')
+        messages.error(request, 'Only superusers can manage site settings.')
         return redirect('dashboard')
     settings = SiteSettings.load()
-    if request.method == 'POST' and request.FILES.get('logo_image'):
-        settings.logo_image = request.FILES['logo_image']
-        settings.save()
-        messages.success(request, 'Logo updated.')
-    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+    if request.method == 'POST':
+        if request.FILES.get('logo_image'):
+            settings.logo_image = request.FILES['logo_image']
+            settings.save()
+            messages.success(request, 'Logo updated.')
+        return redirect('site_settings')
+    return render(request, 'core/site_settings.html', {'settings': settings})
 
 
 @login_required

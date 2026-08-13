@@ -1,178 +1,342 @@
 {% extends 'base.html' %}
 {% load crm_tags %}
-{% block title %}Dashboard — Danpite CRM{% endblock %}
+{% block title %}Dashboard - Danpite CRM{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
 {% block extra_head %}
 <style>
+:root {
+  --dash-ink: #151515;
+  --dash-muted: #7b7b76;
+  --dash-soft: #f4f4f1;
+  --dash-line: #deded8;
+  --dash-line-dark: #c9c9c1;
+  --dash-green: #0ead7b;
+}
+
+body {
+  background: #eeeeeb;
+}
+
+#main {
+  background: #f7f7f4;
+}
+
 .dash-shell {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  color: var(--dash-ink);
+  display: grid;
+  gap: 14px;
 }
 
-@keyframes glowSweep {
-  0% {
-    transform: translateX(-160%) skewX(-18deg);
-    opacity: 0;
-  }
-  30% {
-    opacity: 0.16;
-  }
-  100% {
-    transform: translateX(200%) skewX(-18deg);
-    opacity: 0;
-  }
-}
-
-.dash-hero {
-  background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 42%, #fdfefe 100%);
-  border: 1px solid #e5ecf5;
-  border-radius: 22px;
-  padding: 22px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
-}
-
-.dash-title {
-  font-size: 24px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.03em;
-}
-
-.dash-subtitle {
-  color: #64748b;
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-.dash-stat-grid .stat-card {
-  min-height: 122px;
-  border-radius: 14px;
-  border: 1px solid #e5edf7;
+.dash-topline {
+  align-items: center;
   background: #ffffff;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+  border: 1px solid var(--dash-line);
+  border-radius: 2px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 14px;
   position: relative;
-  padding: 18px 18px 16px;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  z-index: 20;
 }
 
-.dash-stat-grid .stat-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 25%, rgba(59, 130, 246, 0.09) 50%, transparent 75%);
-  transform: translateX(-160%) skewX(-18deg);
-  pointer-events: none;
+.dash-search {
+  align-items: center;
+  color: #595955;
+  display: flex;
+  flex: 1 1 320px;
+  gap: 9px;
+  max-width: 520px;
 }
 
-.dash-stat-grid .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.16);
-}
-
-.dash-stat-grid .stat-card:hover::after {
-  animation: glowSweep 0.95s ease;
-}
-
-.dash-stat-grid .stat-card .stat-label {
-  color: #6b7280;
+.dash-search input {
+  background: transparent;
+  border: 0;
+  color: var(--dash-ink);
   font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-  margin-bottom: 8px;
+  outline: 0;
+  width: 100%;
 }
 
-.dash-stat-grid .stat-card .stat-value {
-  color: #0f172a;
-  font-size: 34px;
-  line-height: 1;
-}
-
-.dash-stat-grid .stat-card .stat-icon {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  transform: none;
-  width: 42px;
-  height: 42px;
-  border-radius: 9px;
-  display: inline-flex;
+.dash-top-actions {
   align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.dash-icon-btn,
+.dash-avatar {
+  align-items: center;
+  background: #fff;
+  border: 1px solid transparent;
+  color: var(--dash-ink);
+  display: inline-flex;
+  height: 34px;
   justify-content: center;
-  font-size: 20px;
-  opacity: 1;
+  width: 34px;
 }
 
-.dash-stat-grid .stat-card .stat-meta {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #94a3b8;
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.dash-stat-grid .stat-card .stat-meta i {
-  font-size: 11px;
-}
-
-.dash-stat-grid .stat-card .stat-meta .delta {
+.dash-avatar {
+  background: #ece9df;
+  border-radius: 50%;
   font-weight: 700;
 }
 
-.dash-stat-grid .stat-card .stat-meta.up .delta {
-  color: #22c55e;
+.btn-black {
+  background: var(--dash-ink);
+  border: 1px solid var(--dash-ink);
+  border-radius: 2px;
+  color: #fff;
+  font-size: 12px;
+  padding: 7px 10px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.dash-stat-grid .stat-card .stat-meta.down .delta {
-  color: #ef4444;
+.btn-black:hover {
+  background: #000;
+  color: #fff;
 }
 
-.dash-stat-grid .stat-card.is-emerald .stat-icon {
-  color: #16a34a;
-  background: #ecfdf3;
+.btn-black.dropdown-toggle {
+  min-height: 30px;
+  padding: 5px 10px;
 }
 
-.dash-stat-grid .stat-card.is-rose .stat-icon {
-  color: #ef4444;
-  background: #fef2f2;
+.metric-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.dash-stat-grid .stat-card.is-blue .stat-icon {
-  color: #2563eb;
-  background: #eff6ff;
+.stat-card {
+  background: #ffffff;
+  border: 1px solid var(--dash-line);
+  border-radius: 2px;
+  color: var(--dash-ink);
+  display: grid;
+  gap: 10px;
+  min-height: 118px;
+  padding: 16px;
+  text-decoration: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-.dash-stat-grid .stat-card.is-violet .stat-icon {
-  color: #7c3aed;
-  background: #f5f3ff;
+.stat-card:hover {
+  border-color: var(--dash-line-dark);
+  box-shadow: 0 10px 24px rgba(21, 21, 21, 0.06);
+  color: var(--dash-ink);
 }
 
-.metric-card {
-  background: #fff;
-  border: 1px solid #e6edf6;
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+.stat-row {
+  align-items: start;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stat-label,
+.panel-label,
+.micro-label {
+  color: var(--dash-ink);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-value.is-money {
+  font-size: clamp(18px, 2vw, 22px);
+}
+
+.stat-footer {
+  align-items: center;
+  border-top: 1px solid #eeeeea;
+  color: #8a8a84;
+  display: flex;
+  font-size: 11px;
+  gap: 8px;
+  justify-content: space-between;
+  margin: 0 -16px -16px;
+  padding: 9px 16px;
+}
+
+.stat-delta {
+  color: var(--dash-green);
+  font-weight: 700;
+}
+
+.stat-delta.down {
+  color: #cf4b3f;
+}
+
+.sparkline {
+  height: 42px;
+  width: 78px;
+  opacity: 0;
+  animation: sparkIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-delay: calc(var(--d, 0ms) + 0.35s);
+}
+
+@keyframes sparkIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sparkline path,
+.sparkline polyline {
+  fill: none;
+  stroke: #1b1b19;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
+}
+
+.dash-panel {
+  background: #ffffff;
+  border: 1px solid var(--dash-line);
+  border-radius: 2px;
+  min-width: 0;
   overflow: hidden;
 }
 
-.metric-card .crm-card-header {
-  border-bottom: 1px solid #edf2f7;
-  padding: 16px 18px;
+.dash-panel-header {
+  align-items: start;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 18px 0;
 }
 
-.metric-card .card-body-pad {
+.panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.panel-value {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.panel-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.dash-mini-btn {
+  background: #fff;
+  border: 1px solid var(--dash-line);
+  border-radius: 2px;
+  color: var(--dash-ink);
+  font-size: 12px;
+  min-height: 30px;
+  padding: 5px 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-mini-btn:hover {
+  border-color: var(--dash-ink);
+  color: var(--dash-ink);
+}
+
+.legend {
+  align-items: center;
+  color: #878780;
+  display: inline-flex;
+  font-size: 12px;
+  gap: 11px;
+}
+
+.legend span {
+  align-items: center;
+  display: inline-flex;
+  gap: 5px;
+}
+
+.legend i {
+  background: #20201d;
+  border-radius: 50%;
+  display: inline-block;
+  height: 6px;
+  width: 6px;
+}
+
+.legend .muted-dot {
+  background: #bdbdb6;
+}
+
+.chart-wrap {
+  min-height: 300px;
+  padding: 12px 16px 18px;
+  animation: chartRise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: 0.5s;
+}
+
+@keyframes chartRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-wrap canvas {
+  height: 270px !important;
+  width: 100% !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-wrap,
+  .sparkline {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.pipe-list {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.mini-kpi-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: 18px;
 }
 
 .mini-kpi {
-  background: transparent;
-  border: 0;
-  border-bottom: 1px dashed #dbe6f2;
-  border-radius: 0;
-  padding: 10px 0 12px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -180,76 +344,129 @@
 }
 
 .mini-kpi .kpi-label {
-  color: #64748b;
+  color: var(--dash-muted);
   font-size: 12px;
   margin-bottom: 5px;
 }
 
 .mini-kpi .kpi-value {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--dash-ink);
   line-height: 1;
 }
 
 .mini-kpi .kpi-note {
-  color: #94a3b8;
+  color: #94948e;
   font-size: 12px;
   margin-top: 4px;
 }
 
-.mini-kpi:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+.table-panel {
+  margin-top: 0;
 }
 
-.mini-kpi .kpi-side {
-  text-align: right;
+.table-panel .dash-panel-header {
+  padding-bottom: 14px;
+}
+
+.dash-table {
+  margin: 0;
+}
+
+.dash-table th {
+  color: #8a8a84;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.dash-table td {
+  color: var(--dash-ink);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.dash-table td,
+.dash-table th {
+  border-color: #eeeeea;
+  padding: 11px 18px;
   white-space: nowrap;
 }
 
-.chart-wrap {
-  min-height: 320px;
+.dash-table .row-title {
+  color: var(--dash-ink);
+  font-weight: 600;
+  text-decoration: none;
 }
 
-.chart-wrap canvas {
-  width: 100% !important;
-  height: 280px !important;
+.dash-table .row-title:hover {
+  color: #000;
+  text-decoration: underline;
 }
 
-.activity-table td,
-.activity-table th {
-  white-space: nowrap;
-}
-
-.pill-soft {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 999px;
-  padding: 7px 12px;
-  background: #f1f5f9;
-  color: #334155;
-  font-size: 12px;
+.badge-mono {
+  background: #f4f4f1;
+  border: 1px solid var(--dash-line);
+  color: #343430;
+  font-size: 11px;
   font-weight: 600;
 }
 
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.badge-mono.ok {
+  background: #eef4f0;
+  border-color: #d5e3da;
+  color: #1e6b4c;
 }
 
-.hero-actions .btn {
-  border-radius: 12px;
-  min-height: 42px;
+.badge-mono.warn {
+  background: #f6f2e8;
+  border-color: #e5d9bb;
+  color: #6b5215;
 }
 
-@media (max-width: 991.98px) {
-  .dash-hero { padding: 16px; }
-  .dash-title { font-size: 20px; }
-  .chart-wrap { min-height: 240px; }
-  .chart-wrap canvas { height: 240px !important; }
+.badge-mono.bad {
+  background: #f7eeee;
+  border-color: #e7cfcc;
+  color: #84251f;
+}
+
+@media (max-width: 1199.98px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mini-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .dash-topline,
+  .dash-top-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-wrap {
+    min-height: 250px;
+  }
+
+  .chart-wrap canvas {
+    height: 230px !important;
+  }
 }
 </style>
 {% endblock %}
@@ -259,301 +476,359 @@
 {{ source_stats|json_script:"dashboard-source-stats" }}
 
 <div class="dash-shell">
-  <section class="dash-hero reveal" style="--d: 40ms;">
-    <div class="row g-3 align-items-center">
-      <div class="col-lg-7">
-        <div class="pill-soft mb-3"><i class="bi bi-speedometer2"></i> Dashboard</div>
-        <div class="dash-title">Business overview at a glance</div>
-        <div class="dash-subtitle">Track revenue, expenses, orders, and team activity from one clean control panel.</div>
+  <section class="dash-topline reveal" style="--d: 40ms;">
+    <form method="get" action="{% url 'global_search' %}" class="dash-search">
+      <i class="bi bi-search"></i>
+      <input type="text" name="q" placeholder="Search leads, clients, invoices, orders..." value="{{ request.GET.q|default:'' }}">
+    </form>
+    <div class="dash-top-actions">
+      <a href="{% url 'invoice_create' %}" class="btn-black"><i class="bi bi-plus-lg"></i> New Invoice</a>
+      <a href="{% url 'payment_create' %}" class="btn-black"><i class="bi bi-cash-coin"></i> Payment</a>
+      <a href="{% url 'lead_create' %}" class="btn-black"><i class="bi bi-person-plus"></i> New Lead</a>
+      <div class="dropdown">
+        <button class="btn-black dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background:#fff;color:var(--dash-ink);border-color:var(--dash-line);">
+          <i class="bi bi-plus-lg"></i> More
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{% url 'expense_create' %}"><i class="bi bi-receipt me-2"></i>Add Expense</a></li>
+          <li><a class="dropdown-item" href="{% url 'order_create' %}"><i class="bi bi-bag-plus me-2"></i>New Order</a></li>
+          <li><a class="dropdown-item" href="{% url 'client_list' %}"><i class="bi bi-people me-2"></i>New Client</a></li>
+          <li><a class="dropdown-item" href="{% url 'task_create' %}"><i class="bi bi-check2-square me-2"></i>New Task</a></li>
+          <li><a class="dropdown-item" href="{% url 'project_create' %}"><i class="bi bi-kanban me-2"></i>New Project</a></li>
+          <li><a class="dropdown-item" href="{% url 'employee_create' %}"><i class="bi bi-person-badge me-2"></i>New Employee</a></li>
+        </ul>
       </div>
-      <div class="col-lg-5 text-lg-end">
-        <div class="hero-actions justify-content-lg-end">
-          <a href="{% url 'invoice_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New Invoice</a>
-          <a href="{% url 'payment_create' %}" class="btn btn-outline-primary"><i class="bi bi-cash-coin me-1"></i>Record Payment</a>
-          <a href="{% url 'lead_create' %}" class="btn btn-outline-secondary"><i class="bi bi-person-plus me-1"></i>New Lead</a>
-        </div>
-      </div>
+      <div class="dash-avatar">{{ request.user.get_full_name|default:request.user.username|first|upper }}</div>
     </div>
   </section>
 
-  <section class="row g-3 dash-stat-grid">
-    <div class="col-6 col-xl-3 reveal" style="--d: 90ms;">
-      <a href="{% url 'payment_list' %}" class="text-decoration-none">
-        <div class="stat-card is-emerald">
-          <div class="stat-label">Total Revenue</div>
-          <div class="stat-value">{{ total_revenue|currency }}</div>
-          <div class="stat-meta {% if revenue_delta >= 0 %}up{% else %}down{% endif %}">
-            <i class="bi {% if revenue_delta >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i><span class="delta">{{ revenue_delta|signed }}%</span><span>from previous period</span>
-          </div>
-          <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+  <section class="metric-grid">
+    <a href="{% url 'payment_list' %}" class="stat-card reveal" style="--d: 90ms;">
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Total revenue</div>
+          <div class="stat-value is-money">{{ total_revenue|currency }}</div>
         </div>
-      </a>
-    </div>
-    <div class="col-6 col-xl-3 reveal" style="--d: 140ms;">
-      <a href="{% url 'expense_list' %}" class="text-decoration-none">
-        <div class="stat-card is-rose">
-          <div class="stat-label">Total Expenses</div>
-          <div class="stat-value">{{ total_expenses|currency }}</div>
-          <div class="stat-meta {% if expense_delta >= 0 %}up{% else %}down{% endif %}">
-            <i class="bi {% if expense_delta >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i><span class="delta">{{ expense_delta|signed }}%</span><span>from previous period</span>
-          </div>
-          <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+        <svg class="sparkline" viewBox="0 0 90 48" aria-hidden="true">
+          <polyline points="5,39 19,36 28,8 39,34 49,18 59,31 70,23 82,26 87,19"/>
+        </svg>
+      </div>
+      <div class="stat-footer">
+        <span>Collected from payments</span>
+        <span>Show more <i class="bi bi-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <a href="{% url 'expense_list' %}" class="stat-card reveal" style="--d: 140ms;">
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Total expenses</div>
+          <div class="stat-value is-money">{{ total_expenses|currency }}</div>
         </div>
-      </a>
-    </div>
-    <div class="col-6 col-xl-3 reveal" style="--d: 190ms;">
-      <a href="{% url 'order_list' %}" class="text-decoration-none">
-        <div class="stat-card is-blue">
-          <div class="stat-label">New Orders</div>
+        <svg class="sparkline" viewBox="0 0 90 48" aria-hidden="true">
+          <polyline points="5,21 17,28 25,18 37,31 49,25 59,38 70,35 77,12 86,18"/>
+        </svg>
+      </div>
+      <div class="stat-footer">
+        <span>Spent across expenses</span>
+        <span>Show more <i class="bi bi-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <a href="{% url 'order_list' %}" class="stat-card reveal" style="--d: 190ms;">
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Number of orders</div>
           <div class="stat-value">{{ order_count }}</div>
-          <div class="stat-meta {% if order_delta >= 0 %}up{% else %}down{% endif %}">
-            <i class="bi {% if order_delta >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i><span class="delta">{{ order_delta|signed }}%</span><span>from previous period</span>
-          </div>
-          <div class="stat-icon"><i class="bi bi-cart3"></i></div>
         </div>
-      </a>
+        <svg class="sparkline" viewBox="0 0 90 48" aria-hidden="true">
+          <polyline points="5,39 19,36 28,8 39,34 49,18 59,31 70,23 82,26 87,19"/>
+        </svg>
+      </div>
+      <div class="stat-footer">
+        <span>All orders on record</span>
+        <span>Show more <i class="bi bi-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <a href="{% url 'balance_report' %}" class="stat-card reveal" style="--d: 240ms;">
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Net balance</div>
+          <div class="stat-value is-money">{{ net_balance|currency }}</div>
+        </div>
+        <svg class="gauge" viewBox="0 0 84 52" aria-hidden="true">
+          <path d="M14 43a28 28 0 0 1 56 0" fill="none" stroke="#d8d8d1" stroke-width="4"/>
+          <path d="M14 43a28 28 0 0 1 50-17" fill="none" stroke="#151515" stroke-width="4"/>
+          <path d="M63 26l7-3" fill="none" stroke="#0ead7b" stroke-width="4"/>
+          <circle cx="42" cy="43" r="2" fill="#151515"/>
+        </svg>
+      </div>
+      <div class="stat-footer">
+        <span>Revenue minus expenses</span>
+        <span>Show more <i class="bi bi-arrow-right"></i></span>
+      </div>
+    </a>
+  </section>
+
+  <section class="metric-grid">
+    <a href="{% url 'lead_list' %}" class="stat-card reveal" style="--d: 290ms;">
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Leads</div>
+          <div class="stat-value">{{ lead_count }}</div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 90 48" aria-hidden="true">
+          <polyline points="6,35 17,24 28,37 38,28 49,30 61,20 73,18 83,7"/>
+        </svg>
+      </div>
+      <div class="stat-footer">
+        <span>{{ source_stats|length }} tracked sources</span>
+        <span>Show more <i class="bi bi-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <a href="{% url 'client_list' %}" class="stat-card reveal" style="--d: 340ms;">
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Clients</div>
+          <div class="stat-value">{{ client_count }}</div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 90 48" aria-hidden="true">
+          <polyline points="5,21 17,28 25,18 37,31 49,25 59,38 70,35 77,12 86,18"/>
+        </svg>
+      </div>
+      <div class="stat-footer">
+        <span>Stored customer records</span>
+        <span>Show more <i class="bi bi-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <a href="{% url 'project_list' %}" class="stat-card reveal" style="--d: 390ms;">
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Projects</div>
+          <div class="stat-value">{{ project_count }}</div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 90 48" aria-hidden="true">
+          <polyline points="5,21 17,28 25,18 37,31 49,25 59,38 70,35 77,12 86,18"/>
+        </svg>
+      </div>
+      <div class="stat-footer">
+        <span>Active initiatives</span>
+        <span>Show more <i class="bi bi-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <a href="{% url 'employee_list' %}" class="stat-card reveal" style="--d: 440ms;">
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Team members</div>
+          <div class="stat-value">{{ employee_count }}</div>
+        </div>
+        <svg class="sparkline" viewBox="0 0 90 48" aria-hidden="true">
+          <polyline points="5,39 19,36 28,8 39,34 49,18 59,31 70,23 82,26 87,19"/>
+        </svg>
+      </div>
+      <div class="stat-footer">
+        <span>People on record</span>
+        <span>Show more <i class="bi bi-arrow-right"></i></span>
+      </div>
+    </a>
+  </section>
+
+  <section class="dashboard-grid">
+    <div class="dash-panel reveal" style="--d: 490ms;">
+      <div class="dash-panel-header">
+        <div>
+          <div class="panel-title">Total sales</div>
+          <div class="panel-value">{{ total_revenue|currency }}</div>
+        </div>
+        <div class="panel-actions">
+          <div class="legend"><span><i></i> Revenue</span><span><i class="muted-dot"></i> Expenses</span></div>
+          <form method="get" action="{% url 'dashboard' %}">
+            <select name="period" class="dash-select" aria-label="Trend range" onchange="this.form.submit()">
+              <option value="day" {% if request.GET.period == 'day' %}selected{% endif %}>Day</option>
+              <option value="week" {% if request.GET.period == 'week' %}selected{% endif %}>Week</option>
+              <option value="month" {% if request.GET.period == 'month' or not request.GET.period %}selected{% endif %}>Month</option>
+              <option value="year" {% if request.GET.period == 'year' %}selected{% endif %}>Year</option>
+            </select>
+          </form>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="earningsChart"></canvas>
+      </div>
     </div>
-    <div class="col-6 col-xl-3 reveal" style="--d: 240ms;">
-      <a href="{% url 'balance_report' %}" class="text-decoration-none">
-        <div class="stat-card is-violet">
-          <div class="stat-label">Net Balance</div>
-          <div class="stat-value">{{ net_balance|currency }}</div>
-          <div class="stat-meta {% if net_delta >= 0 %}up{% else %}down{% endif %}">
-            <i class="bi {% if net_delta >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i>
-            <span class="delta">{{ net_delta|signed }}%</span>
-            <span>from previous period</span>
-          </div>
-          <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
+
+    <div class="dash-panel reveal" style="--d: 540ms;">
+      <div class="dash-panel-header">
+        <div>
+          <div class="panel-title">Lead sources</div>
+          <div class="panel-value">{{ lead_count }} <span class="fs-6 text-muted fw-normal">leads</span></div>
         </div>
-      </a>
+        <div class="panel-actions">
+          <a href="{% url 'lead_list' %}" class="dash-mini-btn">View all</a>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="sourceChart"></canvas>
+      </div>
     </div>
   </section>
 
-  <section class="row g-3">
-    <div class="col-lg-8 reveal" style="--d: 290ms;">
-      <div class="metric-card h-100">
-        <div class="crm-card-header">
-          <span class="crm-card-title">Revenue & Expense Trend</span>
-          <span class="pill-soft"><i class="bi bi-calendar3"></i> Last 12 months</span>
+  <section class="dashboard-grid">
+    <div class="dash-panel reveal" style="--d: 590ms; grid-column: 1 / -1;">
+      <div class="dash-panel-header">
+        <div>
+          <div class="panel-title">Performance</div>
+          <div class="panel-value">{{ net_balance|currency }} <span class="fs-6 text-muted fw-normal">net position</span></div>
         </div>
-        <div class="card-body-pad chart-wrap">
-          <canvas id="earningsChart"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-4 reveal" style="--d: 340ms;">
-      <div class="metric-card h-100">
-        <div class="crm-card-header">
-          <span class="crm-card-title">Quick Metrics</span>
-          <span class="pill-soft"><i class="bi bi-activity"></i> Live</span>
-        </div>
-        <div class="card-body-pad d-flex flex-column gap-3">
-          <div class="mini-kpi">
-            <div>
-              <div class="kpi-label">Projects</div>
-              <div class="kpi-note">Active initiatives in the workspace</div>
-            </div>
-            <div class="kpi-side">
-              <div class="kpi-value">{{ project_count }}</div>
-            </div>
-          </div>
-          <div class="mini-kpi">
-            <div>
-              <div class="kpi-label">Clients</div>
-              <div class="kpi-note">Stored customer records</div>
-            </div>
-            <div class="kpi-side">
-              <div class="kpi-value">{{ client_count }}</div>
-            </div>
-          </div>
-          <div class="mini-kpi">
-            <div>
-              <div class="kpi-label">Leads</div>
-              <div class="kpi-note">Unconverted opportunities</div>
-            </div>
-            <div class="kpi-side">
-              <div class="kpi-value">{{ lead_count }}</div>
-            </div>
-          </div>
-          <div class="mini-kpi">
-            <div>
-              <div class="kpi-label">Employees</div>
-              <div class="kpi-note">Team members on record</div>
-            </div>
-            <div class="kpi-side">
-              <div class="kpi-value">{{ employee_count }}</div>
-            </div>
-          </div>
+        <div class="panel-actions">
+          <a href="{% url 'sales_report' %}" class="dash-mini-btn">Report</a>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section class="row g-3">
-    <div class="col-lg-8 reveal" style="--d: 390ms;">
-      <div class="metric-card h-100">
-        <div class="crm-card-header">
-          <span class="crm-card-title">Lead Source Breakdown</span>
-          <span class="pill-soft"><i class="bi bi-funnel"></i> Conversion funnel</span>
-        </div>
-        <div class="card-body-pad chart-wrap">
-          <canvas id="sourceChart"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-4 reveal" style="--d: 440ms;">
-      <div class="metric-card h-100">
-        <div class="crm-card-header">
-          <span class="crm-card-title">Monthly Earnings</span>
-          <span class="pill-soft"><i class="bi bi-currency-dollar"></i> Trend</span>
-        </div>
-        <div class="card-body-pad d-flex flex-column gap-3">
-          {% for point in monthly_points|slice:":3" %}
-          <div class="mini-kpi">
-            <div>
-              <div class="kpi-label">{{ point.label }}</div>
-              <div class="kpi-note">Revenue for the month</div>
-            </div>
-            <div class="kpi-side">
-              <div class="kpi-value">{{ point.revenue|currency }}</div>
-            </div>
+      <div class="mini-kpi-grid">
+        <div class="mini-kpi">
+          <div>
+            <div class="kpi-label">Payments received</div>
+            <div class="kpi-note">Total payment records</div>
           </div>
-          {% empty %}
-          <div class="text-center text-muted py-5">Not enough data yet.</div>
-          {% endfor %}
+          <div class="kpi-value">{{ payment_count }}</div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="row g-3">
-    <div class="col-lg-8 reveal" style="--d: 490ms;">
-      <div class="metric-card h-100">
-        <div class="crm-card-header">
-          <span class="crm-card-title">Latest Transactions</span>
-          <a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        <div class="mini-kpi">
+          <div>
+            <div class="kpi-label">Tasks</div>
+            <div class="kpi-note">Across all projects</div>
+          </div>
+          <div class="kpi-value">{{ task_count }}</div>
         </div>
-        <div class="table-responsive">
-          <table class="table activity-table table-hover mb-0">
-            <thead>
-              <tr>
-                <th>Client</th>
-                <th>Invoice</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Method</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in latest_payments %}
-              <tr>
-                <td>{{ p.client.name|default:"—" }}</td>
-                <td>{% if p.invoice %}{{ p.invoice.code }}{% else %}—{% endif %}</td>
-                <td class="fw-semibold text-success">{{ p.amount|currency }}</td>
-                <td class="text-muted">{{ p.payment_date }}</td>
-                <td><span class="badge bg-light text-dark border">{{ p.get_method_display }}</span></td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="5" class="text-center text-muted py-4">No payments yet.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <div class="mini-kpi">
+          <div>
+            <div class="kpi-label">Orders</div>
+            <div class="kpi-note">Total orders logged</div>
+          </div>
+          <div class="kpi-value">{{ order_count }}</div>
         </div>
-      </div>
-    </div>
-    <div class="col-lg-4 reveal" style="--d: 540ms;">
-      <div class="metric-card h-100">
-        <div class="crm-card-header">
-          <span class="crm-card-title">Recent Invoices</span>
-          <a href="{% url 'invoice_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
-        </div>
-        <div class="table-responsive">
-          <table class="table activity-table table-hover mb-0">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Client</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for inv in latest_invoices %}
-              <tr>
-                <td class="fw-semibold text-primary">{{ inv.code }}</td>
-                <td>{{ inv.client.name|default:inv.bill_to_name|default:"—" }}</td>
-                <td>
-                  {% if inv.status == 'paid' %}<span class="badge bg-success">Paid</span>
-                  {% elif inv.status == 'overdue' %}<span class="badge bg-danger">Overdue</span>
-                  {% elif inv.status == 'sent' %}<span class="badge bg-primary">Sent</span>
-                  {% else %}<span class="badge bg-secondary">Draft</span>{% endif %}
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="3" class="text-center text-muted py-4">No invoices yet.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <div class="mini-kpi">
+          <div>
+            <div class="kpi-label">Clients</div>
+            <div class="kpi-note">Stored customer records</div>
+          </div>
+          <div class="kpi-value">{{ client_count }}</div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="row g-3">
-    <div class="col-lg-6 reveal" style="--d: 590ms;">
-      <div class="metric-card h-100">
-        <div class="crm-card-header">
-          <span class="crm-card-title">Recent Tasks</span>
-          <a href="{% url 'task_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
-        </div>
-        <div class="table-responsive">
-          <table class="table activity-table table-hover mb-0">
-            <thead><tr><th>Task</th><th>Due</th><th>Priority</th></tr></thead>
-            <tbody>
-              {% for t in recent_tasks %}
-              <tr>
-                <td class="fw-medium">{{ t.title }}</td>
-                <td class="text-muted">{{ t.due_date|default:"—" }}</td>
-                <td>
-                  {% if t.priority == 'high' %}<span class="badge bg-danger">High</span>
-                  {% elif t.priority == 'medium' %}<span class="badge bg-warning text-dark">Medium</span>
-                  {% else %}<span class="badge bg-secondary">Low</span>{% endif %}
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="3" class="text-center text-muted py-4">No tasks yet.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <section class="dashboard-grid table-panel">
+    <div class="dash-panel reveal" style="--d: 690ms;">
+      <div class="dash-panel-header">
+        <div class="panel-title">Latest transactions</div>
+        <a href="{% url 'payment_list' %}" class="dash-mini-btn">View all</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table dash-table table-hover">
+          <thead><tr><th>Client</th><th>Invoice</th><th>Amount</th><th>Date</th><th>Method</th></tr></thead>
+          <tbody>
+            {% for p in latest_payments %}
+            <tr>
+              <td>{{ p.client.name|default:"-" }}</td>
+              <td>{% if p.invoice %}{{ p.invoice.code }}{% else %}-{% endif %}</td>
+              <td class="fw-semibold">{{ p.amount|currency }}</td>
+              <td class="text-muted">{{ p.payment_date }}</td>
+              <td><span class="badge badge-mono">{{ p.get_method_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No payments yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="col-lg-6 reveal" style="--d: 640ms;">
-      <div class="metric-card h-100">
-        <div class="crm-card-header">
-          <span class="crm-card-title">Recent Projects</span>
-          <a href="{% url 'project_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
-        </div>
-        <div class="table-responsive">
-          <table class="table activity-table table-hover mb-0">
-            <thead><tr><th>Project</th><th>End Date</th><th>Status</th></tr></thead>
-            <tbody>
-              {% for p in recent_projects %}
-              <tr>
-                <td class="fw-medium">{{ p.name }}</td>
-                <td class="text-muted">{{ p.end_date|default:"—" }}</td>
-                <td>
-                  {% if p.status == 'completed' %}<span class="badge bg-success">Done</span>
-                  {% elif p.status == 'in_progress' %}<span class="badge bg-primary">Active</span>
-                  {% elif p.status == 'on_hold' %}<span class="badge bg-warning text-dark">Hold</span>
-                  {% else %}<span class="badge bg-secondary">Not Started</span>{% endif %}
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="3" class="text-center text-muted py-4">No projects yet.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+
+    <div class="dash-panel reveal" style="--d: 740ms;">
+      <div class="dash-panel-header">
+        <div class="panel-title">Recent invoices</div>
+        <a href="{% url 'invoice_list' %}" class="dash-mini-btn">View all</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table dash-table table-hover">
+          <thead><tr><th>Code</th><th>Client</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for inv in latest_invoices %}
+            <tr>
+              <td><a class="row-title" href="{% url 'invoice_detail' inv.pk %}">{{ inv.code }}</a></td>
+              <td>{{ inv.client.name|default:inv.bill_to_name|default:"-" }}</td>
+              <td>
+                {% if inv.status == 'paid' %}<span class="badge badge-mono ok">Paid</span>
+                {% elif inv.status == 'overdue' %}<span class="badge badge-mono bad">Overdue</span>
+                {% elif inv.status == 'sent' %}<span class="badge badge-mono warn">Sent</span>
+                {% else %}<span class="badge badge-mono">Draft</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-4">No invoices yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="dashboard-grid">
+    <div class="dash-panel reveal" style="--d: 790ms;">
+      <div class="dash-panel-header">
+        <div class="panel-title">Recent tasks</div>
+        <a href="{% url 'task_list' %}" class="dash-mini-btn">View all</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table dash-table table-hover">
+          <thead><tr><th>Task</th><th>Due</th><th>Priority</th></tr></thead>
+          <tbody>
+            {% for t in recent_tasks %}
+            <tr>
+              <td><a class="row-title" href="{% url 'task_detail' t.pk %}">{{ t.title }}</a></td>
+              <td class="text-muted">{{ t.due_date|default:"-" }}</td>
+              <td>
+                {% if t.priority == 'high' %}<span class="badge badge-mono bad">High</span>
+                {% elif t.priority == 'medium' %}<span class="badge badge-mono warn">Medium</span>
+                {% else %}<span class="badge badge-mono">Low</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-4">No tasks yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dash-panel reveal" style="--d: 840ms;">
+      <div class="dash-panel-header">
+        <div class="panel-title">Recent projects</div>
+        <a href="{% url 'project_list' %}" class="dash-mini-btn">View all</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table dash-table table-hover">
+          <thead><tr><th>Project</th><th>End date</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for p in recent_projects %}
+            <tr>
+              <td><a class="row-title" href="{% url 'project_detail' p.pk %}">{{ p.name }}</a></td>
+              <td class="text-muted">{{ p.end_date|default:"-" }}</td>
+              <td>
+                {% if p.status == 'completed' %}<span class="badge badge-mono ok">Done</span>
+                {% elif p.status == 'in_progress' %}<span class="badge badge-mono warn">Active</span>
+                {% elif p.status == 'on_hold' %}<span class="badge badge-mono">Hold</span>
+                {% else %}<span class="badge badge-mono">Not started</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-4">No projects yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
@@ -571,6 +846,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const revenueValues = monthlyData.map(item => item.revenue);
   const expenseValues = monthlyData.map(item => item.expense);
 
+  const font = {
+    family: "'Inter', 'Segoe UI', system-ui, sans-serif",
+    size: 11,
+  };
+
   const earningsCtx = document.getElementById('earningsChart');
   if (earningsCtx) {
     new Chart(earningsCtx, {
@@ -578,35 +858,57 @@ document.addEventListener('DOMContentLoaded', function() {
         labels: monthLabels,
         datasets: [
           {
-            type: 'bar',
+            type: 'line',
             label: 'Revenue',
             data: revenueValues,
-            backgroundColor: 'rgba(59, 130, 246, 0.85)',
-            borderRadius: 10,
-            barPercentage: 0.6,
-            categoryPercentage: 0.68,
+            borderColor: '#151515',
+            backgroundColor: '#151515',
+            borderWidth: 1.6,
+            tension: 0.28,
+            pointRadius: 0,
+            pointHoverRadius: 4,
           },
           {
             type: 'line',
             label: 'Expenses',
             data: expenseValues,
-            borderColor: '#10b981',
-            backgroundColor: '#10b981',
-            tension: 0.38,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            borderColor: '#a8a8a0',
+            backgroundColor: '#a8a8a0',
+            borderWidth: 1.2,
+            tension: 0.28,
+            pointRadius: 0,
+            pointHoverRadius: 4,
           },
         ]
       },
       options: {
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        animation: {
+          duration: 1400,
+          easing: 'easeInOutQuart',
+        },
         plugins: {
-          legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 10 } },
-          tooltip: { mode: 'index', intersect: false }
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#151515',
+            borderColor: '#151515',
+            titleFont: font,
+            bodyFont: font,
+          }
         },
         scales: {
-          x: { grid: { display: false } },
-          y: { beginAtZero: true, grid: { color: '#edf2f7' } }
+          x: {
+            border: { display: false },
+            grid: { color: '#eeeeea', drawTicks: false },
+            ticks: { color: '#8a8a84', font: font, maxRotation: 0 },
+          },
+          y: {
+            beginAtZero: true,
+            border: { display: false },
+            grid: { color: '#e7e7e1', borderDash: [2, 4] },
+            ticks: { color: '#8a8a84', font: font },
+          }
         }
       }
     });
@@ -617,20 +919,46 @@ document.addEventListener('DOMContentLoaded', function() {
   const sourceCtx = document.getElementById('sourceChart');
   if (sourceCtx) {
     new Chart(sourceCtx, {
-      type: 'doughnut',
+      type: 'bar',
       data: {
         labels: sourceLabels,
-        datasets: [{
-          data: sourceValues,
-          backgroundColor: ['#4f8df7', '#10b981', '#f59e0b', '#8b5cf6', '#f43f5e', '#0ea5e9'],
-          borderWidth: 0,
-        }]
+        datasets: [
+          {
+            label: 'Leads',
+            data: sourceValues,
+            backgroundColor: '#4d4d48',
+            borderRadius: 0,
+            barPercentage: 0.46,
+            categoryPercentage: 0.64,
+          }
+        ]
       },
       options: {
         maintainAspectRatio: false,
-        cutout: '70%',
+        animation: {
+          duration: 1000,
+          easing: 'easeOutQuart',
+        },
         plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true } }
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#151515',
+            titleFont: font,
+            bodyFont: font,
+          }
+        },
+        scales: {
+          x: {
+            border: { display: false },
+            grid: { display: false },
+            ticks: { color: '#8a8a84', font: font },
+          },
+          y: {
+            beginAtZero: true,
+            border: { display: false },
+            grid: { color: '#e7e7e1', borderDash: [2, 4] },
+            ticks: { color: '#8a8a84', font: font },
+          }
         }
       }
     });
