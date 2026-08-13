@@ -14,9 +14,12 @@ from clients.models import Client
 from leads.models import LeadContact
 
 from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm, TransferForm
-from .models import AccountCategory, AccountType, BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer
+from .models import (AccountCategory, AccountType, BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer,
+                     METHOD_CHOICES)
 from orders.models import Order, OrderItem
 from datetime import date
+
+MOBILE_METHODS = {'bkash', 'nagad', 'rocket', 'upay'}
 
 
 def _client_suggestions():
@@ -29,6 +32,85 @@ def _client_suggestions():
         if lead.name not in seen:
             data.append({'pk': None, 'name': lead.name, 'phone': lead.phone or '', 'address': lead.address or ''})
             seen.add(lead.name)
+    return data
+
+
+def _parse_payment_rows(request, invoice_code):
+    """Parse dynamic payment rows from the invoice form into a list of dicts."""
+    rows = []
+    try:
+        count = int(request.POST.get('payments-TOTAL_FORMS', 0))
+    except (TypeError, ValueError):
+        count = 0
+    for i in range(count):
+        p = f'payments-{i}-'
+        method = request.POST.get(p + 'method', '').strip().lower()
+        amount_str = request.POST.get(p + 'amount', '').strip()
+        if not method and not amount_str:
+            continue
+        try:
+            amount = Decimal(amount_str or 0)
+        except Exception:
+            amount = Decimal('0')
+        if amount is not None and amount <= 0:
+            continue
+
+        account = None
+        account_pk = request.POST.get(p + 'account_pk', '').strip()
+        if account_pk:
+            account = BankAccount.objects.filter(pk=account_pk).first()
+
+        mobile_number = request.POST.get(p + 'mobile_number', '').strip()
+        mobile_holder = request.POST.get(p + 'mobile_holder', '').strip()
+        if method in MOBILE_METHODS and mobile_number and not account:
+            category = AccountCategory.objects.filter(name__iexact=method).first()
+            if not category:
+                category, _ = AccountCategory.objects.get_or_create(
+                    name=method.capitalize(), account_type='mobile',
+                )
+            account, _ = BankAccount.objects.get_or_create(
+                account_category=category, mobile_number=mobile_number,
+                defaults={'holder_name': mobile_holder, 'mobile_provider': method, 'is_active': True},
+            )
+            if mobile_holder and account.holder_name != mobile_holder:
+                account.holder_name = mobile_holder
+                account.save()
+
+        pid = request.POST.get(p + 'id', '').strip()
+        reference = request.POST.get(p + 'reference', '').strip() or f'Invoice {invoice_code}'
+        rows.append({
+            'id': pid,
+            'method': method,
+            'amount': amount,
+            'account': account,
+            'reference': reference,
+        })
+    return rows
+
+
+def _serialize_payments(invoice):
+    data = []
+    for pay in invoice.payments.all():
+        account = None
+        if pay.account:
+            cat = pay.account.account_category
+            account = {
+                'pk': pay.account.pk,
+                'category_name': cat.name if cat else '',
+                'category_type': cat.account_type if cat else '',
+                'bank_name': pay.account.bank_name,
+                'account_number': pay.account.account_number,
+                'mobile_number': pay.account.mobile_number,
+                'mobile_holder': pay.account.holder_name,
+                'holder_name': pay.account.holder_name,
+            }
+        data.append({
+            'id': pay.pk,
+            'method': pay.method,
+            'amount': str(pay.amount),
+            'reference': pay.reference,
+            'account': account,
+        })
     return data
 
 
@@ -184,39 +266,12 @@ def invoice_create(request):
             after_discount = item_total - (item_total * (obj.discount or 0) / 100)
             obj.total = after_discount + (after_discount * (obj.tax or 0) / 100) + (obj.shipping or 0)
             obj.save(update_fields=['total'])
-            amount_paid = form.cleaned_data.get('amount_paid') or 0
-            if float(amount_paid) > 0:
-                method = request.POST.get('payment_method', '') or 'cash'
-                account_pk = request.POST.get('payment_bank_account', '') or request.POST.get('payment_cash_account', '')
-                account = BankAccount.objects.filter(pk=account_pk).first() if account_pk else None
-                mobile_number = request.POST.get('payment_mobile_number', '').strip()
-                mobile_holder = request.POST.get('payment_mobile_holder', '').strip()
-                if method in ('bkash', 'nagad', 'rocket') and mobile_number and not account:
-                    category = AccountCategory.objects.filter(name__iexact=method).first()
-                    if not category:
-                        category, _ = AccountCategory.objects.get_or_create(
-                            name=method.capitalize(), account_type='mobile',
-                        )
-                    account, _ = BankAccount.objects.get_or_create(
-                        account_category=category, mobile_number=mobile_number,
-                        defaults={'holder_name': mobile_holder, 'mobile_provider': method, 'is_active': True},
-                    )
-                    if mobile_holder and account.holder_name != mobile_holder:
-                        account.holder_name = mobile_holder
-                        account.save()
-                elif method in ('bkash', 'nagad', 'rocket') and mobile_number and account:
-                    if account.mobile_number != mobile_number:
-                        account.mobile_number = mobile_number
-                    if mobile_holder and account.holder_name != mobile_holder:
-                        account.holder_name = mobile_holder
-                    account.save()
-                ref = request.POST.get('payment_reference', '').strip() or f'Invoice {obj.code}'
+            for row in _parse_payment_rows(request, obj.code):
                 Payment.objects.create(
-                    invoice=obj, client=obj.client, amount=amount_paid,
-                    payment_date=date.today(),
-                    method=method,
-                    account=account,
-                    reference=ref, created_by=request.user,
+                    invoice=obj, client=obj.client, amount=row['amount'],
+                    payment_date=date.today(), method=row['method'],
+                    account=row['account'], reference=row['reference'],
+                    created_by=request.user,
                 )
             _update_invoice_paid_status(obj)
             log_action(request, 'create', 'Invoice', obj, description=f'{obj.code} — Total: {obj.total}')
@@ -247,7 +302,8 @@ def invoice_create(request):
     return render(request, 'accounts/invoice_form.html', {
         'form': form, 'formset': formset, 'action': 'Create',
         'invoice': form.instance, 'clients': clients, 'banks': banks,
-        'categories': categories,
+        'categories': categories, 'method_choices': METHOD_CHOICES,
+        'existing_payments_json': json.dumps([]),
     })
 
 
@@ -279,53 +335,33 @@ def invoice_edit(request, pk):
             after_discount = item_total - (item_total * (obj.discount or 0) / 100)
             obj.total = after_discount + (after_discount * (obj.tax or 0) / 100) + (obj.shipping or 0)
             obj.save(update_fields=['total'])
-            new_amount = Decimal(form.cleaned_data.get('amount_paid') or 0)
-            current_paid = obj.payments.aggregate(s=Sum('amount'))['s'] or Decimal('0')
-            diff = new_amount - current_paid
-            if diff > 0:
-                method = request.POST.get('payment_method', '') or 'cash'
-                account_pk = request.POST.get('payment_bank_account', '') or request.POST.get('payment_cash_account', '')
-                account = BankAccount.objects.filter(pk=account_pk).first() if account_pk else None
-                mobile_number = request.POST.get('payment_mobile_number', '').strip()
-                mobile_holder = request.POST.get('payment_mobile_holder', '').strip()
-                if method in ('bkash', 'nagad', 'rocket') and mobile_number and not account:
-                    category = AccountCategory.objects.filter(name__iexact=method).first()
-                    if not category:
-                        category, _ = AccountCategory.objects.get_or_create(
-                            name=method.capitalize(), account_type='mobile',
-                        )
-                    account, _ = BankAccount.objects.get_or_create(
-                        account_category=category, mobile_number=mobile_number,
-                        defaults={'holder_name': mobile_holder, 'mobile_provider': method, 'is_active': True},
+            rows = _parse_payment_rows(request, obj.code)
+            existing = {p.pk: p for p in obj.payments.all()}
+            submitted = []
+            for row in rows:
+                try:
+                    pid = int(row['id']) if row['id'] else None
+                except ValueError:
+                    pid = None
+                if pid and pid in existing:
+                    p = existing[pid]
+                    p.method = row['method']
+                    p.amount = row['amount']
+                    p.account = row['account']
+                    p.reference = row['reference']
+                    p.save()
+                    submitted.append(pid)
+                else:
+                    p = Payment.objects.create(
+                        invoice=obj, client=obj.client, amount=row['amount'],
+                        payment_date=date.today(), method=row['method'],
+                        account=row['account'], reference=row['reference'],
+                        created_by=request.user,
                     )
-                    if mobile_holder and account.holder_name != mobile_holder:
-                        account.holder_name = mobile_holder
-                        account.save()
-                elif method in ('bkash', 'nagad', 'rocket') and mobile_number and account:
-                    if account.mobile_number != mobile_number:
-                        account.mobile_number = mobile_number
-                    if mobile_holder and account.holder_name != mobile_holder:
-                        account.holder_name = mobile_holder
-                    account.save()
-                ref = request.POST.get('payment_reference', '').strip() or f'Invoice {obj.code}'
-                Payment.objects.create(
-                    invoice=obj, client=obj.client, amount=diff,
-                    payment_date=date.today(),
-                    method=method,
-                    account=account,
-                    reference=ref, created_by=request.user,
-                )
-            elif diff < 0:
-                for p in obj.payments.order_by('-created_at'):
-                    if diff >= 0:
-                        break
-                    if p.amount <= abs(diff):
-                        diff += p.amount
-                        p.delete()
-                    else:
-                        p.amount += diff
-                        p.save()
-                        diff = 0
+                    submitted.append(p.pk)
+            for pk, p in existing.items():
+                if pk not in submitted:
+                    p.delete()
             _update_invoice_paid_status(obj)
             Order.objects.filter(notes__contains=obj.code).update(delivery_date=obj.delivery_date)
             log_action(request, 'update', 'Invoice', obj, description=f'{obj.code} — Total: {obj.total}')
@@ -341,7 +377,8 @@ def invoice_edit(request, pk):
     return render(request, 'accounts/invoice_form.html', {
         'form': form, 'formset': formset, 'action': 'Edit',
         'invoice': obj, 'clients': clients, 'banks': banks,
-        'categories': categories,
+        'categories': categories, 'method_choices': METHOD_CHOICES,
+        'existing_payments_json': json.dumps(_serialize_payments(obj)),
     })
 
 
@@ -829,12 +866,19 @@ def bank_account_detail(request, pk):
         return redirect('bank_account_detail', pk=pk)
     total_payments = obj.payments.aggregate(s=Sum('amount'))['s'] or 0
     total_expenses = obj.expenses.aggregate(s=Sum('amount'))['s'] or 0
+    transactions = []
+    for p in obj.payments.all():
+        transactions.append({'date': p.created_at, 'kind': 'payment', 'label': p.reference or 'Payment', 'detail': p.invoice.code if p.invoice else '', 'amount': p.amount})
+    for e in obj.expenses.all():
+        transactions.append({'date': e.created_at, 'kind': 'expense', 'label': e.title, 'detail': '', 'amount': e.amount})
+    transactions.sort(key=lambda t: t['date'], reverse=True)
     categories = AccountCategory.objects.filter(is_active=True)
     return render(request, 'accounts/bank_account_detail.html', {
         'account': obj,
         'total_payments': total_payments,
         'total_expenses': total_expenses,
         'categories': categories,
+        'transactions': transactions,
     })
 
 
@@ -931,13 +975,14 @@ def invoice_pdf(request, pk):
     total_with_tax = after_discount + tax_amount + shipping
     total_paid = invoice.payments.aggregate(s=Sum('amount'))['s'] or 0
     balance_due = total_with_tax - float(total_paid)
+    payments = invoice.payments.all()
     logo_path = settings.MEDIA_ROOT / 'invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg'
     html_string = render_to_string('accounts/invoice_pdf.html', {
         'invoice': invoice, 'items': items,
         'subtotal': subtotal, 'discount_amount': discount_amount,
         'tax_amount': tax_amount, 'total_with_tax': total_with_tax,
         'total_paid': total_paid, 'balance_due': balance_due,
-        'shipping': shipping, 'logo_path': logo_path,
+        'shipping': shipping, 'logo_path': logo_path, 'payments': payments,
     }, request=request)
     pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
     response = HttpResponse(pdf, content_type='application/pdf')

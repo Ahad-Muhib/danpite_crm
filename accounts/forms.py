@@ -41,7 +41,7 @@ class InvoiceForm(forms.ModelForm):
             max_digits=12, decimal_places=2, required=False, initial=0,
             widget=forms.NumberInput(attrs={
                 'class': 'form-control', 'id': 'id_amount_paid',
-                'min': '0', 'step': '0.01',
+                'min': '0', 'step': '0.01', 'readonly': 'readonly',
             }),
             label='Amount Paid',
         )

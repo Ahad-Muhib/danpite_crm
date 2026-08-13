@@ -41,6 +41,8 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
 .sum-row input:focus{outline:none;border-color:#0d6efd}
 .total{border-top:2px solid var(--line);font-size:17px;font-weight:700;padding-top:6px;margin-top:5px}
 .money{padding:7px 8px}
+#id_amount_paid{display:none}
+.add-pay-btn:hover,.add-pay-btn:focus{background:var(--soft);border-color:var(--line);color:var(--dash-text,#111827);outline:none;box-shadow:none}
 @media(max-width:760px){
   .top,.parties,.bottom{grid-template-columns:1fr;gap:22px}
   .title{text-align:left}.number{justify-content:flex-start}
@@ -134,123 +136,22 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
         <div class="sum-row"><span>Tax (%)</span>{{ form.tax }}</div>
         <div class="sum-row"><span>Shipping</span>{{ form.shipping }}</div>
         <div class="sum-row total"><span>Total</span><span id="total" class="money">৳0.00</span></div>
-        <div class="sum-row"><span>Amount Paid</span>{{ form.amount_paid }}</div>
+        <div class="sum-row"><span>Amount Paid</span><span id="amount-paid-display" class="money">৳0.00</span>{{ form.amount_paid }}</div>
       </div>
     </section>
 
-    <!-- Payment Details Box -->
+    <!-- Payment Details Box (multiple payment methods) -->
     <section class="bottom" style="margin-top:20px;border-top:1px solid var(--line);padding-top:20px;">
       <div>
-        <div class="label" style="margin-bottom:8px;">Payment Details</div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-medium" style="font-size:12px;">Method</label>
-            <select name="payment_method" id="payment-method" class="form-select form-select-sm">
-              <option value="">-- Select Method --</option>
-              <option value="cash">Cash</option>
-              <option value="bank">Bank</option>
-              <option value="bkash">bKash</option>
-              <option value="nagad">Nagad</option>
-              <option value="rocket">Rocket</option>
-              <option value="card">Card</option>
-              <option value="cheque">Cheque</option>
-              <option value="online">Online</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-medium" style="font-size:12px;">Amount</label>
-            <input type="number" name="payment_amount" id="payment-amount" class="form-control form-control-sm" step="0.01" min="0" style="background:#f9fafb;">
-          </div>
-          <!-- Bank Account (bank) -->
-          <div class="col-12" id="payment-bank-section" style="display:none;">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-medium" style="font-size:12px;">Select Bank</label>
-                <select name="payment_bank_name" id="payment-bank-name" class="form-select form-select-sm">
-                  <option value="">-- Select Bank --</option>
-                  {% for bank in banks %}
-                  <option value="{{ bank }}">{{ bank }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-6" style="position:relative;">
-                <label class="form-label fw-medium" style="font-size:12px;">Account Number</label>
-                <input type="text" id="payment-account-number" class="form-control form-control-sm" placeholder="Type account number..." autocomplete="off">
-                <input type="hidden" name="payment_bank_account" id="payment-bank-account-pk">
-                <div id="acct-dropdown" class="acct-dropdown" style="display:none;"></div>
-              </div>
-            </div>
-            <div id="bank-account-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
-              <div style="font-size:13px;font-weight:600;" id="bank-info-name"></div>
-              <div style="font-size:12px;color:#374151;"><span id="bank-info-holder"></span> · <span id="bank-info-type"></span></div>
-              <div style="font-size:12px;color:#6b7280;" id="bank-info-number"></div>
-            </div>
-          </div>
-          <!-- Mobile Account (bkash/nagad/rocket) -->
-          <div class="col-12" id="payment-mobile-section" style="display:none;">
-            <div class="row g-3">
-              <div class="col-md-6" style="position:relative;">
-                <label class="form-label fw-medium" style="font-size:12px;">Account Number</label>
-                <input type="text" name="payment_mobile_number" id="payment-mobile-number" class="form-control form-control-sm" placeholder="Enter number..." autocomplete="off">
-                <div id="mobile-dropdown" class="acct-dropdown" style="display:none;"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-medium" style="font-size:12px;">Account Holder Name</label>
-                <input type="text" name="payment_mobile_holder" id="payment-mobile-holder" class="form-control form-control-sm" placeholder="Auto-filled on selection...">
-              </div>
-            </div>
-            <div id="mobile-account-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
-              <div style="font-size:13px;font-weight:600;" id="mobile-info-method"></div>
-              <div style="font-size:12px;color:#374151;" id="mobile-info-number"></div>
-              <div style="font-size:12px;color:#6b7280;" id="mobile-info-holder"></div>
-            </div>
-          </div>
-          <!-- Card -->
-          <div class="col-12" id="payment-card-section" style="display:none;">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label fw-medium" style="font-size:12px;">Card Number (last 4)</label>
-                <input type="text" name="payment_card_number" class="form-control form-control-sm" placeholder="Last 4 digits" maxlength="4">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-medium" style="font-size:12px;">Card Holder</label>
-                <input type="text" name="payment_card_holder" class="form-control form-control-sm" placeholder="Name on card">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-medium" style="font-size:12px;">Reference</label>
-                <input type="text" name="payment_reference" class="form-control form-control-sm" placeholder="Transaction ID / Ref">
-              </div>
-            </div>
-          </div>
-          <!-- Cash Account -->
-          <div class="col-12" id="payment-cash-section" style="display:none;">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-medium" style="font-size:12px;">Reference</label>
-                <input type="text" name="payment_reference" class="form-control form-control-sm" placeholder="Reference / Description">
-              </div>
-              <div class="col-md-6" style="position:relative;">
-                <label class="form-label fw-medium" style="font-size:12px;">Cash Account</label>
-                <input type="text" id="payment-cash-search" class="form-control form-control-sm" placeholder="Search by holder name..." autocomplete="off">
-                <input type="hidden" name="payment_cash_account" id="payment-cash-account-pk">
-                <div id="cash-dropdown" class="acct-dropdown" style="display:none;"></div>
-              </div>
-            </div>
-            <div id="cash-account-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
-              <div style="font-size:13px;font-weight:600;" id="cash-info-holder"></div>
-              <div style="font-size:12px;color:#6b7280;"><span id="cash-info-contact"></span></div>
-            </div>
-          </div>
-          <!-- Cheque / Online -->
-          <div class="col-12" id="payment-other-section" style="display:none;">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-medium" style="font-size:12px;">Reference</label>
-                <input type="text" name="payment_reference" class="form-control form-control-sm" placeholder="Reference / Description">
-              </div>
-            </div>
-          </div>
+        <div class="label" style="margin-bottom:8px;">Payment Details
+          <span class="text-muted" style="font-weight:400;font-size:12px;">— add one row per payment method</span>
         </div>
+        <input type="hidden" name="payments-TOTAL_FORMS" id="payments-TOTAL_FORMS" value="0">
+        <div id="payment-rows"></div>
+        <button type="button" id="addPaymentRowBtn" class="btn btn-sm add-pay-btn" style="border:1px dashed var(--line);color:var(--dash-text);margin-top:4px;">
+          <i class="bi bi-plus-lg"></i> Add Payment Method
+        </button>
+        <div class="form-text mt-2">Total paid = the sum of all payment rows. E.g. pay 2,000 via bKash and 5,000 in cash by adding two rows.</div>
       </div>
     </section>
 
@@ -280,6 +181,14 @@ function recalcRow(row){
   if(el) el.textContent = money(q*r);
 }
 
+function payTotal(){
+  let t = 0;
+  document.querySelectorAll('.pay-amount').forEach(function(inp){
+    t += parseFloat(inp.value)||0;
+  });
+  return t;
+}
+
 function calculate(){
   let subtotal=0;
   document.querySelectorAll('.item').forEach(row=>{
@@ -291,24 +200,20 @@ function calculate(){
   const discount = parseFloat(document.getElementById('id_discount')?.value)||0;
   const taxRate = parseFloat(document.getElementById('id_tax')?.value)||0;
   const shipping = parseFloat(document.getElementById('id_shipping')?.value)||0;
-  const paid = parseFloat(document.getElementById('id_amount_paid')?.value)||0;
+  const paid = payTotal();
   const taxable = Math.max(0, subtotal - discount);
   const total = taxable + (taxable * taxRate / 100) + shipping;
   const balance = total - paid;
   document.getElementById('subtotal').textContent = money(subtotal);
   document.getElementById('total').textContent = money(total);
   document.getElementById('balance').textContent = money(balance);
+  document.getElementById('amount-paid-display').textContent = money(paid);
   document.getElementById('id_total').value = total.toFixed(2);
+  const paidEl = document.getElementById('id_amount_paid');
+  if (paidEl) paidEl.value = paid.toFixed(2);
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-  // Direct amount paid -> payment amount sync
-  var amtPaid = document.getElementById('id_amount_paid');
-  var pmtAmt = document.getElementById('payment-amount');
-  function copyAmount() { if (pmtAmt) pmtAmt.value = amtPaid ? (amtPaid.value || '0') : '0'; }
-  if (amtPaid) { amtPaid.addEventListener('input', function(){ copyAmount(); calculate(); }); amtPaid.addEventListener('change', function(){ copyAmount(); calculate(); }); }
-  copyAmount();
-
   // Quill editor
   function makeQuill(selector, placeholder) {
     var q = new Quill(selector, {
@@ -463,251 +368,384 @@ document.addEventListener('DOMContentLoaded', function(){
     calculate();
   });
 
-  // Payment method toggle
-  document.getElementById('payment-method')?.addEventListener('change', function() {
-    var val = this.value;
-    ['payment-bank-section', 'payment-mobile-section', 'payment-card-section', 'payment-cash-section', 'payment-other-section'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-    if (val === 'bank') {
-      document.getElementById('payment-bank-section').style.display = 'block';
-    } else if (['bkash','nagad','rocket'].includes(val)) {
-      document.getElementById('payment-mobile-section').style.display = 'block';
-    } else if (val === 'card') {
-      document.getElementById('payment-card-section').style.display = 'block';
-    } else if (val === 'cash') {
-      document.getElementById('payment-cash-section').style.display = 'block';
-    } else if (['cheque','online'].includes(val)) {
-      document.getElementById('payment-other-section').style.display = 'block';
-    }
-    // auto-set payment amount
-    var a = document.getElementById('id_amount_paid');
-    var p = document.getElementById('payment-amount');
-    if (a && p) p.value = a.value || '0';
-  });
-
-  // Bank cascading autocomplete
-  var bankAccounts = [];
-  var acctInput = document.getElementById('payment-account-number');
-  var bankSelect = document.getElementById('payment-bank-name');
-  var acctDropdown = document.getElementById('acct-dropdown');
-  var acctPk = document.getElementById('payment-bank-account-pk');
-  var bankInfo = document.getElementById('bank-account-info');
-
-  function showAccountInfo(acct) {
-    if (!acct) {
-      bankInfo.style.display = 'none';
-      return;
-    }
-    document.getElementById('bank-info-name').textContent = acct.account_name;
-    document.getElementById('bank-info-holder').textContent = acct.bank_name;
-    document.getElementById('bank-info-type').textContent = 'Bank';
-    document.getElementById('bank-info-number').textContent = 'A/C: ' + acct.account_number + (acct.branch ? ' · ' + acct.branch : '');
-    bankInfo.style.display = 'block';
-  }
-
-  function closeDropdown() {
-    acctDropdown.style.display = 'none';
-  }
-
-  function renderDropdown(matches) {
-    if (!matches || !matches.length) { closeDropdown(); return; }
-    acctDropdown.innerHTML = '';
-    matches.forEach(function(a) {
-      var item = document.createElement('div');
-      item.className = 'acct-dropdown-item';
-      item.innerHTML = '<div class="acct-num">' + a.account_number + '</div><div class="acct-detail">' + a.account_name + ' · ' + a.bank_name + (a.branch ? ' · ' + a.branch : '') + '</div>';
-      item.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        acctInput.value = a.account_number;
-        acctPk.value = a.id;
-        showAccountInfo(a);
-        closeDropdown();
-      });
-      acctDropdown.appendChild(item);
-    });
-    acctDropdown.style.display = 'block';
-  }
-
-  bankSelect?.addEventListener('change', function() {
-    var bank = this.value;
-    acctInput.value = '';
-    acctPk.value = '';
-    bankInfo.style.display = 'none';
-    closeDropdown();
-    bankAccounts = [];
-    if (!bank) return;
-    fetch('/accounts/bank-accounts-by-bank/?bank_name=' + encodeURIComponent(bank))
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        bankAccounts = data.accounts;
-        // If there are accounts, show all initially in dropdown
-        if (bankAccounts.length) renderDropdown(bankAccounts);
-      });
-  });
-
-  acctInput?.addEventListener('input', function() {
-    var val = this.value.trim();
-    // Check for exact match first
-    var exact = bankAccounts.find(function(a) { return a.account_number === val; });
-    if (exact) {
-      acctPk.value = exact.id;
-      showAccountInfo(exact);
-      closeDropdown();
-      return;
-    }
-    acctPk.value = '';
-    bankInfo.style.display = 'none';
-    // Show matching accounts in dropdown
-    var fuzzy = val ? bankAccounts.filter(function(a) { return a.account_number.indexOf(val) !== -1; }) : bankAccounts;
-    renderDropdown(fuzzy);
-  });
-
-  acctInput?.addEventListener('blur', function() {
-    // Delay close so mousedown on item fires first
-    setTimeout(closeDropdown, 200);
-  });
-
-  // Mobile account dropdown
-  var mobileAccounts = [];
-  var mobileInput = document.getElementById('payment-mobile-number');
-  var mobileDropdown = document.getElementById('mobile-dropdown');
-  var mobileHolder = document.getElementById('payment-mobile-holder');
-  var mobileInfo = document.getElementById('mobile-account-info');
-
-  // Map method names to category pks
+  // ── Multiple payment methods ──────────────────
+  var METHOD_CHOICES = [
+    {% for v, l in method_choices %}{v: "{{ v|escapejs }}", l: "{{ l|escapejs }}"},{% endfor %}
+  ];
+  var BANKS = [
+    {% for b in banks %}"{{ b|escapejs }}",{% endfor %}
+  ];
+  var existingPayments = JSON.parse('{{ existing_payments_json|escapejs }}' || '[]');
   var METHOD_CATEGORY_MAP = {
     {% for c in categories %}
     "{{ c.name|lower }}": {{ c.pk }},
     {% endfor %}
   };
+  var paymentRowsEl = document.getElementById('payment-rows');
+  var paymentTotalForms = document.getElementById('payments-TOTAL_FORMS');
 
-  function fetchMobileAccounts(methodVal) {
-    var catPk = METHOD_CATEGORY_MAP[methodVal];
-    if (!catPk) { mobileAccounts = []; return; }
-    fetch('/accounts/bank-accounts-by-bank/?category=' + catPk)
-      .then(function(r) { return r.json(); })
-      .then(function(data) { mobileAccounts = data.accounts; });
-  }
+  function escJs(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-  function renderMobileDropdown(matches) {
-    if (!matches || !matches.length) { mobileDropdown.style.display = 'none'; return; }
-    mobileDropdown.innerHTML = '';
-    matches.forEach(function(a) {
-      var item = document.createElement('div');
-      item.className = 'acct-dropdown-item';
-      item.innerHTML = '<div class="acct-num">' + a.mobile_number + '</div><div class="acct-detail">' + (a.holder_name || '—') + '</div>';
-      item.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        mobileInput.value = a.mobile_number;
-        if (mobileHolder) mobileHolder.value = a.holder_name || '';
-        document.getElementById('mobile-info-method').textContent = a.category;
-        document.getElementById('mobile-info-number').textContent = 'Number: ' + a.mobile_number;
-        document.getElementById('mobile-info-holder').textContent = 'Name: ' + (a.holder_name || '—');
-        mobileInfo.style.display = 'block';
-        mobileDropdown.style.display = 'none';
-      });
-      mobileDropdown.appendChild(item);
+  function methodOptions(selected) {
+    var html = '<option value="">-- Method --</option>';
+    METHOD_CHOICES.forEach(function(m) {
+      html += '<option value="' + escJs(m.v) + '"' + (m.v === selected ? ' selected' : '') + '>' + escJs(m.l) + '</option>';
     });
-    mobileDropdown.style.display = 'block';
+    if (selected && !METHOD_CHOICES.some(function(m) { return m.v === selected; })) {
+      html += '<option value="' + escJs(selected) + '" selected>' + escJs(selected) + '</option>';
+    }
+    return html;
   }
 
-  document.getElementById('payment-method')?.addEventListener('change', function() {
-    var val = this.value;
-    if (['bkash','nagad','rocket'].includes(val)) {
-      fetchMobileAccounts(val);
-    } else {
-      mobileAccounts = [];
+  function bankOptions(selected) {
+    var html = '<option value="">-- Select Bank --</option>';
+    BANKS.forEach(function(b) {
+      html += '<option value="' + escJs(b) + '"' + (b === selected ? ' selected' : '') + '>' + escJs(b) + '</option>';
+    });
+    return html;
+  }
+
+  function paymentRowHtml(idx, data) {
+    data = data || {};
+    var acc = data.account || null;
+    var id = data.id != null ? data.id : '';
+    var method = data.method || '';
+    var amount = data.amount != null ? data.amount : '';
+    var reference = data.reference || '';
+    var bankName = acc && acc.bank_name ? acc.bank_name : '';
+    var acctNum = acc && acc.account_number ? acc.account_number : '';
+    var mobNum = acc && acc.mobile_number ? acc.mobile_number : '';
+    var mobHolder = acc && acc.mobile_holder ? acc.mobile_holder : '';
+    var cashHolder = acc && acc.holder_name ? acc.holder_name : '';
+    var cardNum = data.card_number || '';
+    var cardHolder = data.card_holder || '';
+    var accPk = acc ? acc.pk : '';
+
+    return '<div class="payment-row" style="border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:10px;background:#fff;">' +
+      '<input type="hidden" name="payments-' + idx + '-id" class="pay-id" value="' + id + '">' +
+      '<input type="hidden" name="payments-' + idx + '-account_pk" class="pay-account-pk" value="' + accPk + '">' +
+      '<div class="row g-2 align-items-center">' +
+        '<div class="col-md-3 col-12">' +
+          '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Method</label>' +
+          '<select name="payments-' + idx + '-method" class="form-select form-select-sm pay-method">' + methodOptions(method) + '</select>' +
+        '</div>' +
+        '<div class="col-md-2 col-6">' +
+          '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Amount</label>' +
+          '<input type="number" name="payments-' + idx + '-amount" class="form-control form-control-sm pay-amount" step="0.01" min="0" placeholder="0.00" value="' + escJs(amount) + '">' +
+        '</div>' +
+        '<div class="col-md-5 col-6">' +
+          '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Reference</label>' +
+          '<input type="text" name="payments-' + idx + '-reference" class="form-control form-control-sm pay-reference" placeholder="Transaction ID / Ref" value="' + escJs(reference) + '">' +
+        '</div>' +
+        '<div class="col-md-2 col-12 text-md-end text-start">' +
+          '<button type="button" class="btn btn-sm btn-outline-secondary pay-remove" title="Remove payment method"><i class="bi bi-trash"></i></button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pay-section pay-bank" style="display:none;margin-top:10px;background:var(--dash-soft);border:1px solid var(--dash-line);border-radius:6px;padding:10px;">' +
+        '<div class="row g-2">' +
+          '<div class="col-md-4">' +
+            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Select Bank</label>' +
+            '<select class="form-select form-select-sm pay-bank-name">' + bankOptions(bankName) + '</select>' +
+          '</div>' +
+          '<div class="col-md-8" style="position:relative;">' +
+            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Account Number</label>' +
+            '<input type="text" class="form-control form-control-sm pay-acct-number" placeholder="Type account number..." autocomplete="off" value="' + escJs(acctNum) + '">' +
+            '<div class="acct-dropdown pay-acct-dropdown" style="display:none;"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="pay-acct-info small text-muted" style="display:none;margin-top:6px;"></div>' +
+      '</div>' +
+      '<div class="pay-section pay-mobile" style="display:none;margin-top:10px;background:var(--dash-soft);border:1px solid var(--dash-line);border-radius:6px;padding:10px;">' +
+        '<div class="row g-2">' +
+          '<div class="col-md-5" style="position:relative;">' +
+            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Account Number</label>' +
+            '<input type="text" name="payments-' + idx + '-mobile_number" class="form-control form-control-sm pay-mobile-number" placeholder="Enter number..." autocomplete="off" value="' + escJs(mobNum) + '">' +
+            '<div class="acct-dropdown pay-mobile-dropdown" style="display:none;"></div>' +
+          '</div>' +
+          '<div class="col-md-4">' +
+            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Account Holder Name</label>' +
+            '<input type="text" name="payments-' + idx + '-mobile_holder" class="form-control form-control-sm pay-mobile-holder" placeholder="Auto-filled on selection..." value="' + escJs(mobHolder) + '">' +
+          '</div>' +
+          '<div class="col-md-3 d-flex align-items-end"><div class="pay-mobile-info small text-muted" style="display:none;"></div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pay-section pay-cash" style="display:none;margin-top:10px;background:var(--dash-soft);border:1px solid var(--dash-line);border-radius:6px;padding:10px;">' +
+        '<div class="row g-2">' +
+          '<div class="col-md-6" style="position:relative;">' +
+            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Cash Holder Name</label>' +
+            '<input type="text" class="form-control form-control-sm pay-cash-holder" placeholder="Search by holder name..." autocomplete="off" value="' + escJs(cashHolder) + '">' +
+            '<div class="acct-dropdown pay-cash-dropdown" style="display:none;"></div>' +
+          '</div>' +
+          '<div class="col-md-6 d-flex align-items-end"><div class="pay-cash-info small text-muted" style="display:none;"></div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pay-section pay-card" style="display:none;margin-top:10px;background:var(--dash-soft);border:1px solid var(--dash-line);border-radius:6px;padding:10px;">' +
+        '<div class="row g-2">' +
+          '<div class="col-md-6">' +
+            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Card Number (last 4)</label>' +
+            '<input type="text" name="payments-' + idx + '-card_number" class="form-control form-control-sm" placeholder="Last 4 digits" maxlength="4" value="' + escJs(cardNum) + '">' +
+          '</div>' +
+          '<div class="col-md-6">' +
+            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Card Holder</label>' +
+            '<input type="text" name="payments-' + idx + '-card_holder" class="form-control form-control-sm" placeholder="Name on card" value="' + escJs(cardHolder) + '">' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function reindexPaymentRows() {
+    var rows = paymentRowsEl.querySelectorAll('.payment-row');
+    rows.forEach(function(row, i) {
+      var p = 'payments-' + i + '-';
+      row.querySelectorAll('input, select').forEach(function(el) {
+        if (el.name && el.name.indexOf('payments-') === 0) {
+          el.name = p + el.name.replace(/^payments-\d+-/, '');
+        }
+      });
+    });
+    if (paymentTotalForms) paymentTotalForms.value = rows.length;
+  }
+
+  function togglePaySections(row, method) {
+    row.querySelectorAll('.pay-section').forEach(function(s) { s.style.display = 'none'; });
+    var map = {bank: 'pay-bank', bkash: 'pay-mobile', nagad: 'pay-mobile', rocket: 'pay-mobile', upay: 'pay-mobile', card: 'pay-card', cash: 'pay-cash'};
+    var cls = map[method];
+    if (cls) {
+      var sec = row.querySelector('.' + cls);
+      if (sec) sec.style.display = 'block';
+    }
+    if (!['bank', 'bkash', 'nagad', 'rocket', 'upay', 'cash'].includes(method)) {
+      var pk = row.querySelector('.pay-account-pk');
+      if (pk) pk.value = '';
+    }
+  }
+
+  function setupPaymentRow(row, data) {
+    var method = row.querySelector('.pay-method').value;
+    togglePaySections(row, method);
+    if (data && data.account) {
+      var catType = data.account.category_type;
+      if (catType === 'bank') {
+        var info = row.querySelector('.pay-acct-info');
+        if (info) { info.textContent = 'A/C: ' + (data.account.account_number || '') + (data.account.bank_name ? ' · ' + data.account.bank_name : ''); info.style.display = 'block'; }
+      } else if (catType === 'mobile') {
+        var minfo = row.querySelector('.pay-mobile-info');
+        if (minfo) { minfo.textContent = (data.account.category_name || method) + ' · ' + (data.account.mobile_holder || '—'); minfo.style.display = 'block'; }
+      } else if (catType === 'cash') {
+        var cinfo = row.querySelector('.pay-cash-info');
+        if (cinfo) { cinfo.textContent = data.account.holder_name || '—'; cinfo.style.display = 'block'; }
+      }
+    }
+  }
+
+  function wireBank(row) {
+    var nameSel = row.querySelector('.pay-bank-name');
+    var acctInput = row.querySelector('.pay-acct-number');
+    var dropdown = row.querySelector('.pay-acct-dropdown');
+    var pk = row.querySelector('.pay-account-pk');
+    var info = row.querySelector('.pay-acct-info');
+    var cache = [];
+    function showInfo(a) {
+      if (!a) { if (info) info.style.display = 'none'; return; }
+      info.textContent = a.account_name + ' · ' + a.bank_name + (a.branch ? ' · ' + a.branch : '') + '  [A/C: ' + a.account_number + ']';
+      info.style.display = 'block';
+    }
+    function close() { dropdown.style.display = 'none'; }
+    function render(matches) {
+      if (!matches || !matches.length) { close(); return; }
+      dropdown.innerHTML = '';
+      matches.forEach(function(a) {
+        var item = document.createElement('div');
+        item.className = 'acct-dropdown-item';
+        item.innerHTML = '<div class="acct-num">' + escJs(a.account_number) + '</div><div class="acct-detail">' + escJs(a.account_name) + ' · ' + escJs(a.bank_name) + '</div>';
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          acctInput.value = a.account_number;
+          pk.value = a.id;
+          showInfo(a);
+          close();
+        });
+        dropdown.appendChild(item);
+      });
+      dropdown.style.display = 'block';
+    }
+    nameSel.addEventListener('change', function() {
+      var bank = this.value;
+      acctInput.value = '';
+      pk.value = '';
+      info.style.display = 'none';
+      close();
+      cache = [];
+      if (!bank) return;
+      fetch('/accounts/bank-accounts-by-bank/?bank_name=' + encodeURIComponent(bank))
+        .then(function(r) { return r.json(); })
+        .then(function(data) { cache = data.accounts; if (cache.length) render(cache); });
+    });
+    acctInput.addEventListener('input', function() {
+      var val = this.value.trim();
+      var exact = cache.find(function(a) { return a.account_number === val; });
+      if (exact) { pk.value = exact.id; showInfo(exact); close(); return; }
+      pk.value = '';
+      info.style.display = 'none';
+      var fuzzy = val ? cache.filter(function(a) { return a.account_number.indexOf(val) !== -1; }) : cache;
+      render(fuzzy);
+    });
+    acctInput.addEventListener('blur', function() { setTimeout(close, 200); });
+    acctInput.addEventListener('focus', function() { if (cache.length) render(cache); });
+    if (acctInput.value && nameSel.value) {
+      fetch('/accounts/bank-accounts-by-bank/?bank_name=' + encodeURIComponent(nameSel.value))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var a = data.accounts.find(function(x) { return x.account_number === acctInput.value; });
+          if (a) { pk.value = a.id; showInfo(a); }
+        });
+    }
+  }
+
+  function wireMobile(row) {
+    var input = row.querySelector('.pay-mobile-number');
+    var dropdown = row.querySelector('.pay-mobile-dropdown');
+    var holder = row.querySelector('.pay-mobile-holder');
+    var info = row.querySelector('.pay-mobile-info');
+    var methodSel = row.querySelector('.pay-method');
+    var cache = [];
+    function close() { dropdown.style.display = 'none'; }
+    function show(a) { info.textContent = (a.category || '') + ' · ' + (a.holder_name || '—'); info.style.display = 'block'; }
+    function render(matches) {
+      if (!matches || !matches.length) { close(); return; }
+      dropdown.innerHTML = '';
+      matches.forEach(function(a) {
+        var item = document.createElement('div');
+        item.className = 'acct-dropdown-item';
+        item.innerHTML = '<div class="acct-num">' + escJs(a.mobile_number) + '</div><div class="acct-detail">' + escJs(a.holder_name || '—') + '</div>';
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = a.mobile_number;
+          if (holder) holder.value = a.holder_name || '';
+          show(a);
+          close();
+        });
+        dropdown.appendChild(item);
+      });
+      dropdown.style.display = 'block';
+    }
+    function fetchData() {
+      var catPk = METHOD_CATEGORY_MAP[methodSel.value];
+      if (!catPk) { cache = []; return; }
+      fetch('/accounts/bank-accounts-by-bank/?category=' + catPk)
+        .then(function(r) { return r.json(); })
+        .then(function(data) { cache = data.accounts; });
+    }
+    methodSel.addEventListener('change', function() {
+      if (['bkash', 'nagad', 'rocket', 'upay'].includes(this.value)) fetchData();
+      else cache = [];
+    });
+    input.addEventListener('input', function() {
+      var val = this.value.trim();
+      var exact = cache.find(function(a) { return a.mobile_number === val; });
+      if (exact) {
+        if (holder) holder.value = exact.holder_name || '';
+        show(exact); close(); return;
+      }
+      info.style.display = 'none';
+      var fuzzy = val ? cache.filter(function(a) { return a.mobile_number.indexOf(val) !== -1; }) : cache;
+      render(fuzzy);
+    });
+    input.addEventListener('focus', function() { if (cache.length) render(cache); });
+    input.addEventListener('blur', function() { setTimeout(close, 200); });
+    if (methodSel.value && input.value) {
+      fetchData();
+      setTimeout(function() {
+        var exact = cache.find(function(a) { return a.mobile_number === input.value; });
+        if (exact) { if (holder) holder.value = exact.holder_name || ''; show(exact); }
+      }, 300);
+    }
+  }
+
+  function wireCash(row) {
+    var input = row.querySelector('.pay-cash-holder');
+    var dropdown = row.querySelector('.pay-cash-dropdown');
+    var pk = row.querySelector('.pay-account-pk');
+    var info = row.querySelector('.pay-cash-info');
+    function close() { dropdown.style.display = 'none'; }
+    function show(a) { info.textContent = 'Holder: ' + (a.holder_name || '—') + (a.contact_number ? ' · ' + a.contact_number : ''); info.style.display = 'block'; }
+    function render(matches) {
+      if (!matches || !matches.length) { close(); return; }
+      dropdown.innerHTML = '';
+      matches.forEach(function(a) {
+        var item = document.createElement('div');
+        item.className = 'acct-dropdown-item';
+        item.innerHTML = '<div class="acct-num">' + escJs(a.holder_name || '—') + '</div><div class="acct-detail">' + escJs(a.contact_number || '') + '</div>';
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = a.holder_name || '';
+          pk.value = a.id;
+          show(a);
+          close();
+        });
+        dropdown.appendChild(item);
+      });
+      dropdown.style.display = 'block';
+    }
+    input.addEventListener('input', function() {
+      var val = this.value.trim().toLowerCase();
+      var exact = cashAccountsGlobal.find(function(a) { return (a.holder_name || '').toLowerCase() === val; });
+      if (exact) { pk.value = exact.id; show(exact); close(); return; }
+      info.style.display = 'none';
+      var fuzzy = val ? cashAccountsGlobal.filter(function(a) { return (a.holder_name || '').toLowerCase().indexOf(val) !== -1; }) : cashAccountsGlobal;
+      render(fuzzy);
+    });
+    input.addEventListener('focus', function() { if (cashAccountsGlobal.length) render(cashAccountsGlobal); });
+    input.addEventListener('blur', function() { setTimeout(close, 200); });
+  }
+
+  function addPaymentRow(data) {
+    var idx = paymentRowsEl.querySelectorAll('.payment-row').length;
+    paymentRowsEl.insertAdjacentHTML('beforeend', paymentRowHtml(idx, data));
+    var row = paymentRowsEl.lastElementChild;
+    wireBank(row); wireMobile(row); wireCash(row);
+    setupPaymentRow(row, data);
+    reindexPaymentRows();
+    calculate();
+  }
+
+  paymentRowsEl.addEventListener('click', function(e) {
+    var rm = e.target.closest('.pay-remove');
+    if (rm) {
+      var row = rm.closest('.payment-row');
+      if (row) { row.remove(); reindexPaymentRows(); calculate(); }
     }
   });
 
-  mobileInput?.addEventListener('input', function() {
-    var val = this.value.trim();
-    var exact = mobileAccounts.find(function(a) { return a.mobile_number === val; });
-    if (exact) {
-      if (mobileHolder) mobileHolder.value = exact.holder_name || '';
-      document.getElementById('mobile-info-method').textContent = exact.category;
-      document.getElementById('mobile-info-number').textContent = 'Number: ' + exact.mobile_number;
-      document.getElementById('mobile-info-holder').textContent = 'Name: ' + (exact.holder_name || '—');
-      mobileInfo.style.display = 'block';
-      mobileDropdown.style.display = 'none';
-      return;
+  paymentRowsEl.addEventListener('change', function(e) {
+    if (e.target.classList.contains('pay-method')) {
+      togglePaySections(e.target.closest('.payment-row'), e.target.value);
     }
-    mobileInfo.style.display = 'none';
-    var fuzzy = val ? mobileAccounts.filter(function(a) { return a.mobile_number.indexOf(val) !== -1; }) : mobileAccounts;
-    renderMobileDropdown(fuzzy);
+    if (e.target.classList.contains('pay-amount')) calculate();
   });
 
-  mobileInput?.addEventListener('blur', function() {
-    setTimeout(function() { mobileDropdown.style.display = 'none'; }, 200);
+  paymentRowsEl.addEventListener('input', function(e) {
+    if (e.target.classList.contains('pay-amount')) calculate();
   });
 
-  // Cash account dropdown
-  var cashAccounts = [];
-  var cashSearch = document.getElementById('payment-cash-search');
-  var cashDropdown = document.getElementById('cash-dropdown');
-  var cashPk = document.getElementById('payment-cash-account-pk');
-  var cashInfo = document.getElementById('cash-account-info');
+  document.getElementById('addPaymentRowBtn')?.addEventListener('click', function() {
+    addPaymentRow(null);
+  });
 
-  function fetchCashAccounts() {
+  var cashAccountsGlobal = [];
+  (function fetchCashAccounts() {
     fetch('/accounts/bank-accounts-by-bank/?account_type=cash')
       .then(function(r) { return r.json(); })
-      .then(function(data) { cashAccounts = data.accounts; });
+      .then(function(data) { cashAccountsGlobal = data.accounts; });
+  })();
+
+  if (existingPayments.length) {
+    existingPayments.forEach(function(d) { addPaymentRow(d); });
+  } else {
+    addPaymentRow(null);
   }
-
-  function renderCashDropdown(matches) {
-    if (!matches || !matches.length) { cashDropdown.style.display = 'none'; return; }
-    cashDropdown.innerHTML = '';
-    matches.forEach(function(a) {
-      var item = document.createElement('div');
-      item.className = 'acct-dropdown-item';
-      item.innerHTML = '<div class="acct-num">' + (a.holder_name || '—') + '</div><div class="acct-detail">' + (a.contact_number || '') + '</div>';
-      item.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        cashSearch.value = a.holder_name || '';
-        cashPk.value = a.id;
-        document.getElementById('cash-info-holder').textContent = 'Holder: ' + (a.holder_name || '—');
-        document.getElementById('cash-info-contact').textContent = 'Contact: ' + (a.contact_number || '—');
-        cashInfo.style.display = 'block';
-        cashDropdown.style.display = 'none';
-      });
-      cashDropdown.appendChild(item);
-    });
-    cashDropdown.style.display = 'block';
-  }
-
-  document.getElementById('payment-method')?.addEventListener('change', function() {
-    var val = this.value;
-    if (val === 'cash') {
-      fetchCashAccounts();
-    } else {
-      cashAccounts = [];
-    }
-  });
-
-  cashSearch?.addEventListener('input', function() {
-    var val = this.value.trim().toLowerCase();
-    var exact = cashAccounts.find(function(a) { return (a.holder_name || '').toLowerCase() === val; });
-    if (exact) {
-      cashPk.value = exact.id;
-      document.getElementById('cash-info-holder').textContent = 'Holder: ' + (exact.holder_name || '—');
-      document.getElementById('cash-info-contact').textContent = 'Contact: ' + (exact.contact_number || '—');
-      cashInfo.style.display = 'block';
-      cashDropdown.style.display = 'none';
-      return;
-    }
-    cashInfo.style.display = 'none';
-    var fuzzy = val ? cashAccounts.filter(function(a) { return (a.holder_name || '').toLowerCase().indexOf(val) !== -1; }) : cashAccounts;
-    renderCashDropdown(fuzzy);
-  });
-
-  cashSearch?.addEventListener('blur', function() {
-    setTimeout(function() { cashDropdown.style.display = 'none'; }, 200);
-  });
-
-  // Trigger payment method change on load
-  var pm = document.getElementById('payment-method');
-  if (pm) pm.dispatchEvent(new Event('change'));
+  reindexPaymentRows();
 
   calculate();
 });

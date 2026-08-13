@@ -115,6 +115,12 @@ body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust
       <div class="sum-row total-row"><span>Total</span><span class="val">{{ total_with_tax|currency }}</span></div>
       {% if total_paid > 0 %}
       <div class="sum-row"><span>Amount Paid</span><span class="val" style="color:#16a34a;font-weight:600;">{{ total_paid|currency }}</span></div>
+      {% for p in payments %}
+      <div class="sum-row" style="font-size:12px;color:#374151;">
+        <span>{{ p.get_method_display }}{% if p.reference %} ({{ p.reference }}){% endif %}</span>
+        <span class="val">{{ p.amount|currency }}</span>
+      </div>
+      {% endfor %}
       {% endif %}
     </div>
   </section>

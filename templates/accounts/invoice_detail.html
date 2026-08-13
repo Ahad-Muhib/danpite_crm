@@ -185,7 +185,7 @@
       <div class="crm-card-header" style="border-left:3px solid #dc3545;"><span class="crm-card-title">Payment History</span></div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead><tr><th>Amount</th><th>Date</th><th>Method</th><th>Bank Account</th></tr></thead>
+          <thead><tr><th>Amount</th><th>Date</th><th>Method</th><th>Account</th><th>Reference</th></tr></thead>
           <tbody>
             {% for p in payments %}
             <tr>
@@ -193,6 +193,7 @@
               <td class="text-muted" style="white-space:nowrap;">{{ p.created_at|date:"d M Y H:i" }}</td>
               <td>{{ p.get_method_display }}</td>
               <td>{% if p.account %}{{ p.account.display_name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td>{% if p.reference %}<span class="text-muted">{{ p.reference }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
             </tr>
             {% endfor %}
           </tbody>

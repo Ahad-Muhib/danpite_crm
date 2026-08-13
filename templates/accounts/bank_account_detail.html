@@ -152,27 +152,19 @@
   </div>
 </div>
 
-{% if account.payments.exists or account.expenses.exists %}
+{% if transactions %}
 <div class="crm-card mt-4">
   <div class="crm-card-header"><span class="crm-card-title">Transaction History</span></div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th></tr></thead>
       <tbody>
-        {% for p in account.payments.all %}
+        {% for t in transactions %}
         <tr>
-          <td style="white-space:nowrap;">{{ p.created_at|date:"d M Y H:i" }}</td>
-          <td><span class="badge bg-success">Payment</span></td>
-          <td>{{ p.reference|default:"" }} {% if p.invoice %}({{ p.invoice.code }}){% endif %}</td>
-          <td class="fw-medium text-success">+{{ p.amount }}</td>
-        </tr>
-        {% endfor %}
-        {% for e in account.expenses.all %}
-        <tr>
-          <td style="white-space:nowrap;">{{ e.created_at|date:"d M Y H:i" }}</td>
-          <td><span class="badge bg-danger">Expense</span></td>
-          <td>{{ e.title }}</td>
-          <td class="fw-medium text-danger">-{{ e.amount }}</td>
+          <td style="white-space:nowrap;">{{ t.date|date:"d M Y H:i" }}</td>
+          <td>{% if t.kind == 'payment' %}<span class="badge bg-success">Payment</span>{% else %}<span class="badge bg-danger">Expense</span>{% endif %}</td>
+          <td>{{ t.label }}{% if t.detail %} ({{ t.detail }}){% endif %}</td>
+          <td class="fw-medium {% if t.kind == 'payment' %}text-success{% else %}text-danger{% endif %}">{% if t.kind == 'payment' %}+{% else %}-{% endif %}{{ t.amount }}</td>
         </tr>
         {% endfor %}
       </tbody>
