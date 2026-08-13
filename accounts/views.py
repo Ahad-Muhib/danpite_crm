@@ -23,6 +23,28 @@ from datetime import date
 MOBILE_METHODS = {'bkash', 'nagad', 'rocket', 'upay'}
 
 
+def _available_payment_methods():
+    """Only offer payment methods whose linked account type actually has active accounts."""
+    from django.db.models import Exists, OuterRef
+    sub = BankAccount.objects.filter(is_active=True, account_category=OuterRef('pk'))
+    cats = list(AccountCategory.objects.filter(is_active=True).annotate(has_accts=Exists(sub)))
+    names = {c.name.lower() for c in cats if c.has_accts}
+    types = {c.account_type for c in cats if c.has_accts}
+    has_bank = 'bank' in types
+    has_cash = 'cash' in types
+    choices = []
+    for value, label in METHOD_CHOICES:
+        if value == 'cash':
+            if has_cash:
+                choices.append((value, label))
+        elif value in MOBILE_METHODS:
+            if value in names:
+                choices.append((value, label))
+        elif has_bank:
+            choices.append((value, label))
+    return choices
+
+
 def _client_suggestions():
     data = [
         {'pk': c.pk, 'name': c.name, 'phone': c.phone or '', 'address': c.address or ''}
@@ -166,7 +188,7 @@ def _invoice_form_context(request, form, formset, obj, action, existing_payments
     return {
         'form': form, 'formset': formset, 'action': action,
         'invoice': obj, 'clients': clients, 'banks': banks,
-        'categories': categories, 'method_choices': METHOD_CHOICES,
+        'categories': categories, 'method_choices': _available_payment_methods(),
         'existing_payments_json': existing_payments_json,
     }
 
@@ -529,7 +551,8 @@ def payment_create(request):
             pass
     if client_name and not request.method == 'POST':
         initial['client_name'] = client_name
-    form = PaymentForm(request.POST or None, request.FILES or None, initial=initial or None)
+    form = PaymentForm(request.POST or None, request.FILES or None, initial=initial or None,
+                       method_choices=_available_payment_methods())
     accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     invoices = Invoice.objects.all().order_by('-created_at')[:100]
     clients = Client.objects.all().order_by('name')
@@ -566,7 +589,8 @@ def payment_detail(request, pk):
 @login_required
 def payment_edit(request, pk):
     obj = get_object_or_404(Payment, pk=pk)
-    form = PaymentForm(request.POST or None, request.FILES or None, instance=obj)
+    form = PaymentForm(request.POST or None, request.FILES or None, instance=obj,
+                       method_choices=_available_payment_methods())
     if form.is_valid():
         obj = form.save(commit=False)
         obj.updated_by = request.user
@@ -654,7 +678,7 @@ def expense_list(request):
 @login_required
 @login_required
 def expense_create(request):
-    form = ExpenseForm(request.POST or None, request.FILES or None)
+    form = ExpenseForm(request.POST or None, request.FILES or None, method_choices=_available_payment_methods())
     accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     if form.is_valid():
         obj = form.save(commit=False)
@@ -675,7 +699,7 @@ def expense_detail(request, pk):
 @login_required
 def expense_edit(request, pk):
     obj = get_object_or_404(Expense, pk=pk)
-    form = ExpenseForm(request.POST or None, request.FILES or None, instance=obj)
+    form = ExpenseForm(request.POST or None, request.FILES or None, instance=obj, method_choices=_available_payment_methods())
     accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
     if form.is_valid():
         obj = form.save()

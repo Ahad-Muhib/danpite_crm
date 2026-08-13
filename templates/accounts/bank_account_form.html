@@ -86,35 +86,20 @@
 
         <div id="mobile-fields" class="row g-3" style="display:none;">
           <div class="col-md-6"><label class="form-label fw-medium">Mobile Number</label>{{ form.mobile_number }}</div>
-          <div class="col-md-6"><label class="form-label fw-medium">Account Holder Name</label>{{ form.holder_name }}</div>
           <div class="col-md-6"><label class="form-label fw-medium">Account Type</label>{{ form.mobile_type }}</div>
         </div>
 
-        <div id="cash-fields" class="row g-3" style="display:none;">
+        <div id="holder-fields" class="row g-3" style="display:none;">
           <div class="col-md-6"><label class="form-label fw-medium">Account Holder Name</label>{{ form.holder_name }}</div>
+        </div>
+
+        <div id="cash-fields" class="row g-3" style="display:none;">
           <div class="col-md-6"><label class="form-label fw-medium">Contact Number</label>{{ form.contact_number }}</div>
           <div class="col-md-6"><label class="form-label fw-medium">Currency</label>{{ form.currency }}</div>
         </div>
 
         {% if form.instance.pk %}
         <div class="col-md-6"><label class="form-label fw-medium">Available Balance</label><div class="form-control-plaintext fw-bold" style="font-size:18px;">{{ form.instance.available_balance }}</div></div>
-        {% if request.user.is_superuser %}
-        <div class="col-12 mt-2">
-          <details class="border rounded p-3" style="background:#fefce8;">
-            <summary class="fw-medium" style="cursor:pointer;font-size:13px;">Adjust Available Balance (Superuser)</summary>
-            <form method="post" class="mt-2 row g-2 align-items-end">
-              {% csrf_token %}
-              <div class="col-auto">
-                <label class="form-label fw-medium" style="font-size:12px;">New Available Balance</label>
-                <input type="number" name="new_available_balance" value="{{ form.instance.available_balance }}" step="0.01" class="form-control form-control-sm" style="width:180px;">
-              </div>
-              <div class="col-auto">
-                <button type="submit" name="adjust_balance" value="1" class="btn btn-sm btn-warning">Save</button>
-              </div>
-            </form>
-          </details>
-        </div>
-        {% endif %}
         {% endif %}
         <div class="col-12"><label class="form-label fw-medium">Details</label>{{ form.details }}</div>
         <div class="col-12">
@@ -127,6 +112,18 @@
         <a href="{% url 'bank_account_list' %}" class="btn btn-outline-secondary">Cancel</a>
       </div>
     </form>
+    {% if form.instance.pk and request.user.is_superuser %}
+    <form method="post" class="mt-3 border rounded p-3" style="background:#fefce8;">
+      {% csrf_token %}
+      <div class="d-flex align-items-end gap-2 flex-wrap">
+        <div>
+          <label class="form-label fw-medium" style="font-size:13px;">Adjust Available Balance (Superuser)</label>
+          <input type="number" name="new_available_balance" value="{{ form.instance.available_balance }}" step="0.01" class="form-control form-control-sm" style="width:180px;">
+        </div>
+        <button type="submit" name="adjust_balance" value="1" class="btn btn-sm btn-warning">Save</button>
+      </div>
+    </form>
+    {% endif %}
   </div>
 </div>
 
@@ -406,6 +403,7 @@
     document.getElementById('bank-fields').style.display = type === 'bank' ? '' : 'none';
     document.getElementById('card-fields').style.display = isCard ? '' : 'none';
     document.getElementById('mobile-fields').style.display = type === 'mobile' ? '' : 'none';
+    document.getElementById('holder-fields').style.display = (type === 'mobile' || type === 'cash') ? '' : 'none';
     document.getElementById('cash-fields').style.display = type === 'cash' ? '' : 'none';
     filterCategories(type);
   }

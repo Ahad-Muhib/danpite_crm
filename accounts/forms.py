@@ -117,13 +117,16 @@ class PaymentForm(forms.ModelForm):
             'receipt': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, method_choices=None, **kwargs):
         instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
         if instance and instance.client:
             self.fields['client_name'].initial = instance.client.name
-        cats = AccountCategory.objects.filter(is_active=True).values_list('name', flat=True)
-        method_choices = [('', '-- Select Method --')] + [(c.lower(), c) for c in cats]
+        if method_choices is None:
+            cats = AccountCategory.objects.filter(is_active=True).values_list('name', flat=True)
+            method_choices = [('', '-- Select Method --')] + [(c.lower(), c) for c in cats]
+        else:
+            method_choices = [('', '-- Select Method --')] + list(method_choices)
         self.fields['method'] = forms.CharField(
             widget=forms.Select(choices=method_choices, attrs={'class': 'form-select', 'id': 'id_method'}),
             required=False,
@@ -156,7 +159,7 @@ class ExpenseForm(forms.ModelForm):
             'receipt': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, method_choices=None, **kwargs):
         instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
         self.fields['expense_date'].initial = date.today()
@@ -171,7 +174,9 @@ class ExpenseForm(forms.ModelForm):
                     choices.append((key, c.name))
                     seen.add(key)
             self.fields['category'].choices = choices
-        method_choices = [('', '-- Select Method --')] + list(METHOD_CHOICES)
+        if method_choices is None:
+            method_choices = list(METHOD_CHOICES)
+        method_choices = [('', '-- Select Method --')] + list(method_choices)
         self.fields['method'] = forms.CharField(
             widget=forms.Select(choices=method_choices, attrs={'class': 'form-select', 'id': 'id_method'}),
             required=False,
@@ -228,6 +233,16 @@ class BankAccountForm(forms.ModelForm):
         self.fields['card_number'].label = 'Card Number'
         self.fields['contact_number'].label = 'Contact Number'
         self.fields['currency'].initial = 'BDT'
+        self.fields['account_type'].required = False
+        self.fields['mobile_type'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get('account_type'):
+            cleaned['account_type'] = self.instance.account_type if self.instance and self.instance.account_type else 'current'
+        if not cleaned.get('mobile_type'):
+            cleaned['mobile_type'] = self.instance.mobile_type if self.instance and self.instance.mobile_type else 'personal'
+        return cleaned
 
 
 class TransferForm(forms.ModelForm):
