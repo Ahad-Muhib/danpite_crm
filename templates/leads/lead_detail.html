@@ -152,6 +152,7 @@
                   </td>
                   <td class="text-muted">{{ f.outcome|default:"—" }}</td>
                   <td>
+                    <a href="{% url 'followup_edit' f.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
                     <form method="post" action="{% url 'followup_complete' f.pk %}" class="d-inline">
                       {% csrf_token %}
                       <button type="submit" class="btn btn-sm btn-outline-success" title="Complete" onclick="return confirm('Complete this follow-up?{% if f.is_recurring %} A new one will be created.{% endif %}')"><i class="bi bi-check-lg"></i></button>

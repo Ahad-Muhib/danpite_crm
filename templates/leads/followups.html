@@ -66,6 +66,7 @@
           </td>
           <td class="text-muted">{{ f.outcome|default:"—" }}</td>
           <td>
+            <a href="{% url 'followup_edit' f.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="Edit"><i class="bi bi-pencil"></i></a>
             <a href="{% url 'followup_delete' f.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" onclick="return confirm('Delete?')"><i class="bi bi-trash"></i></a>
           </td>
         </tr>

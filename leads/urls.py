@@ -21,6 +21,7 @@ urlpatterns = [
     path('followups/', views.followup_list, name='followup_list'),
     path('followups/new/', views.followup_create, name='followup_create'),
     path('followups/<int:pk>/complete/', views.followup_complete, name='followup_complete'),
+    path('followups/<int:pk>/edit/', views.followup_edit, name='followup_edit'),
     path('followups/<int:pk>/delete/', views.followup_delete, name='followup_delete'),
     path('deals/', views.deal_list, name='deal_list'),
     path('deals/kanban/', views.deal_kanban, name='deal_kanban'),

@@ -61,7 +61,7 @@ class FollowUp(models.Model):
     lead = models.ForeignKey('LeadContact', null=True, blank=True, on_delete=models.SET_NULL, related_name='followups')
     deal = models.ForeignKey('Deal', null=True, blank=True, on_delete=models.SET_NULL, related_name='followups')
     followup_type = models.CharField(max_length=20, choices=TYPE, default='call')
-    subject = models.CharField(max_length=200)
+    subject = models.CharField(max_length=200, blank=True)
     notes = models.TextField(blank=True)
     next_followup_date = models.DateField(null=True, blank=True)
     outcome = models.CharField(max_length=100, blank=True)

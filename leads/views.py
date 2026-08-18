@@ -30,6 +30,33 @@ def _log_activity(lead=None, deal=None, activity_type='note', title='', descript
     )
 
 
+def _sync_lead_followup(lead, followup_date, followup_type, user, old_date=None):
+    latest = lead.followups.order_by('-created_at').first()
+    if latest:
+        latest.next_followup_date = followup_date
+        latest.save(update_fields=['next_followup_date'])
+    else:
+        FollowUp.objects.create(
+            lead=lead,
+            followup_type=followup_type,
+            subject=f'Follow-up {"updated to " + str(followup_date) if followup_date else "scheduled"}',
+            next_followup_date=followup_date,
+            created_by=user,
+            notes=f'Previous: {old_date or "none"} → {followup_date or "none"}',
+        )
+
+
+def _set_lead_next_date(lead, next_date):
+    if lead.next_followup_date != next_date:
+        lead.next_followup_date = next_date
+        lead.save(update_fields=['next_followup_date', 'updated_at'])
+
+
+def _resync_lead_next_date(lead):
+    latest = lead.followups.order_by('-created_at').first()
+    _set_lead_next_date(lead, latest.next_followup_date if latest else None)
+
+
 # ── Leads ──────────────────────────────────────────────────────
 
 @login_required
@@ -120,6 +147,9 @@ def lead_create(request):
         obj.save()
         log_action(request, 'create', 'LeadContact', obj)
         _log_activity(lead=obj, activity_type='note', title='Lead created', user=request.user)
+        if obj.next_followup_date:
+            _sync_lead_followup(obj, obj.next_followup_date, obj.followup_action or 'other', request.user)
+            _log_activity(lead=obj, activity_type='followup', title=f'Follow-up scheduled: {obj.next_followup_date}', user=request.user)
         messages.success(request, 'Lead contact added.')
         return redirect('lead_list')
     form.fields['lead_owner'].initial = request.user.pk
@@ -132,6 +162,7 @@ def lead_create(request):
 @login_required
 def lead_edit(request, pk):
     obj = get_object_or_404(LeadContact, pk=pk)
+    old_followup_date = obj.next_followup_date
     form = LeadContactForm(request.POST or None, instance=obj)
     if form.is_valid():
         obj = form.save(commit=False)
@@ -139,6 +170,10 @@ def lead_edit(request, pk):
             obj.lead_owner = request.user
         obj.save()
         log_action(request, 'update', 'LeadContact', obj)
+        new_date = obj.next_followup_date
+        if new_date != old_followup_date or (new_date and not obj.followups.exists()):
+            _sync_lead_followup(obj, new_date, obj.followup_action or 'other', request.user, old_date=old_followup_date)
+            _log_activity(lead=obj, activity_type='followup', title=f'Follow-up {"updated to " + str(new_date) if new_date else "cleared"}', description=f'Previous: {old_followup_date or "none"} → {new_date or "none"}', user=request.user)
         _log_activity(lead=obj, activity_type='note', title='Lead updated', user=request.user)
         messages.success(request, 'Lead updated.')
         return redirect('lead_list')
@@ -168,15 +203,8 @@ def lead_update_followup(request, pk):
     old_date = lead.next_followup_date
     lead.next_followup_date = followup_date
     lead.save(update_fields=['next_followup_date', 'updated_at'])
-    FollowUp.objects.create(
-        lead=lead,
-        followup_type=followup_type,
-        subject=f'Follow-up {"updated to " + str(followup_date) if followup_date else "cleared"}',
-        next_followup_date=followup_date,
-        created_by=request.user,
-        notes=f'Previous: {old_date or "none"} → {followup_date or "none"}',
-    )
-    _log_activity(lead=lead, activity_type='followup', title=f'Follow-up {"updated to " + str(followup_date) if followup_date else "cleared"}', user=request.user)
+    _sync_lead_followup(lead, followup_date, followup_type, request.user, old_date=old_date)
+    _log_activity(lead=lead, activity_type='followup', title=f'Follow-up {"updated to " + str(followup_date) if followup_date else "cleared"}', description=f'Previous: {old_date or "none"} → {followup_date or "none"}', user=request.user)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'ok': True, 'date': str(lead.next_followup_date) if lead.next_followup_date else ''})
     messages.success(request, 'Follow-up date updated.')
@@ -207,7 +235,7 @@ def lead_update_state(request, pk):
 def lead_detail(request, pk):
     lead = get_object_or_404(LeadContact, pk=pk)
     deals = lead.deals.all()
-    followups = lead.followups.all().order_by('-created_at')[:10]
+    followups = lead.followups.all().order_by('-created_at')
     activities = lead.activities.all()[:20]
     comments = lead.comments.all()
     today = timezone.now().date()
@@ -484,11 +512,15 @@ def followup_create(request):
     form = FollowUpForm(request.POST or None, initial=initial)
     if form.is_valid():
         obj = form.save(commit=False)
+        if not obj.subject:
+            obj.subject = f'{obj.get_followup_type_display()} follow-up'
         obj.created_by = request.user
         obj.save()
         log_action(request, 'create', 'FollowUp', obj)
         _log_activity(lead=obj.lead, deal=obj.deal, activity_type='followup',
                       title=f'Follow-up: {obj.subject}', user=request.user)
+        if obj.lead and obj.next_followup_date:
+            _set_lead_next_date(obj.lead, obj.next_followup_date)
         if obj.is_recurring and obj.next_followup_date:
             _create_recurring_followup(obj)
         if lead_id:
@@ -496,6 +528,34 @@ def followup_create(request):
         messages.success(request, 'Follow-up logged.')
         return redirect('followup_list')
     return render(request, 'leads/followup_form.html', {'form': form, 'action': 'Log'})
+
+
+@login_required
+def followup_edit(request, pk):
+    obj = get_object_or_404(FollowUp, pk=pk)
+    form = FollowUpForm(request.POST or None, instance=obj)
+    if form.is_valid():
+        obj = form.save(commit=False)
+        if not obj.subject:
+            obj.subject = f'{obj.get_followup_type_display()} follow-up'
+        obj.save()
+        log_action(request, 'update', 'FollowUp', obj)
+        _log_activity(lead=obj.lead, deal=obj.deal, activity_type='followup',
+                      title=f'Follow-up updated: {obj.subject}', user=request.user)
+        if obj.lead:
+            if obj.next_followup_date:
+                _set_lead_next_date(obj.lead, obj.next_followup_date)
+            else:
+                latest = obj.lead.followups.order_by('-created_at').first()
+                if latest and latest.pk == obj.pk:
+                    _set_lead_next_date(obj.lead, None)
+        messages.success(request, 'Follow-up updated.')
+        if obj.lead_id:
+            return redirect('lead_detail', pk=obj.lead_id)
+        return redirect('followup_list')
+    return render(request, 'leads/followup_form.html', {
+        'form': form, 'action': 'Update', 'followup': obj,
+    })
 
 
 def _create_recurring_followup(original):
@@ -523,6 +583,7 @@ def followup_complete(request, pk):
     lead_pk = fu.lead_id
     fu.delete()
     if lead_pk:
+        _resync_lead_next_date(fu.lead)
         return redirect('lead_detail', pk=lead_pk)
     return redirect('followup_list')
 
@@ -538,6 +599,7 @@ def followup_delete(request, pk):
     obj.delete()
     messages.success(request, 'Follow-up deleted.')
     if lead_pk:
+        _resync_lead_next_date(obj.lead)
         return redirect('lead_detail', pk=lead_pk)
     return redirect('followup_list')
 
