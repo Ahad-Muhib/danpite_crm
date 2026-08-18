@@ -47,7 +47,7 @@ def _available_payment_methods():
 def _client_suggestions():
     return [
         {'pk': c.pk, 'name': c.name, 'phone': c.phone or '', 'address': c.address or ''}
-        for c in Client.objects.all().order_by('name')
+        for c in Client.objects.filter(status='active').order_by('name')
     ]
 
 
@@ -339,6 +339,10 @@ def invoice_create(request):
                     messages.error(request, 'Please select a valid client from the dropdown.')
                     context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps([]))
                     return render(request, 'accounts/invoice_form.html', context)
+                if obj.client.status != 'active':
+                    messages.error(request, 'This client is inactive and cannot be invoiced.')
+                    context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps([]))
+                    return render(request, 'accounts/invoice_form.html', context)
             elif bill_to and not client_pk:
                 messages.error(request, 'Please select a client from the dropdown instead of typing a name.')
                 context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps([]))
@@ -420,6 +424,10 @@ def invoice_edit(request, pk):
                     obj.client = Client.objects.get(pk=client_pk)
                 except (Client.DoesNotExist, ValueError):
                     messages.error(request, 'Please select a valid client from the dropdown.')
+                    context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_payments(obj)))
+                    return render(request, 'accounts/invoice_form.html', context)
+                if obj.client.status != 'active':
+                    messages.error(request, 'This client is inactive and cannot be invoiced.')
                     context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_payments(obj)))
                     return render(request, 'accounts/invoice_form.html', context)
             elif bill_to and not client_pk:
