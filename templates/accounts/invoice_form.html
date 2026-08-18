@@ -137,6 +137,7 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
         <div class="sum-row"><span>Shipping</span>{{ form.shipping }}</div>
         <div class="sum-row total"><span>Total</span><span id="total" class="money">৳0.00</span></div>
         <div class="sum-row"><span>Amount Paid</span><span id="amount-paid-display" class="money">৳0.00</span>{{ form.amount_paid }}</div>
+        {{ form.total }}
         <div id="overpay-warning" style="display:none;background:#dc2626;color:#fff;font-size:12px;font-weight:600;border-radius:4px;padding:6px 8px;margin-top:8px;">
           <i class="bi bi-exclamation-triangle-fill"></i> Paid amount is more than the invoice total. Please reduce the paid amount so it does not exceed the total.
         </div>

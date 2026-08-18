@@ -27,7 +27,7 @@
       </select>
       <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
       {% if from or to or selected_category or selected_method %}<a href="{% url 'expense_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
-      <a href="{% url 'expense_report_pdf' %}?{% if from %}from={{ from }}&{% endif %}{% if to %}to={{ to }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_method %}method={{ selected_method }}{% endif %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success"><i class="bi bi-filetype-pdf me-1"></i>Download PDF</a>
+      <a href="{% url 'expense_report_print' %}?{% if from %}from={{ from }}&{% endif %}{% if to %}to={{ to }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_method %}method={{ selected_method }}{% endif %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success"><i class="bi bi-filetype-pdf me-1"></i>Download PDF</a>
     </form>
   </div>
   <div class="table-responsive">
@@ -45,7 +45,7 @@
       <tbody>
         {% for e in expenses %}
         <tr>
-          <td class="text-muted" style="white-space:nowrap;">{{ e.expense_date|date:"d M Y" }}</td>
+          <td class="text-muted" style="white-space:nowrap;">{{ e.created_at|date:"d M Y H:i" }}</td>
           <td class="fw-medium">{{ e.title }}</td>
           <td>{{ e.report_category }}</td>
           <td>{{ e.report_method_label }}</td>

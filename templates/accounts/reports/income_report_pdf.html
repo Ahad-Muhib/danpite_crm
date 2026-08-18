@@ -1,4 +1,4 @@
-{% load crm_tags %}
+{% load crm_tags static %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,8 +6,11 @@
 <title>Income Report</title>
 <style>
 :root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff;--green:#16a34a}
+@font-face{font-family:'Liberation Sans';src:url('{% static "fonts/LiberationSans-Regular.ttf" %}') format('truetype');font-weight:400;font-style:normal}
+@font-face{font-family:'Liberation Sans';src:url('{% static "fonts/LiberationSans-Bold.ttf" %}') format('truetype');font-weight:700;font-style:normal}
+@font-face{font-family:'Liberation Sans';src:url('{% static "fonts/LiberationSans-Italic.ttf" %}') format('truetype');font-weight:400;font-style:italic}
 *{box-sizing:border-box;margin:0;padding:0}
-body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{color:var(--ink);font:12px/1.45 'Liberation Sans',Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @page{size:A4;margin:14mm 16mm}
 .header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:10px}
 .title{font-size:24px;font-weight:700;letter-spacing:.5px}
@@ -55,7 +58,7 @@ tr:last-child td{border-bottom:none}
     <tbody>
       {% for p in payments %}
       <tr>
-        <td class="muted" style="white-space:nowrap;">{{ p.payment_date|date:"d M Y" }}</td>
+        <td class="muted" style="white-space:nowrap;">{{ p.created_at|date:"d M Y H:i" }}</td>
         <td>{% if p.client %}{{ p.client.name }}{% elif p.invoice and p.invoice.client %}{{ p.invoice.client.name }}{% else %}—{% endif %}</td>
         <td>{% if p.invoice %}{{ p.invoice.code }}{% else %}—{% endif %}</td>
         <td class="right" style="color:var(--green);font-weight:600;">{{ p.amount|currency }}</td>

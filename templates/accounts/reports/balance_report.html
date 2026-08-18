@@ -27,7 +27,7 @@
       </select>
       <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
       {% if from or to or selected_method %}<a href="{% url 'balance_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
-      <a href="{% url 'balance_report_pdf' %}?{% if from %}from={{ from }}&{% endif %}{% if to %}to={{ to }}&{% endif %}{% if selected_method %}method={{ selected_method }}{% endif %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success ms-auto"><i class="bi bi-filetype-pdf me-1"></i>Download PDF</a>
+      <a href="{% url 'balance_report_print' %}?{% if from %}from={{ from }}&{% endif %}{% if to %}to={{ to }}&{% endif %}{% if selected_method %}method={{ selected_method }}{% endif %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success ms-auto"><i class="bi bi-filetype-pdf me-1"></i>Download PDF</a>
     </form>
   </div>
 </div>

@@ -1058,10 +1058,15 @@ def bank_account_delete(request, pk):
 
 @login_required
 def invoice_pdf(request, pk):
-    from weasyprint import HTML
-    from django.db.models import Sum
-    from django.conf import settings
     invoice = get_object_or_404(Invoice, pk=pk)
+    context = _invoice_pdf_context(invoice)
+    html_string = render_to_string('accounts/invoice_pdf.html', context, request=request)
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
+
+
+def _invoice_pdf_context(invoice):
+    from django.db.models import Sum
     items = invoice.items.all()
     subtotal = items.aggregate(s=Sum('total'))['s'] or 0
     discount_pct = float(invoice.discount or 0)
@@ -1074,18 +1079,22 @@ def invoice_pdf(request, pk):
     total_paid = invoice.payments.aggregate(s=Sum('amount'))['s'] or 0
     balance_due = total_with_tax - float(total_paid)
     payments = invoice.payments.all()
-    logo_path = settings.MEDIA_ROOT / 'invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg'
-    html_string = render_to_string('accounts/invoice_pdf.html', {
+    return {
         'invoice': invoice, 'items': items,
         'subtotal': subtotal, 'discount_amount': discount_amount,
         'tax_amount': tax_amount, 'total_with_tax': total_with_tax,
         'total_paid': total_paid, 'balance_due': balance_due,
-        'shipping': shipping, 'logo_path': logo_path, 'payments': payments,
-    }, request=request)
-    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="{invoice.code}.pdf"'
-    return response
+        'shipping': shipping, 'payments': payments,
+    }
+
+
+@login_required
+def invoice_print(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    context = _invoice_pdf_context(invoice)
+    html_string = render_to_string('accounts/invoice_pdf.html', context, request=request)
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
 
 
 @login_required

@@ -1,4 +1,4 @@
-{% load crm_tags %}
+{% load crm_tags static %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,8 +6,11 @@
 <title>Bank Details</title>
 <style>
 :root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff}
+@font-face{font-family:'Liberation Sans';src:url('{% static "fonts/LiberationSans-Regular.ttf" %}') format('truetype');font-weight:400;font-style:normal}
+@font-face{font-family:'Liberation Sans';src:url('{% static "fonts/LiberationSans-Bold.ttf" %}') format('truetype');font-weight:700;font-style:normal}
+@font-face{font-family:'Liberation Sans';src:url('{% static "fonts/LiberationSans-Italic.ttf" %}') format('truetype');font-weight:400;font-style:italic}
 *{box-sizing:border-box;margin:0;padding:0}
-body{color:var(--ink);font:12px/1.45 Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{color:var(--ink);font:12px/1.45 'Liberation Sans',Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @page{size:A4 landscape;margin:12mm 14mm}
 .header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:10px}
 .title{font-size:24px;font-weight:700;letter-spacing:.5px}

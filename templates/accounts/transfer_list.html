@@ -76,9 +76,6 @@
           <td>{{ t.created_by.username|default:"—" }}</td>
           <td>
             <a href="{% url 'transfer_detail' t.pk %}" class="btn btn-sm btn-outline-secondary btn-sm-action" title="View"><i class="bi bi-eye"></i></a>
-            {% if request.user.is_superuser %}
-            <a href="{% url 'transfer_delete' t.pk %}" class="btn btn-sm btn-outline-danger btn-sm-action" title="Delete" onclick="return confirm('Delete this transfer?')"><i class="bi bi-trash"></i></a>
-            {% endif %}
           </td>
         </tr>
         {% empty %}

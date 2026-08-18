@@ -6,7 +6,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth
-from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
 from django.template.loader import render_to_string
@@ -54,7 +53,7 @@ def _annotate_payments(payments):
 def _income_report_context(request):
     f, t = _dates(request)
     method = request.GET.get('method', '')
-    payments = Payment.objects.all().order_by('-payment_date')
+    payments = Payment.objects.all().order_by('-created_at')
     if f:
         payments = payments.filter(payment_date__gte=f)
     if t:
@@ -85,14 +84,20 @@ def income_report(request):
 
 @financial_required
 def income_report_pdf(request):
-    from weasyprint import HTML
     context = _income_report_context(request)
     context['payments'] = _annotate_payments(context['payments'])
     html_string = render_to_string('accounts/reports/income_report_pdf.html', context, request=request)
-    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = 'inline; filename="income-report.pdf"'
-    return response
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
+
+
+@financial_required
+def income_report_print(request):
+    context = _income_report_context(request)
+    context['payments'] = _annotate_payments(context['payments'])
+    html_string = render_to_string('accounts/reports/income_report_pdf.html', context, request=request)
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
 
 
 def _expense_method(expense):
@@ -150,7 +155,7 @@ def _expense_report_context(request):
     for e in expenses:
         e.report_category = cat_map.get(e.category, e.get_category_display())
 
-    sort_keys = {'date': 'expense_date', 'title': 'title', 'category': 'category', 'amount': 'amount', 'method': 'report_method'}
+    sort_keys = {'date': 'created_at', 'title': 'title', 'category': 'category', 'amount': 'amount', 'method': 'report_method'}
     skey = sort_keys.get(sort, 'expense_date')
     expenses.sort(key=lambda e: getattr(e, skey), reverse=(dir == 'desc'))
 
@@ -174,13 +179,18 @@ def expense_report(request):
 
 @financial_required
 def expense_report_pdf(request):
-    from weasyprint import HTML
     context = _expense_report_context(request)
     html_string = render_to_string('accounts/reports/expense_report_pdf.html', context, request=request)
-    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = 'inline; filename="expense-report.pdf"'
-    return response
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
+
+
+@financial_required
+def expense_report_print(request):
+    context = _expense_report_context(request)
+    html_string = render_to_string('accounts/reports/expense_report_pdf.html', context, request=request)
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
 
 
 def _balance_report_context(request):
@@ -228,13 +238,18 @@ def balance_report(request):
 
 @financial_required
 def balance_report_pdf(request):
-    from weasyprint import HTML
     context = _balance_report_context(request)
     html_string = render_to_string('accounts/reports/balance_report_pdf.html', context, request=request)
-    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = 'inline; filename="balance-report.pdf"'
-    return response
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
+
+
+@financial_required
+def balance_report_print(request):
+    context = _balance_report_context(request)
+    html_string = render_to_string('accounts/reports/balance_report_pdf.html', context, request=request)
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
 
 
 def _bank_details_context(request):
@@ -278,13 +293,18 @@ def bank_details(request):
 
 @financial_required
 def bank_details_pdf(request):
-    from weasyprint import HTML
     context = _bank_details_context(request)
     html_string = render_to_string('accounts/reports/bank_details_pdf.html', context, request=request)
-    pdf = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = 'inline; filename="bank-details.pdf"'
-    return response
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
+
+
+@financial_required
+def bank_details_print(request):
+    context = _bank_details_context(request)
+    html_string = render_to_string('accounts/reports/bank_details_pdf.html', context, request=request)
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
+    return HttpResponse(html_string)
 
 
 @financial_required
