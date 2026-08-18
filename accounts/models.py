@@ -174,7 +174,8 @@ class BankAccount(models.Model):
         elif cat.account_type == 'mobile':
             return f"{self.get_mobile_provider_display() or cat.name} - {self.mobile_number or '(no number)'}"
         elif cat.account_type == 'cash':
-            return f"Cash - {self.holder_name or '(no name)'}"
+            parts = [p for p in ['Cash', self.contact_number] if p]
+            return ' - '.join(parts)
         return cat.name
 
     def __str__(self):
@@ -193,8 +194,15 @@ class ExpenseCategory(models.Model):
         return self.name
 
 
+PREDEFINED_EXPENSE_CATEGORIES = ['Office Supplies', 'Marketing', 'Travel', 'Utilities', 'Rent', 'Salary', 'Equipment', 'Other']
+
+EXPENSE_CATEGORY_CHOICES = [('office', 'Office Supplies'), ('travel', 'Travel'), ('marketing', 'Marketing'), ('utilities', 'Utilities'), ('salary', 'Salary'), ('rent', 'Rent'), ('equipment', 'Equipment'), ('other', 'Other')]
+
+CATEGORY_KEY_MAP = {label.lower(): key for key, label in EXPENSE_CATEGORY_CHOICES}
+
+
 class Expense(models.Model):
-    CATEGORY = [('office', 'Office Supplies'), ('travel', 'Travel'), ('marketing', 'Marketing'), ('utilities', 'Utilities'), ('salary', 'Salary'), ('rent', 'Rent'), ('equipment', 'Equipment'), ('other', 'Other')]
+    CATEGORY = EXPENSE_CATEGORY_CHOICES
     title = models.CharField(max_length=200)
     category = models.CharField(max_length=30, choices=CATEGORY, default='other')
     method = models.CharField(max_length=20, choices=METHOD_CHOICES, default='cash')

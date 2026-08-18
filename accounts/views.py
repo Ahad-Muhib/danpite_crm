@@ -15,7 +15,7 @@ from clients.models import Client
 
 from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm, TransferForm
 from .models import (AccountCategory, AccountType, BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer,
-                     METHOD_CHOICES)
+                     METHOD_CHOICES, CATEGORY_KEY_MAP)
 from orders.models import Order, OrderItem
 from datetime import date
 
@@ -23,23 +23,23 @@ MOBILE_METHODS = {'bkash', 'nagad', 'rocket', 'upay'}
 
 
 def _available_payment_methods():
-    """Only offer payment methods whose linked account type actually has active accounts."""
+    """Only offer payment methods whose linked account category actually has active accounts."""
     from django.db.models import Exists, OuterRef
     sub = BankAccount.objects.filter(is_active=True, account_category=OuterRef('pk'))
     cats = list(AccountCategory.objects.filter(is_active=True).annotate(has_accts=Exists(sub)))
-    names = {c.name.lower() for c in cats if c.has_accts}
-    types = {c.account_type for c in cats if c.has_accts}
-    has_bank = 'bank' in types
-    has_cash = 'cash' in types
+    has = {c.name.lower(): c.has_accts for c in cats}
     choices = []
     for value, label in METHOD_CHOICES:
-        if value == 'cash':
-            if has_cash:
+        if value in MOBILE_METHODS:
+            if has.get(value):
                 choices.append((value, label))
-        elif value in MOBILE_METHODS:
-            if value in names:
+        elif value == 'cash':
+            if has.get('cash'):
                 choices.append((value, label))
-        elif has_bank:
+        elif value == 'card':
+            if has.get('card'):
+                choices.append((value, label))
+        elif has.get('bank'):
             choices.append((value, label))
     return choices
 
@@ -52,8 +52,13 @@ def _client_suggestions():
 
 
 def _parse_payment_rows(request, invoice_code):
-    """Parse dynamic payment rows from the invoice form into a list of dicts."""
+    """Parse dynamic payment rows from the invoice form into a list of dicts.
+
+    Every row with an amount must reference an account that exists in the
+    bank accounts section — nothing is auto-created here. Returns (rows, errors).
+    """
     rows = []
+    errors = []
     try:
         count = int(request.POST.get('payments-TOTAL_FORMS', 0))
     except (TypeError, ValueError):
@@ -76,21 +81,28 @@ def _parse_payment_rows(request, invoice_code):
         if account_pk:
             account = BankAccount.objects.filter(pk=account_pk).first()
 
-        mobile_number = request.POST.get(p + 'mobile_number', '').strip()
-        mobile_holder = request.POST.get(p + 'mobile_holder', '').strip()
-        if method in MOBILE_METHODS and mobile_number and not account:
-            category = AccountCategory.objects.filter(name__iexact=method).first()
-            if not category:
-                category, _ = AccountCategory.objects.get_or_create(
-                    name=method.capitalize(), account_type='mobile',
-                )
-            account, _ = BankAccount.objects.get_or_create(
-                account_category=category, mobile_number=mobile_number,
-                defaults={'holder_name': mobile_holder, 'mobile_provider': method, 'is_active': True},
-            )
-            if mobile_holder and account.holder_name != mobile_holder:
-                account.holder_name = mobile_holder
-                account.save()
+        if not account and method in MOBILE_METHODS:
+            mobile_number = request.POST.get(p + 'mobile_number', '').strip()
+            if mobile_number:
+                account = BankAccount.objects.filter(
+                    account_category__name__iexact=method,
+                    mobile_number=mobile_number,
+                ).first()
+
+        if not account:
+            if not method:
+                errors.append(f'Payment row {i + 1}: select a payment method and its account from the bank accounts page.')
+            else:
+                errors.append(f'Payment row {i + 1}: please select the "{method}" account from the bank accounts page.')
+            rows.append({
+                'id': request.POST.get(p + 'id', '').strip(),
+                'method': method,
+                'amount': amount,
+                'account': None,
+                'reference': request.POST.get(p + 'reference', '').strip(),
+                'error': True,
+            })
+            continue
 
         pid = request.POST.get(p + 'id', '').strip()
         reference = request.POST.get(p + 'reference', '').strip()
@@ -103,7 +115,7 @@ def _parse_payment_rows(request, invoice_code):
             'account': account,
             'reference': reference,
         })
-    return rows
+    return rows, errors
 
 
 def _serialize_payments(invoice):
@@ -114,6 +126,7 @@ def _serialize_payments(invoice):
             cat = pay.account.account_category
             account = {
                 'pk': pay.account.pk,
+                'display_name': pay.account.display_name,
                 'category_name': cat.name if cat else '',
                 'category_type': cat.account_type if cat else '',
                 'bank_name': pay.account.bank_name,
@@ -152,6 +165,7 @@ def _serialize_parsed_rows(rows):
             cat = acc.account_category
             account = {
                 'pk': acc.pk,
+                'display_name': acc.display_name,
                 'category_name': cat.name if cat else '',
                 'category_type': cat.account_type if cat else '',
                 'bank_name': acc.bank_name,
@@ -358,7 +372,11 @@ def invoice_create(request):
                 return render(request, 'accounts/invoice_form.html', context)
             if save_as_draft:
                 obj.status = 'draft'
-            rows = _parse_payment_rows(request, '')
+            rows, pay_errors = _parse_payment_rows(request, '')
+            if pay_errors:
+                messages.error(request, ' '.join(pay_errors))
+                context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps(_serialize_parsed_rows(rows)))
+                return render(request, 'accounts/invoice_form.html', context)
             item_total = _formset_item_total(formset)
             after_discount = item_total - (item_total * (obj.discount or 0) / 100)
             obj.total = after_discount + (after_discount * (obj.tax or 0) / 100) + (obj.shipping or 0)
@@ -374,7 +392,7 @@ def invoice_create(request):
             after_discount = item_total - (item_total * (obj.discount or 0) / 100)
             obj.total = after_discount + (after_discount * (obj.tax or 0) / 100) + (obj.shipping or 0)
             obj.save(update_fields=['total'])
-            for row in _parse_payment_rows(request, obj.code):
+            for row in _parse_payment_rows(request, obj.code)[0]:
                 Payment.objects.create(
                     invoice=obj, client=obj.client, amount=row['amount'],
                     payment_date=date.today(), method=row['method'],
@@ -445,7 +463,11 @@ def invoice_edit(request, pk):
                 return render(request, 'accounts/invoice_form.html', context)
             if save_as_draft:
                 obj.status = 'draft'
-            rows = _parse_payment_rows(request, obj.code)
+            rows, pay_errors = _parse_payment_rows(request, obj.code)
+            if pay_errors:
+                messages.error(request, ' '.join(pay_errors))
+                context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_parsed_rows(rows)))
+                return render(request, 'accounts/invoice_form.html', context)
             item_total = _formset_item_total(formset)
             after_discount = item_total - (item_total * (obj.discount or 0) / 100)
             obj.total = after_discount + (after_discount * (obj.tax or 0) / 100) + (obj.shipping or 0)
@@ -624,6 +646,9 @@ def payment_detail(request, pk):
 @login_required
 def payment_edit(request, pk):
     obj = get_object_or_404(Payment, pk=pk)
+    accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
+    invoices = Invoice.objects.all().order_by('-created_at')[:100]
+    clients = Client.objects.all().order_by('name')
     form = PaymentForm(request.POST or None, request.FILES or None, instance=obj,
                        method_choices=_available_payment_methods())
     if form.is_valid():
@@ -652,9 +677,6 @@ def payment_edit(request, pk):
         log_action(request, 'update', 'Payment', obj, description=f'{obj.amount} — {cname} — {obj.payment_date}')
         messages.success(request, 'Payment updated.')
         return redirect('payment_list')
-    accounts = BankAccount.objects.filter(is_active=True).order_by('account_category__account_type', 'account_name')
-    invoices = Invoice.objects.all().order_by('-created_at')[:100]
-    clients = Client.objects.all().order_by('name')
     return render(request, 'accounts/payment_form.html', {
         'form': form, 'action': 'Edit', 'accounts': accounts, 'invoices': invoices, 'clients': clients,
     })
@@ -707,7 +729,10 @@ def expense_list(request):
     total = qs.aggregate(Sum('amount'))['amount__sum'] or 0
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get('page'))
-    return render(request, 'accounts/expenses.html', {'expenses': page, 'total': total, 'q': q, 'category': category, 'sort': sort, 'dir': dir})
+    categories = [(CATEGORY_KEY_MAP.get(c.name.lower(), c.name.lower()), c.name)
+                  for c in ExpenseCategory.objects.filter(is_active=True).order_by('name')]
+    return render(request, 'accounts/expenses.html',
+                  {'expenses': page, 'total': total, 'q': q, 'category': category, 'sort': sort, 'dir': dir, 'categories': categories})
 
 
 @login_required

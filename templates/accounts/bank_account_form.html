@@ -403,7 +403,7 @@
     document.getElementById('bank-fields').style.display = type === 'bank' ? '' : 'none';
     document.getElementById('card-fields').style.display = isCard ? '' : 'none';
     document.getElementById('mobile-fields').style.display = type === 'mobile' ? '' : 'none';
-    document.getElementById('holder-fields').style.display = (type === 'mobile' || type === 'cash') ? '' : 'none';
+    document.getElementById('holder-fields').style.display = type === 'mobile' ? '' : 'none';
     document.getElementById('cash-fields').style.display = type === 'cash' ? '' : 'none';
     filterCategories(type);
   }

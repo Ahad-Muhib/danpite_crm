@@ -15,14 +15,9 @@
       <input type="hidden" name="dir" value="{{ dir }}">
       <select name="category" class="form-select form-select-sm" style="width:150px;">
         <option value="">All Categories</option>
-        <option value="office" {% if category == 'office' %}selected{% endif %}>Office Supplies</option>
-        <option value="travel" {% if category == 'travel' %}selected{% endif %}>Travel</option>
-        <option value="marketing" {% if category == 'marketing' %}selected{% endif %}>Marketing</option>
-        <option value="utilities" {% if category == 'utilities' %}selected{% endif %}>Utilities</option>
-        <option value="salary" {% if category == 'salary' %}selected{% endif %}>Salary</option>
-        <option value="rent" {% if category == 'rent' %}selected{% endif %}>Rent</option>
-        <option value="equipment" {% if category == 'equipment' %}selected{% endif %}>Equipment</option>
-        <option value="other" {% if category == 'other' %}selected{% endif %}>Other</option>
+        {% for value, label in categories %}
+        <option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
       </select>
       <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search me-1"></i>Search</button>
       {% if q or category %}

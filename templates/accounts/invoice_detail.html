@@ -4,12 +4,12 @@
 {% block page_title %}{{ invoice.code }}{% endblock %}
 {% block content %}
 <style>
-:root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff}
-.invoice-box{width:100%;margin:14px auto 40px;background:var(--paper);padding:54px;box-shadow:0 4px 24px #00000012;border-radius:10px}
+:root{--ink:var(--dash-ink);--muted:var(--dash-muted);--line:var(--dash-line);--soft:var(--dash-soft);--paper:#fff}
+.invoice-box{width:100%;margin:14px auto 40px;background:var(--paper);padding:54px;box-shadow:0 4px 24px rgba(95,36,146,.08);border-radius:10px}
 .top{display:grid;grid-template-columns:1.35fr .8fr;gap:60px}
 .logo-area{width:160px;min-height:80px;margin-bottom:20px;display:flex;align-items:center;justify-content:center}
 .logo-area img{max-width:150px;max-height:90px;object-fit:contain}
-.title{text-align:right;font-size:34px;font-weight:700;margin-bottom:6px}
+.title{text-align:right;font-size:34px;font-weight:700;margin-bottom:6px;color:var(--ink)}
 .code-line{display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
 .parties{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:26px}
 .label{font-weight:700;color:var(--muted);margin-bottom:3px}
@@ -22,9 +22,9 @@
 .balance{font-size:18px;font-weight:800;border-top:1px solid var(--line);margin-top:7px;padding-top:8px}
 .items{margin-top:34px}
 .items-head,.item-row{display:grid;grid-template-columns:minmax(250px,1fr) 90px 130px 130px;gap:6px;align-items:center}
-.items-head{background:#1f2937;color:#fff;border-radius:5px;padding:8px 10px;font-weight:700}
+.items-head{background:var(--brand-purple);color:#fff;border-radius:5px;padding:8px 10px;font-weight:700}
 .items-head div:not(:first-child){text-align:right}
-.item-row{padding:8px 10px;border-bottom:1px solid #eee;font-size:14px}
+.item-row{padding:8px 10px;border-bottom:1px solid #f0ecf5;font-size:14px}
 .item-row div:not(:first-child){text-align:right}
 .item-amount{font-weight:700}
 .bottom{display:grid;grid-template-columns:1fr 360px;gap:55px;margin-top:34px}
@@ -35,11 +35,11 @@
 .balance-due{font-size:18px;font-weight:800;border-top:1px solid var(--line);margin-top:7px;padding-top:8px}
 .paid{color:#16a34a;font-weight:600}
 .status-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.status-draft{background:#f1f5f9;color:#64748b}
-.status-sent{background:#dbeafe;color:#2563eb}
-.status-paid{background:#dcfce7;color:#16a34a}
-.status-overdue{background:#fee2e2;color:#dc2626}
-.status-cancelled{background:#f1f5f9;color:#64748b}
+.status-draft{background:var(--dash-soft);color:var(--dash-muted)}
+.status-sent{background:#ede5f5;color:var(--brand-purple)}
+.status-paid{background:#dcfce7;color:#166534}
+.status-overdue{background:#fef2f2;color:#991b1b}
+.status-cancelled{background:var(--dash-soft);color:var(--dash-muted)}
 @media(max-width:760px){
   .invoice-box{padding:24px;width:calc(100% - 20px)}
   .top,.parties,.bottom{grid-template-columns:1fr;gap:22px}

@@ -5,7 +5,8 @@ from django.forms import inlineformset_factory
 
 from clients.models import Client
 
-from .models import AccountCategory, BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, Transfer, CURRENCY_CHOICES, METHOD_CHOICES
+from .models import (AccountCategory, BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, Transfer,
+                     CURRENCY_CHOICES, METHOD_CHOICES, CATEGORY_KEY_MAP)
 
 
 class InvoiceForm(forms.ModelForm):
@@ -143,6 +144,16 @@ class PaymentForm(forms.ModelForm):
         exclude.add('method')
         return exclude
 
+    def clean(self):
+        cleaned = super().clean()
+        method = (cleaned.get('method') or '').strip().lower()
+        account = cleaned.get('account')
+        if not method:
+            raise forms.ValidationError('Select a payment method.')
+        if not account:
+            raise forms.ValidationError('Select the account from the bank accounts page for this payment method.')
+        return cleaned
+
 
 class ExpenseForm(forms.ModelForm):
     class Meta:
@@ -164,16 +175,22 @@ class ExpenseForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['expense_date'].initial = date.today()
         self.fields['description'].label = 'Notes'
-        cats = ExpenseCategory.objects.filter(is_active=True)
-        if cats:
-            choices = [(v, l) for v, l in Expense.CATEGORY]
-            seen = {v for v, _ in choices}
-            for c in cats:
-                key = c.name.lower()
-                if key not in seen:
-                    choices.append((key, c.name))
-                    seen.add(key)
-            self.fields['category'].choices = choices
+        cats = ExpenseCategory.objects.filter(is_active=True).order_by('name')
+        choices = []
+        seen = set()
+        for c in cats:
+            key = CATEGORY_KEY_MAP.get(c.name.lower(), c.name.lower())
+            if key in seen:
+                continue
+            choices.append((key, c.name))
+            seen.add(key)
+        if instance and instance.category:
+            existing = instance.category
+            if existing not in [k for k, _ in choices]:
+                choices.append((existing, instance.get_category_display()))
+        if not choices:
+            choices = list(Expense.CATEGORY)
+        self.fields['category'].choices = choices
         if method_choices is None:
             method_choices = list(METHOD_CHOICES)
         method_choices = [('', '-- Select Method --')] + list(method_choices)

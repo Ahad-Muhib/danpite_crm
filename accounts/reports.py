@@ -10,7 +10,7 @@ from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
 from django.template.loader import render_to_string
 
-from accounts.models import Invoice, Payment, Expense, BankAccount, ExpenseCategory, AccountCategory
+from accounts.models import Invoice, Payment, Expense, BankAccount, ExpenseCategory, AccountCategory, CATEGORY_KEY_MAP
 from core.models import Project
 
 
@@ -114,11 +114,10 @@ def _category_method(cat):
 
 
 def _expense_category_choices():
-    choices = OrderedDict(Expense.CATEGORY)
+    choices = OrderedDict()
     for c in ExpenseCategory.objects.filter(is_active=True):
-        key = c.name.lower()
-        if key not in choices:
-            choices[key] = c.name
+        key = CATEGORY_KEY_MAP.get(c.name.lower(), c.name.lower())
+        choices[key] = c.name
     return list(choices.items())
 
 

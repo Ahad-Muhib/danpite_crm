@@ -86,10 +86,6 @@
 
       {% elif cat.account_type == 'cash' %}
       <div class="col-md-6">
-        <label class="form-label fw-medium text-muted">Holder Name</label>
-        <div class="fw-medium">{{ account.holder_name }}</div>
-      </div>
-      <div class="col-md-6">
         <label class="form-label fw-medium text-muted">Contact Number</label>
         <div><code>{{ account.contact_number|default:"—" }}</code></div>
       </div>

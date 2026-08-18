@@ -6,7 +6,7 @@
 <!-- Quill CSS -->
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 <style>
-:root{--ink:#111827;--muted:#6b7280;--line:#d1d5db;--soft:#f3f4f6;--paper:#fff}
+:root{--ink:var(--dash-ink);--muted:var(--dash-muted);--line:var(--dash-line);--soft:var(--dash-soft);--paper:#fff}
 *{box-sizing:border-box}
 .field{width:100%;border:1px solid transparent;border-radius:4px;padding:7px 8px;background:transparent;font:inherit;color:inherit}
 .field:hover,.field:focus{border-color:var(--line);outline:none}
@@ -14,7 +14,7 @@ textarea.field{resize:vertical}
 select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor:pointer}
 .top{display:grid;grid-template-columns:1fr 1fr;gap:60px}
 
-.title{text-align:left;font-size:34px;font-weight:700;margin-bottom:6px}
+.title{text-align:left;font-size:34px;font-weight:700;margin-bottom:6px;color:var(--ink)}
 .number{display:flex;justify-content:flex-start;align-items:center;gap:4px}
 .parties{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:26px}
 .label{font-weight:700;color:var(--muted);margin-bottom:3px}
@@ -24,36 +24,37 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
 .balance{font-size:18px;font-weight:800;border-top:1px solid var(--line);margin-top:7px;padding-top:8px}
 .items{margin-top:34px}
 .items-head,.item{display:grid;grid-template-columns:minmax(250px,1fr) 90px 130px 130px 32px;gap:6px;align-items:center}
-.items-head{background:#1f2937;color:#fff;border-radius:5px;padding:3px 5px;font-weight:700}
+.items-head{background:var(--brand-purple);color:#fff;border-radius:5px;padding:3px 5px;font-weight:700}
 .items-head div:not(:first-child){text-align:left}
-.item{padding:7px 5px;border-bottom:1px solid #eee}
+.item{padding:7px 5px;border-bottom:1px solid #f0ecf5}
 .item input{text-align:left;border:1px solid var(--line);border-radius:4px;padding:5px 7px;font:inherit;font-size:13px}
 .item input:first-child{text-align:left;width:100%}
 .amount{text-align:left;font-weight:700}
-.remove{background:transparent;color:#9ca3af;padding:5px;font-size:18px;cursor:pointer;border:0}
-.add{margin-top:10px;background:transparent;color:#374151;border:1px solid var(--line);font-weight:600;padding:8px 14px;border-radius:5px;cursor:pointer;font-size:13px}
+.remove{background:transparent;color:var(--dash-muted);padding:5px;font-size:18px;cursor:pointer;border:0}
+.remove:hover{color:var(--dash-red)}
+.add{margin-top:10px;background:transparent;color:var(--brand);border:1px solid var(--line);font-weight:600;padding:8px 14px;border-radius:5px;cursor:pointer;font-size:13px}
 .add:hover{background:var(--soft)}
 .bottom{display:grid;grid-template-columns:1fr 360px;gap:55px;margin-top:34px}
 .notes textarea.field{border:1px solid var(--line);min-height:72px;margin-bottom:18px}
 .ql-editor{min-height:150px}
 .sum-row{display:grid;grid-template-columns:1fr 155px;align-items:center}
 .sum-row input{border:1px solid var(--line);border-radius:4px;padding:5px 8px;font:inherit;font-size:13px;text-align:left}
-.sum-row input:focus{outline:none;border-color:#0d6efd}
+.sum-row input:focus{outline:none;border-color:var(--brand)}
 .total{border-top:2px solid var(--line);font-size:17px;font-weight:700;padding-top:6px;margin-top:5px}
 .money{padding:7px 8px}
 #id_amount_paid{display:none}
-.add-pay-btn:hover,.add-pay-btn:focus{background:var(--soft);border-color:var(--line);color:var(--dash-text,#111827);outline:none;box-shadow:none}
+.add-pay-btn:hover,.add-pay-btn:focus{background:var(--soft);border-color:var(--line);color:var(--dash-text);outline:none;box-shadow:none}
 @media(max-width:760px){
   .top,.parties,.bottom{grid-template-columns:1fr;gap:22px}
   .title{text-align:left}.number{justify-content:flex-start}
   .items{overflow-x:auto}.items-head,.item{min-width:690px}
 }
-.acct-dropdown{position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12)}
-.acct-dropdown-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #f3f4f6}
+.acct-dropdown{position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid var(--dash-line);border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(95,36,146,.12)}
+.acct-dropdown-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #f0ecf5}
 .acct-dropdown-item:last-child{border-bottom:0}
-.acct-dropdown-item:hover{background:#f0fdf4}
+.acct-dropdown-item:hover{background:var(--brand-vlight)}
 .acct-dropdown-item .acct-num{font-weight:600;font-size:13px}
-.acct-dropdown-item .acct-detail{font-size:11px;color:#6b7280}
+.acct-dropdown-item .acct-detail{font-size:11px;color:var(--dash-muted)}
 </style>
 
 <div class="inv-wrap" style="width:100%;margin:14px auto 40px;background:var(--paper);padding:54px;box-shadow:0 4px 24px #00000012;border-radius:10px;">
@@ -450,9 +451,8 @@ document.addEventListener('DOMContentLoaded', function(){
     var acctNum = acc && acc.account_number ? acc.account_number : '';
     var mobNum = acc && acc.mobile_number ? acc.mobile_number : '';
     var mobHolder = acc && acc.mobile_holder ? acc.mobile_holder : '';
-    var cashHolder = acc && acc.holder_name ? acc.holder_name : '';
-    var cardNum = data.card_number || '';
-    var cardHolder = data.card_holder || '';
+    var cashDisplay = acc && acc.display_name ? acc.display_name : '';
+    var cardDisplay = acc && acc.display_name ? acc.display_name : '';
     var accPk = acc ? acc.pk : '';
 
     return '<div class="payment-row" style="border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:10px;background:#fff;">' +
@@ -506,8 +506,8 @@ document.addEventListener('DOMContentLoaded', function(){
       '<div class="pay-section pay-cash" style="display:none;margin-top:10px;background:var(--dash-soft);border:1px solid var(--dash-line);border-radius:6px;padding:10px;">' +
         '<div class="row g-2">' +
           '<div class="col-md-6" style="position:relative;">' +
-            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Cash Holder Name</label>' +
-            '<input type="text" class="form-control form-control-sm pay-cash-holder" placeholder="Search by holder name..." autocomplete="off" value="' + escJs(cashHolder) + '">' +
+            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Cash Account</label>' +
+            '<input type="text" class="form-control form-control-sm pay-cash-holder" placeholder="Search cash account..." autocomplete="off" value="' + escJs(cashDisplay) + '">' +
             '<div class="acct-dropdown pay-cash-dropdown" style="display:none;"></div>' +
           '</div>' +
           '<div class="col-md-6 d-flex align-items-end"><div class="pay-cash-info small text-muted" style="display:none;"></div></div>' +
@@ -515,14 +515,12 @@ document.addEventListener('DOMContentLoaded', function(){
       '</div>' +
       '<div class="pay-section pay-card" style="display:none;margin-top:10px;background:var(--dash-soft);border:1px solid var(--dash-line);border-radius:6px;padding:10px;">' +
         '<div class="row g-2">' +
-          '<div class="col-md-6">' +
-            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Card Number (last 4)</label>' +
-            '<input type="text" name="payments-' + idx + '-card_number" class="form-control form-control-sm" placeholder="Last 4 digits" maxlength="4" value="' + escJs(cardNum) + '">' +
+          '<div class="col-md-6" style="position:relative;">' +
+            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Card Account</label>' +
+            '<input type="text" class="form-control form-control-sm pay-card-search" placeholder="Search card account..." autocomplete="off" value="' + escJs(cardDisplay) + '">' +
+            '<div class="acct-dropdown pay-card-dropdown" style="display:none;"></div>' +
           '</div>' +
-          '<div class="col-md-6">' +
-            '<label class="form-label fw-medium" style="font-size:11px;margin-bottom:2px;">Card Holder</label>' +
-            '<input type="text" name="payments-' + idx + '-card_holder" class="form-control form-control-sm" placeholder="Name on card" value="' + escJs(cardHolder) + '">' +
-          '</div>' +
+          '<div class="col-md-6 d-flex align-items-end"><div class="pay-card-info small text-muted" style="display:none;"></div></div>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -560,7 +558,10 @@ document.addEventListener('DOMContentLoaded', function(){
     togglePaySections(row, method);
     if (data && data.account) {
       var catType = data.account.category_type;
-      if (catType === 'bank') {
+      if (catType === 'bank' && data.account.category_name && data.account.category_name.toLowerCase() === 'card') {
+        var cardinfo = row.querySelector('.pay-card-info');
+        if (cardinfo) { cardinfo.textContent = data.account.display_name || 'Card'; cardinfo.style.display = 'block'; }
+      } else if (catType === 'bank') {
         var info = row.querySelector('.pay-acct-info');
         if (info) { info.textContent = 'A/C: ' + (data.account.account_number || '') + (data.account.bank_name ? ' · ' + data.account.bank_name : ''); info.style.display = 'block'; }
       } else if (catType === 'mobile') {
@@ -568,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function(){
         if (minfo) { minfo.textContent = (data.account.category_name || method) + ' · ' + (data.account.mobile_holder || '—'); minfo.style.display = 'block'; }
       } else if (catType === 'cash') {
         var cinfo = row.querySelector('.pay-cash-info');
-        if (cinfo) { cinfo.textContent = data.account.holder_name || '—'; cinfo.style.display = 'block'; }
+        if (cinfo) { cinfo.textContent = data.account.display_name || 'Cash'; cinfo.style.display = 'block'; }
       }
     }
   }
@@ -642,6 +643,7 @@ document.addEventListener('DOMContentLoaded', function(){
     var dropdown = row.querySelector('.pay-mobile-dropdown');
     var holder = row.querySelector('.pay-mobile-holder');
     var info = row.querySelector('.pay-mobile-info');
+    var pk = row.querySelector('.pay-account-pk');
     var methodSel = row.querySelector('.pay-method');
     var cache = [];
     function close() { dropdown.style.display = 'none'; }
@@ -657,6 +659,7 @@ document.addEventListener('DOMContentLoaded', function(){
           e.preventDefault();
           input.value = a.mobile_number;
           if (holder) holder.value = a.holder_name || '';
+          if (pk) pk.value = a.id;
           show(a);
           close();
         });
@@ -680,6 +683,7 @@ document.addEventListener('DOMContentLoaded', function(){
       var exact = cache.find(function(a) { return a.mobile_number === val; });
       if (exact) {
         if (holder) holder.value = exact.holder_name || '';
+        if (pk) pk.value = exact.id;
         show(exact); close(); return;
       }
       info.style.display = 'none';
@@ -692,7 +696,7 @@ document.addEventListener('DOMContentLoaded', function(){
       fetchData();
       setTimeout(function() {
         var exact = cache.find(function(a) { return a.mobile_number === input.value; });
-        if (exact) { if (holder) holder.value = exact.holder_name || ''; show(exact); }
+        if (exact) { if (holder) holder.value = exact.holder_name || ''; if (pk) pk.value = exact.id; show(exact); }
       }, 300);
     }
   }
@@ -703,17 +707,17 @@ document.addEventListener('DOMContentLoaded', function(){
     var pk = row.querySelector('.pay-account-pk');
     var info = row.querySelector('.pay-cash-info');
     function close() { dropdown.style.display = 'none'; }
-    function show(a) { info.textContent = 'Holder: ' + (a.holder_name || '—') + (a.contact_number ? ' · ' + a.contact_number : ''); info.style.display = 'block'; }
+    function show(a) { info.textContent = a.display_name || 'Cash' + (a.contact_number ? ' · ' + a.contact_number : ''); info.style.display = 'block'; }
     function render(matches) {
       if (!matches || !matches.length) { close(); return; }
       dropdown.innerHTML = '';
       matches.forEach(function(a) {
         var item = document.createElement('div');
         item.className = 'acct-dropdown-item';
-        item.innerHTML = '<div class="acct-num">' + escJs(a.holder_name || '—') + '</div><div class="acct-detail">' + escJs(a.contact_number || '') + '</div>';
+        item.innerHTML = '<div class="acct-num">' + escJs(a.display_name || 'Cash') + '</div><div class="acct-detail">' + escJs(a.contact_number || '') + '</div>';
         item.addEventListener('mousedown', function(e) {
           e.preventDefault();
-          input.value = a.holder_name || '';
+          input.value = a.display_name || 'Cash';
           pk.value = a.id;
           show(a);
           close();
@@ -724,21 +728,73 @@ document.addEventListener('DOMContentLoaded', function(){
     }
     input.addEventListener('input', function() {
       var val = this.value.trim().toLowerCase();
-      var exact = cashAccountsGlobal.find(function(a) { return (a.holder_name || '').toLowerCase() === val; });
+      var exact = cashAccountsGlobal.find(function(a) { return (a.display_name || 'cash').toLowerCase() === val; });
       if (exact) { pk.value = exact.id; show(exact); close(); return; }
       info.style.display = 'none';
-      var fuzzy = val ? cashAccountsGlobal.filter(function(a) { return (a.holder_name || '').toLowerCase().indexOf(val) !== -1; }) : cashAccountsGlobal;
+      var fuzzy = val ? cashAccountsGlobal.filter(function(a) { return (a.display_name || 'cash').toLowerCase().indexOf(val) !== -1; }) : cashAccountsGlobal;
       render(fuzzy);
     });
     input.addEventListener('focus', function() { if (cashAccountsGlobal.length) render(cashAccountsGlobal); });
     input.addEventListener('blur', function() { setTimeout(close, 200); });
   }
 
+  function wireCard(row) {
+    var input = row.querySelector('.pay-card-search');
+    var dropdown = row.querySelector('.pay-card-dropdown');
+    var pk = row.querySelector('.pay-account-pk');
+    var info = row.querySelector('.pay-card-info');
+    var cache = [];
+    function close() { dropdown.style.display = 'none'; }
+    function show(a) { info.textContent = (a.category || 'Card') + ' · ' + (a.display_name || '—'); info.style.display = 'block'; }
+    function render(matches) {
+      if (!matches || !matches.length) { close(); return; }
+      dropdown.innerHTML = '';
+      matches.forEach(function(a) {
+        var item = document.createElement('div');
+        item.className = 'acct-dropdown-item';
+        item.innerHTML = '<div class="acct-num">' + escJs(a.display_name) + '</div><div class="acct-detail">' + escJs(a.branch || '') + '</div>';
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = a.display_name;
+          if (pk) pk.value = a.id;
+          show(a);
+          close();
+        });
+        dropdown.appendChild(item);
+      });
+      dropdown.style.display = 'block';
+    }
+    function fetchData() {
+      var catPk = METHOD_CATEGORY_MAP['card'];
+      if (!catPk) { cache = []; return; }
+      fetch('/accounts/bank-accounts-by-bank/?category=' + catPk)
+        .then(function(r) { return r.json(); })
+        .then(function(data) { cache = data.accounts; });
+    }
+    input.addEventListener('input', function() {
+      var val = this.value.trim().toLowerCase();
+      var exact = cache.find(function(a) { return (a.display_name || '').toLowerCase() === val; });
+      if (exact) { if (pk) pk.value = exact.id; show(exact); close(); return; }
+      info.style.display = 'none';
+      var fuzzy = val ? cache.filter(function(a) { return (a.display_name || '').toLowerCase().indexOf(val) !== -1; }) : cache;
+      render(fuzzy);
+    });
+    input.addEventListener('focus', function() { if (cache.length) render(cache); });
+    input.addEventListener('blur', function() { setTimeout(close, 200); });
+    if (input.value) {
+      fetchData();
+      setTimeout(function() {
+        var exact = cache.find(function(a) { return a.display_name === input.value; });
+        if (exact) { if (pk) pk.value = exact.id; show(exact); }
+      }, 300);
+    }
+  }
+
   function addPaymentRow(data) {
     var idx = paymentRowsEl.querySelectorAll('.payment-row').length;
     paymentRowsEl.insertAdjacentHTML('beforeend', paymentRowHtml(idx, data));
     var row = paymentRowsEl.lastElementChild;
-    wireBank(row); wireMobile(row); wireCash(row);
+    wireBank(row); wireMobile(row); wireCash(row); wireCard(row);
     setupPaymentRow(row, data);
     reindexPaymentRows();
     calculate();

@@ -6,20 +6,20 @@
 {% block extra_head %}
 <style>
 :root {
-  --dash-ink: #151515;
-  --dash-muted: #7b7b76;
-  --dash-soft: #f4f4f1;
-  --dash-line: #deded8;
-  --dash-line-dark: #c9c9c1;
+  --dash-ink: #1a1025;
+  --dash-muted: #7c6e8a;
+  --dash-soft: #f3f0f8;
+  --dash-line: #e4ddf0;
+  --dash-line-dark: #cfc4de;
   --dash-green: #0ead7b;
 }
 
 body {
-  background: #eeeeeb;
+  background: #f8f6fc;
 }
 
 #main {
-  background: #f7f7f4;
+  background: #f8f6fc;
 }
 
 .dash-shell {
@@ -44,7 +44,7 @@ body {
 
 .dash-search {
   align-items: center;
-  color: #595955;
+  color: #7c6e8a;
   display: flex;
   flex: 1 1 320px;
   gap: 9px;
@@ -79,15 +79,15 @@ body {
 }
 
 .dash-avatar {
-  background: #ece9df;
+  background: #ede5f5;
   border-radius: 50%;
   font-weight: 700;
 }
 
 .btn-black {
-  background: var(--dash-ink);
-  border: 1px solid var(--dash-ink);
-  border-radius: 2px;
+  background: #d90094;
+  border: 1px solid #d90094;
+  border-radius: 6px;
   color: #fff;
   font-size: 12px;
   padding: 7px 10px;
@@ -98,7 +98,7 @@ body {
 }
 
 .btn-black:hover {
-  background: #000;
+  background: #b8007d;
   color: #fff;
 }
 
@@ -127,8 +127,8 @@ body {
 }
 
 .stat-card:hover {
-  border-color: var(--dash-line-dark);
-  box-shadow: 0 10px 24px rgba(21, 21, 21, 0.06);
+  border-color: #cfc4de;
+  box-shadow: 0 10px 24px rgba(95, 36, 146, 0.08);
   color: var(--dash-ink);
 }
 
@@ -160,8 +160,8 @@ body {
 
 .stat-footer {
   align-items: center;
-  border-top: 1px solid #eeeeea;
-  color: #8a8a84;
+  border-top: 1px solid #f0ecf5;
+  color: #7c6e8a;
   display: flex;
   font-size: 11px;
   gap: 8px;
@@ -201,7 +201,7 @@ body {
 .sparkline path,
 .sparkline polyline {
   fill: none;
-  stroke: #1b1b19;
+  stroke: #5f2492;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.6;
@@ -262,13 +262,13 @@ body {
 }
 
 .dash-mini-btn:hover {
-  border-color: var(--dash-ink);
-  color: var(--dash-ink);
+  border-color: #d90094;
+  color: #d90094;
 }
 
 .legend {
   align-items: center;
-  color: #878780;
+  color: #7c6e8a;
   display: inline-flex;
   font-size: 12px;
   gap: 11px;
@@ -281,7 +281,7 @@ body {
 }
 
 .legend i {
-  background: #20201d;
+  background: #d90094;
   border-radius: 50%;
   display: inline-block;
   height: 6px;
@@ -289,7 +289,7 @@ body {
 }
 
 .legend .muted-dot {
-  background: #bdbdb6;
+  background: #cfc4de;
 }
 
 .chart-wrap {
@@ -357,7 +357,7 @@ body {
 }
 
 .mini-kpi .kpi-note {
-  color: #94948e;
+  color: #7c6e8a;
   font-size: 12px;
   margin-top: 4px;
 }
@@ -375,7 +375,7 @@ body {
 }
 
 .dash-table th {
-  color: #8a8a84;
+  color: #7c6e8a;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -389,7 +389,7 @@ body {
 
 .dash-table td,
 .dash-table th {
-  border-color: #eeeeea;
+  border-color: #f0ecf5;
   padding: 11px 18px;
   white-space: nowrap;
 }
@@ -401,14 +401,14 @@ body {
 }
 
 .dash-table .row-title:hover {
-  color: #000;
+  color: #d90094;
   text-decoration: underline;
 }
 
 .badge-mono {
-  background: #f4f4f1;
+  background: var(--dash-soft);
   border: 1px solid var(--dash-line);
-  color: #343430;
+  color: #3d3450;
   font-size: 11px;
   font-weight: 600;
 }
@@ -486,7 +486,7 @@ body {
       <a href="{% url 'payment_create' %}" class="btn-black"><i class="bi bi-cash-coin"></i> Payment</a>
       <a href="{% url 'lead_create' %}" class="btn-black"><i class="bi bi-person-plus"></i> New Lead</a>
       <div class="dropdown">
-        <button class="btn-black dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background:#fff;color:var(--dash-ink);border-color:var(--dash-line);">
+        <button class="btn-black dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background:#fff;color:var(--brand);border-color:var(--brand-light);">
           <i class="bi bi-plus-lg"></i> More
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
@@ -558,10 +558,10 @@ body {
           <div class="stat-value is-money">{{ net_balance|currency }}</div>
         </div>
         <svg class="gauge" viewBox="0 0 84 52" aria-hidden="true">
-          <path d="M14 43a28 28 0 0 1 56 0" fill="none" stroke="#d8d8d1" stroke-width="4"/>
-          <path d="M14 43a28 28 0 0 1 50-17" fill="none" stroke="#151515" stroke-width="4"/>
+          <path d="M14 43a28 28 0 0 1 56 0" fill="none" stroke="#e4ddf0" stroke-width="4"/>
+          <path d="M14 43a28 28 0 0 1 50-17" fill="none" stroke="#d90094" stroke-width="4"/>
           <path d="M63 26l7-3" fill="none" stroke="#0ead7b" stroke-width="4"/>
-          <circle cx="42" cy="43" r="2" fill="#151515"/>
+          <circle cx="42" cy="43" r="2" fill="#5f2492"/>
         </svg>
       </div>
       <div class="stat-footer">
@@ -861,23 +861,25 @@ document.addEventListener('DOMContentLoaded', function() {
             type: 'line',
             label: 'Revenue',
             data: revenueValues,
-            borderColor: '#151515',
-            backgroundColor: '#151515',
-            borderWidth: 1.6,
+            borderColor: '#d90094',
+            backgroundColor: 'rgba(217, 0, 148, 0.08)',
+            borderWidth: 2,
             tension: 0.28,
             pointRadius: 0,
             pointHoverRadius: 4,
+            fill: true,
           },
           {
             type: 'line',
             label: 'Expenses',
             data: expenseValues,
-            borderColor: '#a8a8a0',
-            backgroundColor: '#a8a8a0',
+            borderColor: '#cfc4de',
+            backgroundColor: 'rgba(207, 196, 222, 0.08)',
             borderWidth: 1.2,
             tension: 0.28,
             pointRadius: 0,
             pointHoverRadius: 4,
+            fill: true,
           },
         ]
       },
@@ -891,8 +893,8 @@ document.addEventListener('DOMContentLoaded', function() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#151515',
-            borderColor: '#151515',
+            backgroundColor: '#5f2492',
+            borderColor: '#5f2492',
             titleFont: font,
             bodyFont: font,
           }
@@ -900,14 +902,14 @@ document.addEventListener('DOMContentLoaded', function() {
         scales: {
           x: {
             border: { display: false },
-            grid: { color: '#eeeeea', drawTicks: false },
-            ticks: { color: '#8a8a84', font: font, maxRotation: 0 },
+            grid: { color: '#f0ecf5', drawTicks: false },
+            ticks: { color: '#7c6e8a', font: font, maxRotation: 0 },
           },
           y: {
             beginAtZero: true,
             border: { display: false },
-            grid: { color: '#e7e7e1', borderDash: [2, 4] },
-            ticks: { color: '#8a8a84', font: font },
+            grid: { color: '#e4ddf0', borderDash: [2, 4] },
+            ticks: { color: '#7c6e8a', font: font },
           }
         }
       }
@@ -926,7 +928,7 @@ document.addEventListener('DOMContentLoaded', function() {
           {
             label: 'Leads',
             data: sourceValues,
-            backgroundColor: '#4d4d48',
+            backgroundColor: '#8b5fbf',
             borderRadius: 0,
             barPercentage: 0.46,
             categoryPercentage: 0.64,
@@ -942,7 +944,7 @@ document.addEventListener('DOMContentLoaded', function() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#151515',
+            backgroundColor: '#5f2492',
             titleFont: font,
             bodyFont: font,
           }
@@ -951,13 +953,13 @@ document.addEventListener('DOMContentLoaded', function() {
           x: {
             border: { display: false },
             grid: { display: false },
-            ticks: { color: '#8a8a84', font: font },
+            ticks: { color: '#7c6e8a', font: font },
           },
           y: {
             beginAtZero: true,
             border: { display: false },
-            grid: { color: '#e7e7e1', borderDash: [2, 4] },
-            ticks: { color: '#8a8a84', font: font },
+            grid: { color: '#e4ddf0', borderDash: [2, 4] },
+            ticks: { color: '#7c6e8a', font: font },
           }
         }
       }

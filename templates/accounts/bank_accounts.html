@@ -57,8 +57,8 @@
           <td><input type="checkbox" name="selected_accounts" value="{{ a.pk }}" class="form-check-input account-checkbox" form="account-bulk-form"></td>
           <td>{{ cat.name|default:"—" }}</td>
           <td>{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.bank_name }}{% elif cat.account_type == 'bank' %}{{ a.bank_name }}{% endif %}</td>
-          <td class="fw-medium">{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.card_holder_name }}{% else %}{{ a.account_name|default:a.holder_name }}{% endif %}</td>
-          <td><code>{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.card_number }}{% else %}{{ a.account_number|default:a.mobile_number }}{% endif %}</code></td>
+          <td class="fw-medium">{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.card_holder_name }}{% elif cat.account_type == 'cash' %}—{% else %}{{ a.account_name|default:a.holder_name }}{% endif %}</td>
+          <td><code>{% if cat.account_type == 'bank' and cat.name|lower == 'card' %}{{ a.card_number }}{% elif cat.account_type == 'cash' %}{{ a.contact_number|default:'—' }}{% else %}{{ a.account_number|default:a.mobile_number }}{% endif %}</code></td>
           <td>
             <div class="dropdown">
               <button class="btn btn-sm dropdown-toggle {% if a.is_active %}btn-success{% else %}btn-secondary{% endif %}" data-bs-toggle="dropdown" data-bs-boundary="window">
