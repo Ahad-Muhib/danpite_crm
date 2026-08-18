@@ -76,6 +76,7 @@ select.field{border:1px solid var(--line);padding:7px 8px;background:#fff;cursor
         <div class="label">Bill To</div>
         <div style="position:relative;">
           {{ form.bill_to_name }}
+          <input type="hidden" id="id_client_pk" name="client_pk" value="{% if invoice and invoice.client %}{{ invoice.client.pk }}{% endif %}">
           <div id="inv-client-dropdown" class="acct-dropdown" style="display:none;"></div>
         </div>
         <div style="margin-top:6px;">{{ form.phone }}</div>
@@ -279,6 +280,7 @@ document.addEventListener('DOMContentLoaded', function(){
     {% endfor %}
   ];
   var billToInput = document.getElementById('id_bill_to_name');
+  var clientPkInput = document.getElementById('id_client_pk');
   var invClientDropdown = document.getElementById('inv-client-dropdown');
   var phoneInput = document.getElementById('id_phone');
   var addressInput = document.getElementById('id_ship_to');
@@ -299,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function(){
       item.addEventListener('mousedown', function(e) {
         e.preventDefault();
         billToInput.value = c.name;
+        clientPkInput.value = c.pk || '';
         phoneInput.value = c.phone || '';
         addressInput.value = c.address || '';
         invClientDropdown.style.display = 'none';
@@ -311,6 +314,7 @@ document.addEventListener('DOMContentLoaded', function(){
   function closeClientDropdown() { invClientDropdown.style.display = 'none'; }
 
   billToInput.addEventListener('input', function() {
+    clientPkInput.value = '';
     var q = this.value.trim().toLowerCase();
     if (!q) { closeClientDropdown(); return; }
     var results = clientsData.filter(function(c) { return c.name.toLowerCase().includes(q); });
@@ -326,6 +330,16 @@ document.addEventListener('DOMContentLoaded', function(){
   });
   document.addEventListener('click', function(e) {
     if (!e.target.closest('#id_bill_to_name') && !e.target.closest('#inv-client-dropdown') && !e.target.closest('#add-bill-to-btn')) closeClientDropdown();
+  });
+
+  document.querySelector('form').addEventListener('submit', function(e) {
+    var name = billToInput.value.trim();
+    if (name && !clientPkInput.value) {
+      e.preventDefault();
+      billToInput.focus();
+      billToInput.style.borderColor = '#dc2626';
+      alert('Please select a client from the dropdown list.');
+    }
   });
 
   const rows = document.getElementById('rows');

@@ -12,7 +12,6 @@ from django.template.loader import render_to_string
 
 from core.models import log_action
 from clients.models import Client
-from leads.models import LeadContact
 
 from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm, TransferForm
 from .models import (AccountCategory, AccountType, BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer,
@@ -46,16 +45,10 @@ def _available_payment_methods():
 
 
 def _client_suggestions():
-    data = [
+    return [
         {'pk': c.pk, 'name': c.name, 'phone': c.phone or '', 'address': c.address or ''}
         for c in Client.objects.all().order_by('name')
     ]
-    seen = {d['name'] for d in data}
-    for lead in LeadContact.objects.exclude(name='').order_by('name'):
-        if lead.name not in seen:
-            data.append({'pk': None, 'name': lead.name, 'phone': lead.phone or '', 'address': lead.address or ''})
-            seen.add(lead.name)
-    return data
 
 
 def _parse_payment_rows(request, invoice_code):
@@ -338,9 +331,18 @@ def invoice_create(request):
             if not obj.currency:
                 obj.currency = 'BDT'
             bill_to = form.cleaned_data.get('bill_to_name', '').strip()
-            if bill_to:
-                client, _ = Client.objects.get_or_create(name=bill_to)
-                obj.client = client
+            client_pk = request.POST.get('client_pk', '').strip()
+            if bill_to and client_pk:
+                try:
+                    obj.client = Client.objects.get(pk=client_pk)
+                except (Client.DoesNotExist, ValueError):
+                    messages.error(request, 'Please select a valid client from the dropdown.')
+                    context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps([]))
+                    return render(request, 'accounts/invoice_form.html', context)
+            elif bill_to and not client_pk:
+                messages.error(request, 'Please select a client from the dropdown instead of typing a name.')
+                context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps([]))
+                return render(request, 'accounts/invoice_form.html', context)
             if save_as_draft:
                 obj.status = 'draft'
             rows = _parse_payment_rows(request, '')
@@ -403,9 +405,18 @@ def invoice_edit(request, pk):
                 if not getattr(obj, f, None):
                     setattr(obj, f, 0)
             bill_to = form.cleaned_data.get('bill_to_name', '').strip()
-            if bill_to:
-                client, _ = Client.objects.get_or_create(name=bill_to)
-                obj.client = client
+            client_pk = request.POST.get('client_pk', '').strip()
+            if bill_to and client_pk:
+                try:
+                    obj.client = Client.objects.get(pk=client_pk)
+                except (Client.DoesNotExist, ValueError):
+                    messages.error(request, 'Please select a valid client from the dropdown.')
+                    context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_parsed_rows(rows)))
+                    return render(request, 'accounts/invoice_form.html', context)
+            elif bill_to and not client_pk:
+                messages.error(request, 'Please select a client from the dropdown instead of typing a name.')
+                context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_parsed_rows(rows)))
+                return render(request, 'accounts/invoice_form.html', context)
             else:
                 obj.client = None
             if save_as_draft:
