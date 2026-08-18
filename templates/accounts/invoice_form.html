@@ -334,11 +334,18 @@ document.addEventListener('DOMContentLoaded', function(){
 
   document.querySelector('form').addEventListener('submit', function(e) {
     var name = billToInput.value.trim();
-    if (name && !clientPkInput.value) {
+    if (!name || !clientPkInput.value) {
       e.preventDefault();
       billToInput.focus();
       billToInput.style.borderColor = '#dc2626';
       alert('Please select a client from the dropdown list.');
+      return;
+    }
+    var total = parseFloat(document.getElementById('total')?.textContent.replace(/[^0-9.\-]/g, '')) || 0;
+    if (total <= 0) {
+      e.preventDefault();
+      alert('Please add at least one line item with a valid amount.');
+      return;
     }
   });
 

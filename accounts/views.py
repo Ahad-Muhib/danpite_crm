@@ -343,6 +343,15 @@ def invoice_create(request):
                 messages.error(request, 'Please select a client from the dropdown instead of typing a name.')
                 context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps([]))
                 return render(request, 'accounts/invoice_form.html', context)
+            elif not bill_to:
+                messages.error(request, 'Please select a client before creating an invoice.')
+                context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps([]))
+                return render(request, 'accounts/invoice_form.html', context)
+            item_total = _formset_item_total(formset)
+            if item_total <= 0:
+                messages.error(request, 'Please add at least one line item with a valid amount.')
+                context = _invoice_form_context(request, form, formset, obj, 'Create', json.dumps([]))
+                return render(request, 'accounts/invoice_form.html', context)
             if save_as_draft:
                 obj.status = 'draft'
             rows = _parse_payment_rows(request, '')
@@ -411,14 +420,21 @@ def invoice_edit(request, pk):
                     obj.client = Client.objects.get(pk=client_pk)
                 except (Client.DoesNotExist, ValueError):
                     messages.error(request, 'Please select a valid client from the dropdown.')
-                    context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_parsed_rows(rows)))
+                    context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_payments(obj)))
                     return render(request, 'accounts/invoice_form.html', context)
             elif bill_to and not client_pk:
                 messages.error(request, 'Please select a client from the dropdown instead of typing a name.')
-                context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_parsed_rows(rows)))
+                context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_payments(obj)))
                 return render(request, 'accounts/invoice_form.html', context)
-            else:
-                obj.client = None
+            elif not bill_to:
+                messages.error(request, 'Please select a client before saving an invoice.')
+                context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_payments(obj)))
+                return render(request, 'accounts/invoice_form.html', context)
+            item_total = _formset_item_total(formset)
+            if item_total <= 0:
+                messages.error(request, 'Please add at least one line item with a valid amount.')
+                context = _invoice_form_context(request, form, formset, obj, 'Edit', json.dumps(_serialize_payments(obj)))
+                return render(request, 'accounts/invoice_form.html', context)
             if save_as_draft:
                 obj.status = 'draft'
             rows = _parse_payment_rows(request, obj.code)
