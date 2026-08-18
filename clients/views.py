@@ -29,10 +29,10 @@ def client_list(request):
 
     q = request.GET.get('q', '')
     status = request.GET.get('status', '')
-    sort_by = request.GET.get('sort', 'name')
-    sort_order = request.GET.get('order', 'asc')
-    valid_sorts = {'id': 'id', 'name': 'name'}
-    sort_field = valid_sorts.get(sort_by, 'name')
+    sort_by = request.GET.get('sort', 'created')
+    sort_order = request.GET.get('order', 'desc')
+    valid_sorts = {'id': 'id', 'name': 'name', 'created': 'created_at'}
+    sort_field = valid_sorts.get(sort_by, 'created_at')
     order_field = sort_field if sort_order == 'asc' else f'-{sort_field}'
     qs = Client.objects.all().order_by(order_field)
     if q:

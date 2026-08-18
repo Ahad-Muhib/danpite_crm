@@ -685,10 +685,10 @@ def expense_list(request):
         return redirect('expense_list')
     q = request.GET.get('q', '')
     category = request.GET.get('category', '')
-    sort = request.GET.get('sort', 'date')
+    sort = request.GET.get('sort', 'created')
     dir = request.GET.get('dir', 'desc')
     sort_map = {'id': 'id', 'title': 'title', 'category': 'category', 'method': 'method', 'amount': 'amount', 'date': 'expense_date', 'created': 'created_at'}
-    order = sort_map.get(sort, 'expense_date')
+    order = sort_map.get(sort, 'created_at')
     if dir == 'desc':
         order = '-' + order
     qs = Expense.objects.all().order_by(order)
@@ -764,8 +764,8 @@ def expense_category_list(request):
         return redirect('expense_category_list')
     q = request.GET.get('q', '').strip()
     status_filter = request.GET.get('status', '')
-    sort = request.GET.get('sort', 'name')
-    dir = request.GET.get('dir', 'asc')
+    sort = request.GET.get('sort', 'created')
+    dir = request.GET.get('dir', 'desc')
     qs = ExpenseCategory.objects.all()
     if q:
         qs = qs.filter(name__icontains=q)
@@ -774,7 +774,7 @@ def expense_category_list(request):
     if sort in ('name', 'created_at'):
         qs = qs.order_by(sort if dir == 'asc' else f'-{sort}')
     else:
-        qs = qs.order_by('name')
+        qs = qs.order_by('-created_at')
     return render(request, 'accounts/expense_category_list.html', {
         'categories': qs, 'q': q, 'status_filter': status_filter, 'sort': sort, 'dir': dir,
     })
