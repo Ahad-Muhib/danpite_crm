@@ -11,6 +11,8 @@
       <input type="date" name="to" value="{{ to }}" class="form-control form-control-sm" style="width:160px;">
       <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-funnel me-1"></i>Filter</button>
       {% if from or to %}<a href="{% url 'sales_report' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>{% endif %}
+      <a href="{% url 'sales_report_pdf' %}?{% if from %}from={{ from }}&{% endif %}{% if to %}to={{ to }}&{% endif %}{% if selected_month %}month={{ selected_month }}{% endif %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success"><i class="bi bi-filetype-pdf me-1"></i>Download PDF</a>
+      <a href="{% url 'sales_report_print' %}?{% if from %}from={{ from }}&{% endif %}{% if to %}to={{ to }}&{% endif %}{% if selected_month %}month={{ selected_month }}{% endif %}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>Print</a>
     </form>
   </div>
 </div>

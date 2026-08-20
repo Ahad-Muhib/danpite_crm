@@ -58,5 +58,7 @@ urlpatterns = [
     path('accounts/reports/bank-details/pdf/', reports.bank_details_pdf, name='bank_details_report_pdf'),
     path('accounts/reports/bank-details/print/', reports.bank_details_print, name='bank_details_report_print'),
     path('accounts/reports/sales/', reports.sales_report, name='sales_report'),
+    path('accounts/reports/sales/pdf/', reports.sales_report_pdf, name='sales_report_pdf'),
+    path('accounts/reports/sales/print/', reports.sales_report_print, name='sales_report_print'),
 ]
 

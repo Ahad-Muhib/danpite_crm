@@ -50,6 +50,17 @@ def _annotate_payments(payments):
     return payments
 
 
+def _render_print_html(request, template, context):
+    html_string = render_to_string(template, context, request=request)
+    script = '<script>window.addEventListener("load", function(){setTimeout(function(){window.print();}, 800);});</script>'
+    html_string = html_string.replace('</body>', script + '</body>')
+    response = HttpResponse(html_string)
+    response['Cache-Control'] = 'no-store, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
+
+
 def _income_report_context(request):
     f, t = _dates(request)
     method = request.GET.get('method', '')
@@ -58,18 +69,19 @@ def _income_report_context(request):
         payments = payments.filter(payment_date__gte=f)
     if t:
         payments = payments.filter(payment_date__lte=t)
-    if method:
+    method_keys = set(payments.values_list('method', flat=True))
+    for cat in AccountCategory.objects.filter(is_active=True):
+        method_keys.add(cat.name.lower())
+    methods = _method_choices_from(method_keys)
+    if method and method in {m for m, _ in methods}:
         payments = payments.filter(method=method)
     total_income = payments.aggregate(Sum('amount'))['amount__sum'] or 0
     invoiced_income = payments.filter(invoice__isnull=False).aggregate(Sum('amount'))['amount__sum'] or 0
     direct_income = total_income - invoiced_income
-    method_keys = set(Payment.objects.values_list('method', flat=True))
-    for cat in AccountCategory.objects.filter(is_active=True):
-        method_keys.add(cat.name.lower())
     return {
         'payments': payments, 'total_income': total_income, 'invoiced_income': invoiced_income,
         'direct_income': direct_income, 'from': f, 'to': t,
-        'methods': _method_choices_from(method_keys), 'selected_method': method,
+        'methods': methods, 'selected_method': method,
     }
 
 
@@ -86,18 +98,14 @@ def income_report(request):
 def income_report_pdf(request):
     context = _income_report_context(request)
     context['payments'] = _annotate_payments(context['payments'])
-    html_string = render_to_string('accounts/reports/income_report_pdf.html', context, request=request)
-    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
-    return HttpResponse(html_string)
+    return _render_print_html(request, 'accounts/reports/income_report_pdf.html', context)
 
 
 @financial_required
 def income_report_print(request):
     context = _income_report_context(request)
     context['payments'] = _annotate_payments(context['payments'])
-    html_string = render_to_string('accounts/reports/income_report_pdf.html', context, request=request)
-    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
-    return HttpResponse(html_string)
+    return _render_print_html(request, 'accounts/reports/income_report_pdf.html', context)
 
 
 def _expense_method(expense):
@@ -133,7 +141,8 @@ def _expense_report_context(request):
         expenses = [e for e in expenses if str(e.expense_date) >= f]
     if t:
         expenses = [e for e in expenses if str(e.expense_date) <= t]
-    if cat:
+    valid_cats = {k for k, _ in _expense_category_choices()}
+    if cat and cat in valid_cats:
         expenses = [e for e in expenses if e.category == cat]
 
     method_keys = set()
@@ -142,7 +151,8 @@ def _expense_report_context(request):
     for cat in AccountCategory.objects.filter(is_active=True):
         method_keys.add(_category_method(cat))
     methods = _method_choices_from(method_keys)
-    if method:
+    valid_methods = {m for m, _ in methods}
+    if method and method in valid_methods:
         expenses = [e for e in expenses if _expense_method(e) == method]
 
     for e in expenses:
@@ -179,17 +189,13 @@ def expense_report(request):
 @financial_required
 def expense_report_pdf(request):
     context = _expense_report_context(request)
-    html_string = render_to_string('accounts/reports/expense_report_pdf.html', context, request=request)
-    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
-    return HttpResponse(html_string)
+    return _render_print_html(request, 'accounts/reports/expense_report_pdf.html', context)
 
 
 @financial_required
 def expense_report_print(request):
     context = _expense_report_context(request)
-    html_string = render_to_string('accounts/reports/expense_report_pdf.html', context, request=request)
-    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
-    return HttpResponse(html_string)
+    return _render_print_html(request, 'accounts/reports/expense_report_pdf.html', context)
 
 
 def _balance_report_context(request):
@@ -210,7 +216,8 @@ def _balance_report_context(request):
     for e in expenses:
         method_keys.add(_expense_method(e))
 
-    if method:
+    methods = _method_choices_from(method_keys)
+    if method and method in {m for m, _ in methods}:
         payments = payments.filter(method=method)
         expenses = [e for e in expenses if _expense_method(e) == method]
 
@@ -218,12 +225,12 @@ def _balance_report_context(request):
     total_expense = sum(e.amount for e in expenses) or 0
     net = total_income - total_expense
     bank_accounts = BankAccount.objects.filter(is_active=True).order_by('account_name')
-    if method:
+    if method and method in {m for m, _ in methods}:
         bank_accounts = bank_accounts.filter(account_category__name__iexact=method)
     return {
         'total_income': total_income, 'total_expense': total_expense, 'net_balance': net,
         'bank_accounts': bank_accounts, 'from': f, 'to': t,
-        'methods': _method_choices_from(method_keys), 'selected_method': method,
+        'methods': methods, 'selected_method': method,
     }
 
 
@@ -238,17 +245,13 @@ def balance_report(request):
 @financial_required
 def balance_report_pdf(request):
     context = _balance_report_context(request)
-    html_string = render_to_string('accounts/reports/balance_report_pdf.html', context, request=request)
-    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
-    return HttpResponse(html_string)
+    return _render_print_html(request, 'accounts/reports/balance_report_pdf.html', context)
 
 
 @financial_required
 def balance_report_print(request):
     context = _balance_report_context(request)
-    html_string = render_to_string('accounts/reports/balance_report_pdf.html', context, request=request)
-    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
-    return HttpResponse(html_string)
+    return _render_print_html(request, 'accounts/reports/balance_report_pdf.html', context)
 
 
 def _bank_details_context(request):
@@ -293,21 +296,17 @@ def bank_details(request):
 @financial_required
 def bank_details_pdf(request):
     context = _bank_details_context(request)
-    html_string = render_to_string('accounts/reports/bank_details_pdf.html', context, request=request)
-    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
-    return HttpResponse(html_string)
+    return _render_print_html(request, 'accounts/reports/bank_details_pdf.html', context)
 
 
 @financial_required
 def bank_details_print(request):
     context = _bank_details_context(request)
-    html_string = render_to_string('accounts/reports/bank_details_pdf.html', context, request=request)
-    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},300);}</script></body>')
-    return HttpResponse(html_string)
+    return _render_print_html(request, 'accounts/reports/bank_details_pdf.html', context)
 
 
 @financial_required
-def sales_report(request):
+def _sales_report_context(request):
     f, t = _dates(request)
     sel_month = request.GET.get('month', '')
 
@@ -352,9 +351,27 @@ def sales_report(request):
         except ValueError:
             pass
 
-    return render(request, 'accounts/reports/sales_report.html', {
+    return {
         'report_data': report_data, 'selected_month': sel_month,
         'selected_month_display': selected_month_display,
         'month_invoices': month_invoices, 'month_expenses': month_expenses, 'month_projects': month_projects,
         'from': f, 'to': t,
-    })
+    }
+
+
+@financial_required
+def sales_report(request):
+    context = _sales_report_context(request)
+    return render(request, 'accounts/reports/sales_report.html', context)
+
+
+@financial_required
+def sales_report_pdf(request):
+    context = _sales_report_context(request)
+    return _render_print_html(request, 'accounts/reports/sales_report_pdf.html', context)
+
+
+@financial_required
+def sales_report_print(request):
+    context = _sales_report_context(request)
+    return _render_print_html(request, 'accounts/reports/sales_report_pdf.html', context)

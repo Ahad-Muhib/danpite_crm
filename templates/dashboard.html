@@ -53,7 +53,7 @@
     gap: 6px;
     padding: 9px 16px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #003ea8 0%, #2563eb 45%, #4f83ff 100%);
+    background: linear-gradient(135deg, #4c1d95 0%, #5f2492 45%, #da0497 100%);
     background-size: 180% 100%;
     background-position: 0% 0;
     color: #fff;
@@ -62,7 +62,7 @@
     text-decoration: none;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 6px 14px rgba(0, 74, 198, .28);
+    box-shadow: 0 6px 14px rgba(95, 36, 146, .28);
     transition: transform .18s ease, box-shadow .2s ease, background-position .3s ease;
   }
   .quick-action::after {
@@ -90,7 +90,7 @@
   .quick-action:hover {
     color: #fff;
     transform: translateY(-2px);
-    box-shadow: 0 10px 22px rgba(0, 74, 198, .4);
+    box-shadow: 0 10px 22px rgba(95, 36, 146, .4);
     background-position: 100% 0;
   }
 
@@ -116,8 +116,8 @@
 
   .period-select select:focus {
     outline: none;
-    border-color: #004ac6;
-    box-shadow: 0 0 0 3px rgba(0, 74, 198, .12);
+    border-color: #5f2492;
+    box-shadow: 0 0 0 3px rgba(95, 36, 146, .12);
   }
 
   .period-select .material-symbols-outlined {
@@ -151,8 +151,9 @@
   }
 
   .summary-card:hover {
-    box-shadow: 0 0 0 1px rgba(0, 74, 198, .18), 0 16px 38px rgba(0, 74, 198, .16);
+    box-shadow: 0 0 0 1px rgba(95, 36, 146, .18), 0 16px 38px rgba(95, 36, 146, .16);
     color: inherit;
+    transform: translateY(-6px);
     animation: card-pop .45s cubic-bezier(.34, 1.56, .64, 1) forwards;
   }
 
@@ -204,13 +205,13 @@
   }
 
   .summary-icon.icon-primary {
-    background: rgba(37, 99, 235, .12);
-    color: #2563eb;
+    background: rgba(95, 36, 146, .12);
+    color: #5f2492;
   }
 
   .summary-icon.icon-blue {
-    background: #dce9ff;
-    color: #004ac6;
+    background: #e9e2ff;
+    color: #5f2492;
   }
 
   .summary-icon.icon-muted {
@@ -225,7 +226,7 @@
 
   .summary-icon.icon-violet {
     background: #ede9fe;
-    color: #7c3aed;
+    color: #5f2492;
   }
 
   .info-icon {
@@ -286,7 +287,8 @@
   }
 
   .panel:hover {
-    box-shadow: 0 0 0 1px rgba(37, 99, 235, .22), 0 18px 42px rgba(0, 74, 198, .14);
+    box-shadow: 0 0 0 1px rgba(95, 36, 146, .22), 0 18px 42px rgba(95, 36, 146, .14);
+    transform: translateY(-6px);
     animation: card-pop .45s cubic-bezier(.34, 1.56, .64, 1) forwards;
   }
 
@@ -373,7 +375,7 @@
     background: #f1f5f9;
     color: #0b1c30;
     transform: translateY(-2px);
-    box-shadow: 0 5px 12px rgba(0, 74, 198, .12);
+    box-shadow: 0 5px 12px rgba(95, 36, 146, .12);
   }
 
   .legend {
@@ -397,7 +399,7 @@
   }
 
   .legend i.dot-rev {
-    background: linear-gradient(to top, rgba(37, 99, 235, .25), #2563eb);
+    background: linear-gradient(to top, rgba(95, 36, 146, .25), #5f2492);
   }
 
   .legend i.dot-exp {
@@ -441,7 +443,7 @@
   }
 
   .chart-grid-lines div {
-    border-top: 1px dashed #d3e4fe;
+    border-top: 1px dashed #ddd4f5;
   }
 
   .chart-bars {
@@ -498,7 +500,7 @@
   }
   .bar-link:hover .bar.rev {
     filter: brightness(.9);
-    box-shadow: 0 6px 14px rgba(37, 99, 235, .3);
+    box-shadow: 0 6px 14px rgba(95, 36, 146, .3);
   }
   .bar-link:hover .bar.exp {
     filter: brightness(.96);
@@ -506,7 +508,7 @@
   }
 
   .bar.rev {
-    background: #d3e4fe;
+    background: #ddd4f5;
     transition: filter .15s;
   }
 
@@ -515,8 +517,8 @@
   }
 
   .bar.rev.is-max {
-    background: linear-gradient(to top, rgba(37, 99, 235, .25), #2563eb);
-    box-shadow: 0 8px 20px rgba(37, 99, 235, .4);
+    background: linear-gradient(to top, rgba(95, 36, 146, .25), #5f2492);
+    box-shadow: 0 8px 20px rgba(95, 36, 146, .4);
   }
 
   .bar.rev.is-max:hover {
@@ -526,12 +528,12 @@
   @keyframes bar-glow {
     from {
       filter: brightness(1);
-      box-shadow: 0 8px 20px rgba(37, 99, 235, .4);
+      box-shadow: 0 8px 20px rgba(95, 36, 146, .4);
     }
 
     to {
       filter: brightness(1.12);
-      box-shadow: 0 10px 28px rgba(37, 99, 235, .55);
+      box-shadow: 0 10px 28px rgba(95, 36, 146, .55);
     }
   }
 
@@ -545,7 +547,7 @@
     bottom: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%) translateY(4px);
-    background: #004ac6;
+    background: #5f2492;
     color: #fff;
     font-size: 11px;
     font-weight: 700;
@@ -555,7 +557,7 @@
     opacity: 0;
     pointer-events: none;
     z-index: 6;
-    box-shadow: 0 4px 10px rgba(0, 74, 198, .35);
+    box-shadow: 0 4px 10px rgba(95, 36, 146, .35);
     transition: opacity .15s ease, transform .15s ease;
   }
 
@@ -566,7 +568,7 @@
     left: 50%;
     transform: translateX(-50%);
     border: 5px solid transparent;
-    border-top-color: #004ac6;
+    border-top-color: #5f2492;
   }
 
   .bar-link:hover .bar-tip {
@@ -582,7 +584,7 @@
   }
 
   .chart-col.is-max .chart-x {
-    color: #004ac6;
+    color: #5f2492;
   }
 
   .empty-chart {
@@ -628,7 +630,8 @@
 
   .mini-kpi:hover {
     background: #fff;
-    box-shadow: 0 0 0 1px rgba(37, 99, 235, .2), 0 14px 30px rgba(0, 74, 198, .14);
+    box-shadow: 0 0 0 1px rgba(95, 36, 146, .2), 0 14px 30px rgba(95, 36, 146, .14);
+    transform: translateY(-6px);
     animation: card-pop .45s cubic-bezier(.34, 1.56, .64, 1) forwards;
   }
 
@@ -637,12 +640,12 @@
       transform: translateY(0) scale(1);
     }
 
-    55% {
-      transform: translateY(-7px) scale(1.05);
+    60% {
+      transform: translateY(-12px) scale(1.06);
     }
 
     100% {
-      transform: translateY(-4px) scale(1.02);
+      transform: translateY(-6px) scale(1.03);
     }
   }
 
@@ -683,7 +686,8 @@
   }
 
   .table-panel:hover {
-    box-shadow: 0 0 0 1px rgba(37, 99, 235, .22), 0 18px 42px rgba(0, 74, 198, .14);
+    box-shadow: 0 0 0 1px rgba(95, 36, 146, .22), 0 18px 42px rgba(95, 36, 146, .14);
+    transform: translateY(-6px);
     animation: card-pop .45s cubic-bezier(.34, 1.56, .64, 1) forwards;
   }
 
@@ -749,14 +753,14 @@
   }
 
   .search-box input:hover {
-    background: #eaf0f8;
+    background: #f2edff;
   }
 
   .search-box input:focus {
     outline: none;
     background: #ffffff;
-    border-color: #004ac6;
-    box-shadow: 0 0 0 3px rgba(0, 74, 198, .12);
+    border-color: #5f2492;
+    box-shadow: 0 0 0 3px rgba(95, 36, 146, .12);
   }
 
   .filter-btn {
@@ -777,7 +781,7 @@
   .filter-btn:hover {
     background: #f1f5f9;
     transform: translateY(-2px);
-    box-shadow: 0 5px 12px rgba(0, 74, 198, .12);
+    box-shadow: 0 5px 12px rgba(95, 36, 146, .12);
   }
 
   .filter-btn .material-symbols-outlined {
@@ -835,7 +839,7 @@
   }
 
   .salezy-table .t-link:hover {
-    color: #004ac6;
+    color: #5f2492;
     text-decoration: underline;
   }
 
@@ -868,8 +872,8 @@
   }
 
   .status-pill.blue {
-    background: #e8efff;
-    color: #004ac6;
+    background: #eee6ff;
+    color: #5f2492;
   }
 
   .status-pill.gray {
@@ -884,7 +888,7 @@
   .row-check {
     width: 16px;
     height: 16px;
-    accent-color: #004ac6;
+    accent-color: #5f2492;
     cursor: pointer;
   }
 
@@ -1441,8 +1445,8 @@
       const cashData = monthlyData;
       const cfFont = { family: "'Plus Jakarta Sans', sans-serif", size: 11 };
       const revGrad = cashCtx.getContext('2d').createLinearGradient(0, 0, 0, 270);
-      revGrad.addColorStop(0, 'rgba(37, 99, 235, .35)');
-      revGrad.addColorStop(1, 'rgba(37, 99, 235, .02)');
+      revGrad.addColorStop(0, 'rgba(95, 36, 146, .35)');
+      revGrad.addColorStop(1, 'rgba(95, 36, 146, .02)');
       const expGrad = cashCtx.getContext('2d').createLinearGradient(0, 0, 0, 270);
       expGrad.addColorStop(0, 'rgba(255, 127, 80, .28)');
       expGrad.addColorStop(1, 'rgba(255, 127, 80, .02)');
@@ -1454,13 +1458,13 @@
             {
               label: 'Revenue',
               data: cashData.map(function (d) { return d.revenue; }),
-              borderColor: '#2563eb',
+              borderColor: '#5f2492',
               backgroundColor: revGrad,
               borderWidth: 2.5,
               fill: true,
               tension: 0.45,
               pointRadius: 3,
-              pointBackgroundColor: '#2563eb',
+              pointBackgroundColor: '#7c3aed',
               pointBorderColor: '#ffffff',
               pointBorderWidth: 2,
               pointHoverRadius: 6,
@@ -1488,7 +1492,7 @@
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#003ea8',
+              backgroundColor: '#4c1d95',
               titleFont: cfFont,
               bodyFont: cfFont,
               callbacks: {
@@ -1507,7 +1511,7 @@
             y: {
               beginAtZero: true,
               border: { display: false },
-              grid: { color: '#d3e4fe', borderDash: [2, 4] },
+              grid: { color: '#ddd4f5', borderDash: [2, 4] },
               ticks: {
                 color: '#434655',
                 font: cfFont,
@@ -1526,37 +1530,64 @@
     const sourceCtx = document.getElementById('sourceChart');
     if (sourceCtx && typeof Chart !== 'undefined') {
       const font = { family: "'Plus Jakarta Sans', sans-serif", size: 11 };
+      const palette = ['#5f2492', '#7c3aed', '#a855f7', '#c026d3', '#da0497', '#e94bb8', '#4c1d95', '#9333ea'];
+      const srcTotal = sourceValues.reduce(function (a, b) { return a + b; }, 0);
       new Chart(sourceCtx, {
-        type: 'bar',
+        type: 'doughnut',
         data: {
           labels: sourceLabels,
           datasets: [{
             label: 'Leads',
             data: sourceValues,
-            backgroundColor: '#2563eb',
-            borderRadius: 10,
-            barPercentage: 0.46,
-            categoryPercentage: 0.64,
+            backgroundColor: palette,
+            borderColor: '#fff',
+            borderWidth: 2,
+            hoverOffset: 10,
+            hoverBorderColor: '#fff',
           }]
         },
         options: {
           maintainAspectRatio: false,
+          cutout: '62%',
           animation: { duration: 1000, easing: 'easeOutQuart' },
           plugins: {
-            legend: { display: false },
-            tooltip: { backgroundColor: '#003ea8', titleFont: font, bodyFont: font }
-          },
-          scales: {
-            x: {
-              border: { display: false },
-              grid: { display: false },
-              ticks: { color: '#434655', font: font },
+            legend: {
+              position: 'bottom',
+              labels: {
+                usePointStyle: true,
+                pointStyle: 'circle',
+                boxWidth: 8,
+                padding: 14,
+                color: '#434655',
+                font: font,
+                generateLabels: function (chart) {
+                  const data = chart.data;
+                  return data.labels.map(function (label, i) {
+                    const val = data.datasets[0].data[i];
+                    const pct = srcTotal ? Math.round(val / srcTotal * 100) : 0;
+                    return {
+                      text: label + ' (' + pct + '%)',
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      strokeStyle: data.datasets[0].backgroundColor[i],
+                      lineWidth: 0,
+                      hidden: false,
+                      index: i,
+                      pointStyle: 'circle',
+                    };
+                  });
+                },
+              },
             },
-            y: {
-              beginAtZero: true,
-              border: { display: false },
-              grid: { color: '#d3e4fe', borderDash: [2, 4] },
-              ticks: { color: '#434655', font: font },
+            tooltip: {
+              backgroundColor: '#4c1d95',
+              titleFont: font,
+              bodyFont: font,
+              callbacks: {
+                label: function (ctx) {
+                  const pct = srcTotal ? Math.round(ctx.parsed / srcTotal * 100) : 0;
+                  return ' ' + ctx.parsed + ' leads (' + pct + '%)';
+                }
+              }
             }
           }
         }
