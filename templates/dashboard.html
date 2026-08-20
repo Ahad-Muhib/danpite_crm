@@ -42,23 +42,56 @@
   .welcome-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
-  .welcome-date {
+  .quick-action {
     display: inline-flex;
-    align-items: baseline;
-    gap: 8px;
-    font-size: 20px;
-    font-weight: 700;
-    color: #0b1c30;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #003ea8 0%, #2563eb 45%, #4f83ff 100%);
+    background-size: 180% 100%;
+    background-position: 0% 0;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 6px 14px rgba(0, 74, 198, .28);
+    transition: transform .18s ease, box-shadow .2s ease, background-position .3s ease;
   }
-
-  .welcome-date-sub {
-    font-size: 12px;
-    font-weight: 500;
-    color: #434655;
+  .quick-action::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -70%;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .45), transparent);
+    transform: skewX(-20deg);
+    opacity: 0;
+  }
+  .quick-action:hover::after {
+    opacity: 1;
+    animation: qa-shine .9s ease forwards;
+  }
+  @keyframes qa-shine {
+    from { left: -70%; }
+    to { left: 130%; }
+  }
+  .quick-action .material-symbols-outlined {
+    font-size: 18px;
+  }
+  .quick-action:hover {
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(0, 74, 198, .4);
+    background-position: 100% 0;
   }
 
   .period-select {
@@ -507,23 +540,26 @@
     border: 1px solid rgba(0, 0, 0, .04);
   }
 
-  .bar-tooltip {
+  .bar-tip {
     position: absolute;
     bottom: calc(100% + 8px);
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(4px);
     background: #004ac6;
     color: #fff;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     padding: 4px 8px;
     border-radius: 6px;
     white-space: nowrap;
-    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 6;
     box-shadow: 0 4px 10px rgba(0, 74, 198, .35);
+    transition: opacity .15s ease, transform .15s ease;
   }
 
-  .bar-tooltip::after {
+  .bar-tip::after {
     content: '';
     position: absolute;
     top: 100%;
@@ -531,6 +567,11 @@
     transform: translateX(-50%);
     border: 5px solid transparent;
     border-top-color: #004ac6;
+  }
+
+  .bar-link:hover .bar-tip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 
   .chart-x {
@@ -890,8 +931,21 @@
       <p class="welcome-sub">{% now "l, d F Y" %}</p>
     </div>
     <div class="welcome-actions">
-      <span class="welcome-date">{{ total_revenue|currency }} <span class="welcome-date-sub">total
-          received</span></span>
+      <a href="{% url 'invoice_create' %}" class="quick-action">
+        <span class="material-symbols-outlined">receipt_long</span>New Invoice
+      </a>
+      <a href="{% url 'lead_create' %}" class="quick-action">
+        <span class="material-symbols-outlined">add_business</span>New Lead
+      </a>
+      <a href="{% url 'client_create' %}" class="quick-action">
+        <span class="material-symbols-outlined">person_add</span>New Client
+      </a>
+      <a href="{% url 'order_create' %}" class="quick-action">
+        <span class="material-symbols-outlined">shopping_bag</span>New Order
+      </a>
+      <a href="{% url 'payment_create' %}" class="quick-action">
+        <span class="material-symbols-outlined">payments</span>Record Payment
+      </a>
     </div>
   </div>
   <!-- Summary Cards -->
@@ -1370,10 +1424,8 @@
           const isMax = i === maxIdx;
           html += '<div class="chart-col' + (isMax ? ' is-max' : '') + '">';
           html += '<div class="bar-pair">';
-          html += '<a class="bar-link" href="' + payUrl + '" title="Revenue ' + symbol + (d.revenue || 0).toFixed(2) + '"><div class="bar rev' + (isMax ? ' is-max' : '') + '" style="height:' + rh + '%">';
-          if (isMax) html += '<div class="bar-tooltip">' + fmt(d.revenue) + '</div>';
-          html += '</div></a>';
-          html += '<a class="bar-link" href="' + expUrl + '" title="Expenses ' + symbol + (d.expense || 0).toFixed(2) + '"><div class="bar exp" style="height:' + eh + '%"></div></a>';
+          html += '<a class="bar-link" href="' + payUrl + '" title="Revenue ' + symbol + (d.revenue || 0).toFixed(2) + '"><div class="bar rev' + (isMax ? ' is-max' : '') + '" style="height:' + rh + '%"><span class="bar-tip">' + fmt(d.revenue || 0) + '</span></div></a>';
+          html += '<a class="bar-link" href="' + expUrl + '" title="Expenses ' + symbol + (d.expense || 0).toFixed(2) + '"><div class="bar exp" style="height:' + eh + '%"><span class="bar-tip">' + fmt(d.expense || 0) + '</span></div></a>';
           html += '</div>';
           html += '<span class="chart-x">' + d.label + '</span>';
           html += '</div>';

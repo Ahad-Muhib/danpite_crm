@@ -36,7 +36,7 @@
           <td class="text-muted" style="white-space:nowrap;">{{ log.created_at|date:"d M Y H:i" }}</td>
           <td>{{ log.user.get_full_name|default:log.user.username }}</td>
           <td>
-            <span class="badge rounded-0 {% if log.action == 'create' %}bg-success{% elif log.action == 'update' %}bg-info text-dark{% elif log.action == 'delete' %}bg-danger{% endif %}">
+            <span class="badge rounded-pill {% if log.action == 'create' %}log-badge log-badge-create{% elif log.action == 'update' %}log-badge log-badge-update{% elif log.action == 'delete' %}log-badge log-badge-delete{% endif %}">
               {{ log.get_action_display }}
             </span>
           </td>

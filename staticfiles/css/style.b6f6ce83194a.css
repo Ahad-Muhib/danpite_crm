@@ -75,23 +75,20 @@ body {
   transition: width 0.2s;
 }
 
-#sidebar::-webkit-scrollbar,
-.sidebar-nav::-webkit-scrollbar {
+#sidebar::-webkit-scrollbar {
   width: 3px;
 }
-#sidebar::-webkit-scrollbar-track,
-.sidebar-nav::-webkit-scrollbar-track {
+#sidebar::-webkit-scrollbar-track {
   background: transparent;
 }
-#sidebar::-webkit-scrollbar-thumb,
-.sidebar-nav::-webkit-scrollbar-thumb {
+#sidebar::-webkit-scrollbar-thumb {
   background: rgba(0, 74, 198, .18);
   border-radius: 4px;
 }
 
 /* Logo */
 #sidebar .sidebar-brand {
-  padding: 20px 16px 24px;
+  padding: 24px 24px 28px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -105,9 +102,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 56px;
-  padding: 6px 12px;
+  height: 62px;
+  padding: 8px 14px;
+  margin-left: 10px;
   border-radius: 12px;
   background: linear-gradient(135deg, #eef4ff, #ffffff);
   border: 1px solid var(--dash-line);
@@ -117,10 +114,9 @@ body {
   cursor: pointer;
 }
 .brand-tile img {
-  max-width: 100%;
-  max-height: 42px;
+  height: 46px;
   width: auto;
-  height: auto;
+  max-width: 230px;
   object-fit: contain;
   border-radius: 4px;
   transition: transform .25s ease, filter .25s ease;
@@ -562,21 +558,13 @@ body {
 .log-badge-update { background: #dbe7ff; color: #004ac6; }
 .log-badge-delete { background: #fee2e2; color: #b91c1c; }
 
-/* ── Soft pill status badges (all content) ───── */
-#main .badge {
+/* ── Soften boxy status badges ───────────────── */
+.badge.rounded-0 {
   border-radius: 999px;
   padding: 5px 11px;
   font-weight: 600;
   letter-spacing: .2px;
 }
-.badge.bg-success { background: #dcfce7 !important; color: #15803d !important; }
-.badge.bg-danger { background: #fee2e2 !important; color: #b91c1c !important; }
-.badge.bg-warning { background: #fef3c7 !important; color: #b45309 !important; }
-.badge.bg-primary { background: #dbe7ff !important; color: #004ac6 !important; }
-.badge.bg-info { background: #cffafe !important; color: #0e7490 !important; }
-.badge.bg-secondary { background: #eef2f8 !important; color: #434655 !important; }
-.badge.bg-light { background: #f1f5f9 !important; color: #374151 !important; }
-.badge.bg-dark { background: #e5e7eb !important; color: #111827 !important; }
 
 /* ── Theme overrides ─────────────────────────── */
 a {
