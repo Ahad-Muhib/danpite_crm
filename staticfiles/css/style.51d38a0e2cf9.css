@@ -56,7 +56,7 @@
 body {
   background: var(--dash-bg);
   color: var(--dash-text);
-  font-size: 15px;
+  font-size: 14px;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -137,7 +137,7 @@ body {
   margin-bottom: 10px;
 }
 .nav-label {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--dash-muted);
   padding: 0;
@@ -173,7 +173,7 @@ body {
   gap: 12px;
   padding: 10px 24px;
   color: var(--sidebar-text);
-  font-size: 14.5px;
+  font-size: 13.5px;
   font-weight: 500;
   text-decoration: none;
   border-left: 4px solid transparent;
@@ -208,7 +208,7 @@ body {
 /* Submenu */
 #sidebar .submenu .nav-link {
   padding: 8px 24px 8px 56px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: #5a6270;
   transition: background-color .2s ease, color .2s ease, transform .2s ease;
@@ -262,7 +262,7 @@ body {
   background: #f1f5f9;
   border: 1px solid #e4e9f2;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 13px;
   font-family: 'Plus Jakarta Sans', sans-serif;
   color: #0b1c30;
   transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, width .2s ease;
@@ -288,7 +288,7 @@ body {
   background-size: 16px;
   border: 1px solid #e4e9f2;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   color: #0b1c30;
   transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
@@ -306,7 +306,7 @@ body {
   border: 1px solid #e4e9f2;
   color: #0b1c30;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   padding: 8px 16px;
   transition: background-color .2s ease, color .2s ease, border-color .2s ease, transform .2s ease, box-shadow .2s ease;
 }
@@ -373,13 +373,13 @@ body {
   box-shadow: 0 8px 24px rgba(0, 74, 198, .12);
   transform: translateY(-2px);
 }
-.stat-card .stat-label { color: var(--dash-muted); font-size: 13px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
-.stat-card .stat-value { color: var(--dash-ink); font-size: 32px; font-weight: 700; }
+.stat-card .stat-label { color: var(--dash-muted); font-size: 12px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+.stat-card .stat-value { color: var(--dash-ink); font-size: 30px; font-weight: 700; }
 .stat-card .stat-icon  { color: var(--brand-purple-light); position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 42px; opacity: .25; }
 
 /* ── Tables ──────────────────────────────────── */
 .table thead th {
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: .5px;
   color: var(--dash-muted);
@@ -394,7 +394,7 @@ body {
 
 /* ── Badges ──────────────────────────────────── */
 .badge-status {
-  font-size: 12px;
+  font-size: 11px;
   padding: 4px 10px;
   border-radius: 20px;
   font-weight: 500;
@@ -417,7 +417,7 @@ body {
   align-items: center;
   justify-content: space-between;
 }
-.crm-card-title { font-weight: 600; font-size: 16px; color: var(--dash-ink); }
+.crm-card-title { font-weight: 600; font-size: 15px; color: var(--dash-ink); }
 
 /* ── Avatar ──────────────────────────────────── */
 .avatar-sm {
@@ -427,7 +427,7 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   color: #fff;
   flex-shrink: 0;
 }
@@ -451,14 +451,14 @@ body {
 }
 
 /* ── Misc ────────────────────────────────────── */
-.page-title { font-size: 20px; font-weight: 700; color: var(--dash-ink); }
-.btn-sm-action { padding: 4px 10px; font-size: 13px; }
-.search-form .form-control, .search-form .form-select { font-size: 14px; }
+.page-title { font-size: 18px; font-weight: 700; color: var(--dash-ink); }
+.btn-sm-action { padding: 4px 10px; font-size: 12px; }
+.search-form .form-control, .search-form .form-select { font-size: 13px; }
 .text-inherit { color: inherit; }
 .text-inherit:hover { color: inherit; }
 
 .th-dropdown { display: inline-flex; align-items: center; gap: 2px; }
-.dropdown-btn { border: none; background: none; color: var(--dash-muted); font-size: 14px; line-height: 1; cursor: pointer; }
+.dropdown-btn { border: none; background: none; color: var(--dash-muted); font-size: 13px; line-height: 1; cursor: pointer; }
 .dropdown-btn:hover { color: var(--dash-ink); }
 
 /* ── Theme overrides ─────────────────────────── */
@@ -486,7 +486,7 @@ a:hover {
   background-image: var(--bs-form-select-bg-img);
   background-size: 20px 20px;
   padding: 9px 40px 9px 14px;
-  font-size: 14px;
+  font-size: 13px;
   transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease, transform .15s ease;
 }
 .form-select:hover {
@@ -504,19 +504,11 @@ a:hover {
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 74, 198, .12);
   padding: 6px;
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-  transition: opacity .25s ease, transform .25s ease;
-}
-.dropdown-menu.show {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+  animation: menu-in .18s ease;
 }
 .dropdown-menu .dropdown-item {
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--dash-text);
   padding: 8px 12px;
   transition: background-color .15s ease, color .15s ease, padding-left .15s ease;
@@ -525,6 +517,10 @@ a:hover {
   background: var(--brand-vlight);
   color: var(--brand);
   padding-left: 16px;
+}
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to { opacity: 1; transform: none; }
 }
 
 .form-label,
@@ -841,13 +837,13 @@ a:hover {
 }
 
 .acct-num {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--dash-ink);
 }
 
 .acct-detail {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--dash-muted);
 }
 
@@ -860,7 +856,7 @@ a:hover {
 }
 
 .info-box .info-label {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .5px;
   color: var(--dash-muted);
@@ -875,7 +871,7 @@ a:hover {
 }
 
 .info-box .info-sub {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--dash-muted);
 }
 

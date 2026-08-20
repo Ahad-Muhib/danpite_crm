@@ -110,7 +110,7 @@ class PaymentForm(forms.ModelForm):
         widgets = {
             'invoice': forms.HiddenInput(attrs={'id': 'id_invoice'}),
             'account': forms.HiddenInput(attrs={'id': 'id_account'}),
-            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.01', 'step': '0.01'}),
             'payment_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'method': forms.Select(attrs={'class': 'form-select', 'id': 'id_method'}),
             'reference': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Transaction ID / Ref'}),
@@ -148,10 +148,27 @@ class PaymentForm(forms.ModelForm):
         cleaned = super().clean()
         method = (cleaned.get('method') or '').strip().lower()
         account = cleaned.get('account')
+        amount = cleaned.get('amount')
+        invoice = cleaned.get('invoice')
+        if amount is None or amount <= 0:
+            self.add_error('amount', 'Amount must be greater than 0.')
         if not method:
-            raise forms.ValidationError('Select a payment method.')
-        if not account:
-            raise forms.ValidationError('Select the account from the bank accounts page for this payment method.')
+            self.add_error('method', 'Select a payment method.')
+        if method == 'cash':
+            cash_acct = BankAccount.objects.filter(is_active=True, account_category__account_type='cash').first()
+            if cash_acct:
+                cleaned['account'] = cash_acct
+                account = cash_acct
+        elif not account:
+            self.add_error('account', 'Select the account from the bank accounts page for this payment method.')
+        if invoice and amount and amount > 0:
+            from django.db.models import Sum
+            current_paid = invoice.payments.aggregate(s=Sum('amount'))['s'] or 0
+            subtract = 0
+            if self.instance.pk and self.instance.invoice_id == invoice.pk:
+                subtract = self.instance.amount or 0
+            if current_paid - subtract + amount > invoice.total:
+                self.add_error('amount', f'This payment would exceed the invoice total ({invoice.total}). Please fix the amount.')
         return cleaned
 
 
@@ -163,7 +180,7 @@ class ExpenseForm(forms.ModelForm):
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Expense title...'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
             'method': forms.Select(attrs={'class': 'form-select', 'id': 'id_method'}),
-            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.01', 'step': '0.01'}),
             'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'bank_account': forms.HiddenInput(attrs={'id': 'id_bank_account'}),
             'description': forms.HiddenInput(attrs={'id': 'id_description'}),
@@ -209,6 +226,14 @@ class ExpenseForm(forms.ModelForm):
         cleaned = super().clean()
         amount = cleaned.get('amount')
         account = cleaned.get('bank_account')
+        method = (cleaned.get('method') or '').strip().lower()
+        if method == 'cash':
+            cash_acct = BankAccount.objects.filter(is_active=True, account_category__account_type='cash').first()
+            if cash_acct:
+                cleaned['bank_account'] = cash_acct
+                account = cash_acct
+        elif not account:
+            self.add_error('bank_account', 'Select the account this expense is paid from.')
         if amount and account:
             balance = account.available_balance
             if self.instance and self.instance.pk:

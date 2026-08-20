@@ -8,7 +8,7 @@
 .acct-dropdown{position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12)}
 .acct-dropdown-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #f3f4f6}
 .acct-dropdown-item:last-child{border-bottom:0}
-.acct-dropdown-item:hover{background:#f0fdf4}
+.acct-dropdown-item:hover{background:#eff4ff}
 .acct-dropdown-item .acct-num{font-weight:600;font-size:13px}
 .acct-dropdown-item .acct-detail{font-size:11px;color:#6b7280}
 .ql-editor{min-height:150px}
@@ -35,7 +35,7 @@
           <input type="text" id="expense-account-search" class="form-control" placeholder="Type account name or number..." autocomplete="off" value="{% if form.instance.bank_account %}{{ form.instance.bank_account.display_name }}{% endif %}">
           {{ form.bank_account }}
           <div id="acct-dropdown" class="acct-dropdown" style="display:none;"></div>
-          <div id="account-info" class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;">
+          <div id="account-info" class="mt-2 p-2 rounded" style="background:#eff4ff;border:1px solid #c3d8ff;display:none;">
             <div style="font-size:13px;font-weight:600;" id="acct-info-name"></div>
             <div style="font-size:12px;color:#6b7280;" id="acct-info-detail"></div>
           </div>
@@ -54,7 +54,7 @@
 <script>
 const accounts = [
   {% for a in accounts %}
-  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ a.account_category.name|default:''|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}"},
+  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ a.account_category.name|default:''|escapejs }}", type: "{{ a.account_category.account_type|default:''|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}", holder: "{% firstof a.holder_name a.account_name a.card_holder_name ''|escapejs %}"},
   {% endfor %}
 ];
 const searchInput = document.getElementById('expense-account-search');
@@ -93,12 +93,38 @@ function selectAccount(a) {
   searchInput.value = a.display;
   dropdown.style.display = 'none';
   infoName.textContent = a.display;
-  infoDetail.textContent = a.category + ' — ' + a.number;
+  var detail = [];
+  if (a.holder) detail.push('Holder: ' + a.holder);
+  if (a.number) detail.push('Number: ' + a.number);
+  detail.push(a.category);
+  infoDetail.textContent = detail.join(' · ');
   infoBox.style.display = 'block';
   if (methodSelect && a.category && !methodSelect.value) {
     methodSelect.value = a.category.toLowerCase();
   }
 }
+
+function handleMethodChange() {
+  var m = (methodSelect.value || '').toLowerCase();
+  var acctCol = searchInput.closest('.col-md-6');
+  if (m === 'cash') {
+    var cashAcct = accounts.find(function(a) { return a.type === 'cash'; });
+    if (cashAcct) selectAccount(cashAcct);
+    searchInput.disabled = true;
+    searchInput.style.opacity = '.6';
+    if (acctCol) acctCol.style.opacity = '.6';
+  } else {
+    searchInput.disabled = false;
+    searchInput.style.opacity = '1';
+    if (acctCol) acctCol.style.opacity = '1';
+    if (!selectedPk) {
+      searchInput.value = '';
+      infoBox.style.display = 'none';
+    }
+  }
+}
+methodSelect.addEventListener('change', handleMethodChange);
+if (methodSelect.value) handleMethodChange();
 
 function escHtml(str) {
   var div = document.createElement('div');

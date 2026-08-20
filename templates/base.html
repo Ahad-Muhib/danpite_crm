@@ -1,286 +1,406 @@
 {% load crm_tags %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}Danpite CRM{% endblock %}</title>
-<link rel="icon" type="image/jpeg" href="{{ MEDIA_URL }}invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-<style>
-.crm-card {
-  transition: box-shadow 0.25s ease;
-}
-.crm-card:hover {
-  box-shadow: 0 14px 30px rgba(95, 36, 146, 0.08);
-}
-.reveal {
-  opacity: 0;
-  transform: translateY(18px) scale(0.99);
-}
-body.dashboard-ready .reveal {
-  animation: dashRise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  animation-delay: var(--d, 0ms);
-}
-@keyframes dashRise {
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; }
-  body.dashboard-ready .reveal { animation: none; }
-}
-</style>
-{% block extra_head %}{% endblock %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Danpite CRM{% endblock %}</title>
+  <link rel="icon" type="image/jpeg" href="{{ MEDIA_URL }}invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .crm-card {
+      transition: box-shadow 0.25s ease;
+    }
+
+    .crm-card:hover {
+      box-shadow: 0 14px 30px rgba(0, 74, 198, 0.08);
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px) scale(0.99);
+    }
+
+    body.dashboard-ready .reveal {
+      animation: dashRise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      animation-delay: var(--d, 0ms);
+    }
+
+    @keyframes dashRise {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal {
+        opacity: 1;
+        transform: none;
+      }
+
+      body.dashboard-ready .reveal {
+        animation: none;
+      }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
 </head>
+
 <body>
 
-<!-- ── Sidebar ────────────────────────────────────────── -->
-<div id="sidebar-backdrop"></div>
-<nav id="sidebar">
-  <a href="{% url 'dashboard' %}" class="sidebar-brand text-decoration-none" style="padding:14px 16px;">
-    <div style="background:#fff;border-radius:10px;padding:10px 14px;width:100%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15);">
-      <img src="{% if site_settings.logo_image %}{{ site_settings.logo_image.url }}{% else %}{{ MEDIA_URL }}invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg{% endif %}" alt="Danpite" style="max-height:38px;width:auto;border-radius:3px;">
-    </div>
-  </a>
-  <div class="nav-label">Main Menu</div>
-  <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-    <i class="bi bi-speedometer2 nav-icon"></i> Dashboard
-  </a>
-
-  <div class="nav-label">Operations</div>
-
-  <!-- Leads -->
-  <a class="nav-link" data-bs-toggle="collapse" href="#leadsMenu" role="button"
-     aria-expanded="{% if 'lead' in request.path %}true{% else %}false{% endif %}">
-    <i class="bi bi-person-lines-fill nav-icon"></i> Leads
-    <i class="bi bi-chevron-right arrow"></i>
-  </a>
-  <div class="collapse submenu {% if 'lead' in request.path %}show{% endif %}" id="leadsMenu">
-    <a href="{% url 'lead_list' %}"  class="nav-link {% if request.resolver_match.url_name == 'lead_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Lead Contacts</a>
-  </div>
-
-  <!-- Clients -->
-  <a href="{% url 'client_list' %}" class="nav-link {% if 'client' in request.path %}active{% endif %}">
-    <i class="bi bi-people-fill nav-icon"></i> Clients
-  </a>
-
-  <!-- Sales -->
-  <a class="nav-link" data-bs-toggle="collapse" href="#accMenu" role="button"
-     aria-expanded="{% if '/accounts/' in request.path %}true{% else %}false{% endif %}">
-    <i class="bi bi-wallet2 nav-icon"></i> Sales
-    <i class="bi bi-chevron-right arrow"></i>
-  </a>
-  <div class="collapse submenu {% if '/accounts/' in request.path %}show{% endif %}" id="accMenu">
-    <a href="{% url 'invoice_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'invoice_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Invoices</a>
-    <a href="{% url 'payment_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Payments</a>
-    <a href="{% url 'expense_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Expenses</a>
-    <a href="{% url 'expense_category_list' %}" class="nav-link {% if request.resolver_match.url_name == 'expense_category_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Expense Categories</a>
-    <a href="{% url 'bank_account_list' %}" class="nav-link {% if request.resolver_match.url_name == 'bank_account_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Bank Accounts</a>
-    <a href="{% url 'transfer_list' %}" class="nav-link {% if request.resolver_match.url_name == 'transfer_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Balance Transfer</a>
-  </div>
-
-  <!-- Reports -->
-  <a class="nav-link" data-bs-toggle="collapse" href="#reportsMenu" role="button"
-     aria-expanded="{% if '/accounts/reports/' in request.path %}true{% else %}false{% endif %}">
-    <i class="bi bi-graph-up nav-icon"></i> Reports
-    <i class="bi bi-chevron-right arrow"></i>
-  </a>
-  <div class="collapse submenu {% if '/accounts/reports/' in request.path %}show{% endif %}" id="reportsMenu">
-    <a href="{% url 'income_report' %}"    class="nav-link {% if request.resolver_match.url_name == 'income_report' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Income Report</a>
-    <a href="{% url 'expense_report' %}"   class="nav-link {% if request.resolver_match.url_name == 'expense_report' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Expense Report</a>
-    <a href="{% url 'balance_report' %}"   class="nav-link {% if request.resolver_match.url_name == 'balance_report' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Total Balance</a>
-    <a href="{% url 'bank_details_report' %}" class="nav-link {% if request.resolver_match.url_name == 'bank_details_report' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Bank Details</a>
-    <a href="{% url 'sales_report' %}"     class="nav-link {% if request.resolver_match.url_name == 'sales_report' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Sales Report</a>
-  </div>
-
-  <!-- HR -->
-  <a class="nav-link" data-bs-toggle="collapse" href="#hrMenu" role="button"
-     aria-expanded="{% if '/hr/' in request.path %}true{% else %}false{% endif %}">
-    <i class="bi bi-person-badge nav-icon"></i> HR
-    <i class="bi bi-chevron-right arrow"></i>
-  </a>
-  <div class="collapse submenu {% if '/hr/' in request.path %}show{% endif %}" id="hrMenu">
-    <a href="{% url 'employee_list' %}"   class="nav-link {% if request.resolver_match.url_name == 'employee_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Employees</a>
-    <a href="{% url 'leave_list' %}"      class="nav-link {% if request.resolver_match.url_name == 'leave_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Leaves</a>
-    <a href="{% url 'attendance_list' %}" class="nav-link {% if request.resolver_match.url_name == 'attendance_list' %}active{% endif %}"><i class="bi bi-dot nav-icon"></i>Attendance</a>
-  </div>
-
-  <a href="{% url 'order_list' %}" class="nav-link {% if 'order' in request.path %}active{% endif %}">
-    <i class="bi bi-bag-check nav-icon"></i> Orders
-  </a>
-
-  <div class="nav-label">Workspace</div>
-  <a href="{% url 'task_list' %}" class="nav-link {% if 'task' in request.path %}active{% endif %}">
-    <i class="bi bi-check2-square nav-icon"></i> Tasks
-  </a>
-  <a href="{% url 'project_list' %}" class="nav-link {% if 'project' in request.path %}active{% endif %}">
-    <i class="bi bi-kanban nav-icon"></i> Projects
-  </a>
-  <a href="{% url 'schedule_list' %}" class="nav-link {% if 'schedule' in request.path %}active{% endif %}">
-    <i class="bi bi-calendar3 nav-icon"></i> Schedules
-  </a>
-
-  <div class="nav-label">Account</div>
-  <a href="{% url 'currency_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'currency_settings' %}active{% endif %}">
-    <i class="bi bi-currency-exchange nav-icon"></i> Currency
-  </a>
-  {% if request.user.is_superuser %}
-  <a href="{% url 'site_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'site_settings' %}active{% endif %}">
-    <i class="bi bi-gear nav-icon"></i> Settings
-  </a>
-  {% endif %}
-  {% if user_role == 'admin' %}
-  <a href="{% url 'user_list' %}" class="nav-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
-    <i class="bi bi-people-gear nav-icon"></i> User Management
-  </a>
-  <a href="{% url 'activity_logs' %}" class="nav-link {% if request.resolver_match.url_name == 'activity_logs' %}active{% endif %}">
-    <i class="bi bi-clock-history nav-icon"></i> Activity Logs
-  </a>
-  {% endif %}
-  {% if request.user.is_superuser %}
-  <a href="/admin/" class="nav-link"><i class="bi bi-shield-lock nav-icon"></i> Admin Panel</a>
-  {% endif %}
-  <form method="post" action="{% url 'logout' %}" style="margin:0;">
-    {% csrf_token %}
-    <button type="submit" class="nav-link w-100 border-0 bg-transparent text-start" style="cursor:pointer;">
-      <i class="bi bi-box-arrow-left nav-icon"></i> Logout
-    </button>
-  </form>
-</nav>
-
-<!-- ── Topbar ────────────────────────────────────────── -->
-<div id="topbar">
-  <div class="d-flex align-items-center gap-2" style="min-width:0;">
-    <button id="sidebar-toggle" type="button" class="btn btn-sm" aria-label="Toggle navigation" style="border:none;background:transparent;font-size:20px;line-height:1;padding:2px 6px;color:var(--dash-ink);">
-      <i class="bi bi-list"></i>
-    </button>
-    <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
-  </div>
-  <div class="d-flex align-items-center gap-3" style="flex-shrink:0;">
-    <!-- Global Search -->
-    <form method="get" action="{% url 'global_search' %}" class="d-flex align-items-center topbar-search">
-      <div class="input-group input-group-sm">
-        <span class="input-group-text bg-light border-end-0" style="padding:4px 10px;"><i class="bi bi-search text-muted" style="font-size:13px;"></i></span>
-        <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Search anything..." style="width:220px;font-size:13px;background:#f8fafc;" value="{{ request.GET.q|default:'' }}">
+  <!-- ── Sidebar ────────────────────────────────────────── -->
+  <div id="sidebar-backdrop"></div>
+  <nav id="sidebar">
+    <!-- Logo -->
+    <a href="{% url 'dashboard' %}" class="sidebar-brand text-decoration-none">
+      <div class="brand-tile">
+        <img
+          src="{% if site_settings.logo_image %}{{ site_settings.logo_image.url }}{% else %}{{ MEDIA_URL }}invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg{% endif %}"
+          alt="Danpite">
       </div>
-    </form>
-    <!-- Role Badge -->
-    <span class="badge topbar-role" style="background:linear-gradient(135deg,#5f2492,#d90094);color:#fff;font-size:11px;">{{ user_role|capfirst }}</span>
-    <!-- User Dropdown -->
-    <div class="dropdown topbar-user">
-      <button class="btn btn-sm dropdown-toggle d-flex align-items-center gap-2" style="border:none;background:transparent;font-size:13px;padding:4px 8px;" data-bs-toggle="dropdown" data-bs-boundary="window">
-        <i class="bi bi-person-circle" style="font-size:18px;"></i>
-        <span class="topbar-user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person me-2"></i>Profile</a></li>
-        <li><hr class="dropdown-divider"></li>
+      <!-- <span class="brand-name">Danpite</span> -->
+    </a>
+
+    <div class="nav-label-row">
+      <span class="nav-label">Main Menu</span>
+      <span class="material-symbols-outlined">expand_more</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul>
         <li>
-          <form method="post" action="{% url 'logout' %}" class="m-0">
-            {% csrf_token %}
-            <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-left me-2"></i>Logout</button>
-          </form>
+          <a href="{% url 'dashboard' %}"
+            class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" data-bs-toggle="collapse" href="#leadsMenu" role="button"
+            aria-expanded="{% if 'lead' in request.path %}true{% else %}false{% endif %}">
+            <span class="material-symbols-outlined">person_add</span>
+            <span>Leads</span>
+            <span class="material-symbols-outlined arrow">expand_more</span>
+          </a>
+          <div class="collapse submenu {% if 'lead' in request.path %}show{% endif %}" id="leadsMenu">
+            <a href="{% url 'lead_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'lead_list' %}active{% endif %}">Lead
+              Contacts</a>
+          </div>
+        </li>
+        <li>
+          <a href="{% url 'client_list' %}" class="nav-link {% if 'client' in request.path %}active{% endif %}">
+            <span class="material-symbols-outlined">group</span>
+            <span>Clients</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-link" data-bs-toggle="collapse" href="#accMenu" role="button"
+            aria-expanded="{% if '/accounts/' in request.path %}true{% else %}false{% endif %}">
+            <span class="material-symbols-outlined">wallet</span>
+            <span>Sales</span>
+            <span class="material-symbols-outlined arrow">expand_more</span>
+          </a>
+          <div class="collapse submenu {% if '/accounts/' in request.path %}show{% endif %}" id="accMenu">
+            <a href="{% url 'invoice_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'invoice_list' %}active{% endif %}">Invoices</a>
+            <a href="{% url 'payment_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}">Payments</a>
+            <a href="{% url 'expense_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}">Expenses</a>
+            <a href="{% url 'expense_category_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'expense_category_list' %}active{% endif %}">Expense
+              Categories</a>
+            <a href="{% url 'bank_account_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'bank_account_list' %}active{% endif %}">Bank
+              Accounts</a>
+            <a href="{% url 'transfer_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'transfer_list' %}active{% endif %}">Balance
+              Transfer</a>
+          </div>
+        </li>
+        <li>
+          <a class="nav-link" data-bs-toggle="collapse" href="#reportsMenu" role="button"
+            aria-expanded="{% if '/accounts/reports/' in request.path %}true{% else %}false{% endif %}">
+            <span class="material-symbols-outlined">bar_chart</span>
+            <span>Reports</span>
+            <span class="material-symbols-outlined arrow">expand_more</span>
+          </a>
+          <div class="collapse submenu {% if '/accounts/reports/' in request.path %}show{% endif %}" id="reportsMenu">
+            <a href="{% url 'income_report' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'income_report' %}active{% endif %}">Income
+              Report</a>
+            <a href="{% url 'expense_report' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'expense_report' %}active{% endif %}">Expense
+              Report</a>
+            <a href="{% url 'balance_report' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'balance_report' %}active{% endif %}">Total
+              Balance</a>
+            <a href="{% url 'bank_details_report' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'bank_details_report' %}active{% endif %}">Bank
+              Details</a>
+            <a href="{% url 'sales_report' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'sales_report' %}active{% endif %}">Sales
+              Report</a>
+          </div>
+        </li>
+        <li>
+          <a class="nav-link" data-bs-toggle="collapse" href="#hrMenu" role="button"
+            aria-expanded="{% if '/hr/' in request.path %}true{% else %}false{% endif %}">
+            <span class="material-symbols-outlined">badge</span>
+            <span>HR</span>
+            <span class="material-symbols-outlined arrow">expand_more</span>
+          </a>
+          <div class="collapse submenu {% if '/hr/' in request.path %}show{% endif %}" id="hrMenu">
+            <a href="{% url 'employee_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'employee_list' %}active{% endif %}">Employees</a>
+            <a href="{% url 'leave_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'leave_list' %}active{% endif %}">Leaves</a>
+            <a href="{% url 'attendance_list' %}"
+              class="nav-link {% if request.resolver_match.url_name == 'attendance_list' %}active{% endif %}">Attendance</a>
+          </div>
+        </li>
+        <li>
+          <a href="{% url 'order_list' %}" class="nav-link {% if 'order' in request.path %}active{% endif %}">
+            <span class="material-symbols-outlined">shopping_bag</span>
+            <span>Orders</span>
+          </a>
         </li>
       </ul>
+
+      <div class="nav-label-row">
+        <span class="nav-label">Workspace</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </div>
+      <ul>
+        <li>
+          <a href="{% url 'task_list' %}" class="nav-link {% if 'task' in request.path %}active{% endif %}">
+            <span class="material-symbols-outlined">task_alt</span>
+            <span>Tasks</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'project_list' %}" class="nav-link {% if 'project' in request.path %}active{% endif %}">
+            <span class="material-symbols-outlined">folder</span>
+            <span>Projects</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'schedule_list' %}" class="nav-link {% if 'schedule' in request.path %}active{% endif %}">
+            <span class="material-symbols-outlined">calendar_month</span>
+            <span>Schedules</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="nav-label-row">
+        <span class="nav-label">Account</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </div>
+      <ul>
+        <li>
+          <a href="{% url 'currency_settings' %}"
+            class="nav-link {% if request.resolver_match.url_name == 'currency_settings' %}active{% endif %}">
+            <span class="material-symbols-outlined">currency_exchange</span>
+            <span>Currency</span>
+          </a>
+        </li>
+        {% if request.user.is_superuser %}
+        <li>
+          <a href="{% url 'site_settings' %}"
+            class="nav-link {% if request.resolver_match.url_name == 'site_settings' %}active{% endif %}">
+            <span class="material-symbols-outlined">settings</span>
+            <span>Settings</span>
+          </a>
+        </li>
+        {% endif %}
+        {% if user_role == 'admin' %}
+        <li>
+          <a href="{% url 'user_list' %}"
+            class="nav-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
+            <span class="material-symbols-outlined">manage_accounts</span>
+            <span>User Management</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'activity_logs' %}"
+            class="nav-link {% if request.resolver_match.url_name == 'activity_logs' %}active{% endif %}">
+            <span class="material-symbols-outlined">history</span>
+            <span>Activity Logs</span>
+          </a>
+        </li>
+        {% endif %}
+        {% if request.user.is_superuser %}
+        <li>
+          <a href="/admin/" class="nav-link">
+            <span class="material-symbols-outlined">admin_panel_settings</span>
+            <span>Admin Panel</span>
+          </a>
+        </li>
+        {% endif %}
+        <li>
+          <form method="post" action="{% url 'logout' %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="nav-link w-100 border-0 bg-transparent text-start" style="cursor:pointer;">
+              <span class="material-symbols-outlined">logout</span>
+              <span>Logout</span>
+            </button>
+          </form>
+        </li>
+</ul>
+  </nav>
+</nav>
+
+  <!-- ── Topbar ────────────────────────────────────────── -->
+  <div id="topbar">
+    <div class="d-flex align-items-center gap-2" style="min-width:0;">
+      <button id="sidebar-toggle" type="button" class="btn btn-sm" aria-label="Toggle navigation"
+        style="border:none;background:transparent;font-size:20px;line-height:1;padding:2px 6px;color:var(--dash-ink);">
+        <i class="bi bi-list"></i>
+      </button>
+      <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+      <!-- Global Search -->
+      <form method="get" action="{% url 'global_search' %}" class="topbar-search">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" name="q" placeholder="Search anything..."
+          value="{{ request.GET.q|default:'' }}">
+      </form>
+    </div>
+    <div class="d-flex align-items-center gap-3" style="flex-shrink:0;">
+      <!-- Role Badge -->
+      <span class="badge topbar-role"
+        style="background:linear-gradient(135deg,#004ac6,#2563eb);color:#fff;font-size:11px;">{{ user_role|capfirst }}</span>
+      <!-- User Dropdown -->
+      <div class="dropdown topbar-user">
+        <button class="btn btn-sm dropdown-toggle d-flex align-items-center gap-2"
+          style="border:none;background:transparent;font-size:13px;padding:4px 8px;" data-bs-toggle="dropdown"
+          data-bs-boundary="window">
+          <i class="bi bi-person-circle" style="font-size:18px;"></i>
+          <span class="topbar-user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person me-2"></i>Profile</a></li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li>
+            <form method="post" action="{% url 'logout' %}" class="m-0">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-left me-2"></i>Logout</button>
+            </form>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── Main Content ───────────────────────────────────── -->
-<div id="main">
-  {% if messages %}
+  <!-- ── Main Content ───────────────────────────────────── -->
+  <div id="main">
+    {% if messages %}
     {% for msg in messages %}
-    <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show mb-3" role="alert">
+    <div
+      class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show mb-3"
+      role="alert">
       {{ msg }}
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function () {
+      var toggle = document.getElementById('sidebar-toggle');
+      var backdrop = document.getElementById('sidebar-backdrop');
+      var sidebar = document.getElementById('sidebar');
+      function isMobile() { return window.innerWidth < 992; }
+      function openSidebar() { document.body.classList.add('sidebar-open'); }
+      function closeSidebar() { document.body.classList.remove('sidebar-open'); }
+      if (toggle) toggle.addEventListener('click', function () {
+        document.body.classList.toggle('sidebar-open');
+      });
+      if (backdrop) backdrop.addEventListener('click', closeSidebar);
+      document.addEventListener('click', function (e) {
+        if (e.target.closest('#sidebar .nav-link') && isMobile()) closeSidebar();
+      });
+      window.addEventListener('resize', function () {
+        if (!isMobile()) closeSidebar();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && isMobile()) closeSidebar();
+      });
+    })();
+  </script>
+  <script>
+    document.addEventListener('show.bs.dropdown', function (e) {
+      var wrap = e.target.closest('.table-responsive');
+      if (wrap) wrap.style.overflow = 'visible';
+    });
+    document.addEventListener('hidden.bs.dropdown', function (e) {
+      var wrap = e.target.closest('.table-responsive');
+      if (wrap) wrap.style.overflow = '';
+    });
+  </script>
+
+  {% if request.user.is_superuser %}
+  <!-- (Logo upload moved to Site Settings) -->
   {% endif %}
-
-  {% block content %}{% endblock %}
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-(function() {
-  var toggle = document.getElementById('sidebar-toggle');
-  var backdrop = document.getElementById('sidebar-backdrop');
-  var sidebar = document.getElementById('sidebar');
-  function isMobile() { return window.innerWidth < 992; }
-  function openSidebar() { document.body.classList.add('sidebar-open'); }
-  function closeSidebar() { document.body.classList.remove('sidebar-open'); }
-  if (toggle) toggle.addEventListener('click', function() {
-    document.body.classList.toggle('sidebar-open');
-  });
-  if (backdrop) backdrop.addEventListener('click', closeSidebar);
-  document.addEventListener('click', function(e) {
-    if (e.target.closest('#sidebar .nav-link') && isMobile()) closeSidebar();
-  });
-  window.addEventListener('resize', function() {
-    if (!isMobile()) closeSidebar();
-  });
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && isMobile()) closeSidebar();
-  });
-})();
-</script>
-<script>
-document.addEventListener('show.bs.dropdown', function(e) {
-  var wrap = e.target.closest('.table-responsive');
-  if (wrap) wrap.style.overflow = 'visible';
-});
-document.addEventListener('hidden.bs.dropdown', function(e) {
-  var wrap = e.target.closest('.table-responsive');
-  if (wrap) wrap.style.overflow = '';
-});
-</script>
-
-{% if request.user.is_superuser %}
-<!-- (Logo upload moved to Site Settings) -->
-{% endif %}
-<script>
-(function() {
-  function markReveals() {
-    var main = document.getElementById('main');
-    if (!main || main.dataset.revealed) return;
-    main.dataset.revealed = '1';
-    var idx = 0;
-    function mark(el) {
-      if (!el || el.classList.contains('reveal')) return;
-      if (getComputedStyle(el).display === 'none') return;
-      el.classList.add('reveal');
-      el.style.setProperty('--d', (idx * 50 + 40) + 'ms');
-      idx++;
-    }
-    Array.prototype.forEach.call(main.children, function(child) {
-      if (child.tagName === 'SCRIPT' || child.tagName === 'TEMPLATE') return;
-      if (child.classList.contains('modal')) return;
-      if (child.querySelector('.reveal')) return;
-      var nested = child.querySelectorAll(':scope > [class*="col"] > .crm-card, :scope > [class*="col"] > .metric-card');
-      if (nested.length) {
-        Array.prototype.forEach.call(nested, mark);
-      } else {
-        mark(child);
+  <script>
+    (function () {
+      function markReveals() {
+        var main = document.getElementById('main');
+        if (!main || main.dataset.revealed) return;
+        main.dataset.revealed = '1';
+        var idx = 0;
+        function mark(el) {
+          if (!el || el.classList.contains('reveal')) return;
+          if (getComputedStyle(el).display === 'none') return;
+          el.classList.add('reveal');
+          el.style.setProperty('--d', (idx * 50 + 40) + 'ms');
+          idx++;
+        }
+        Array.prototype.forEach.call(main.children, function (child) {
+          if (child.tagName === 'SCRIPT' || child.tagName === 'TEMPLATE') return;
+          if (child.classList.contains('modal')) return;
+          if (child.querySelector('.reveal')) return;
+          var nested = child.querySelectorAll(':scope > [class*="col"] > .crm-card, :scope > [class*="col"] > .metric-card');
+          if (nested.length) {
+            Array.prototype.forEach.call(nested, mark);
+          } else {
+            mark(child);
+          }
+        });
       }
-    });
-  }
 
-  markReveals();
-
-  function go() {
-    if (document.body.classList.contains('dashboard-ready')) return;
-    requestAnimationFrame(function() {
       markReveals();
-      document.body.classList.add('dashboard-ready');
-    });
-  }
-  document.addEventListener('DOMContentLoaded', go);
-  setTimeout(go, 1200);
-})();
-</script>
-{% block extra_js %}{% endblock %}
+
+      function go() {
+        if (document.body.classList.contains('dashboard-ready')) return;
+        requestAnimationFrame(function () {
+          markReveals();
+          document.body.classList.add('dashboard-ready');
+        });
+      }
+      document.addEventListener('DOMContentLoaded', go);
+      setTimeout(go, 1200);
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
 </body>
+
 </html>
