@@ -68,6 +68,7 @@
             <div style="font-size:13px;font-weight:600;" id="acct-info-name"></div>
             <div style="font-size:12px;color:#374151;margin-top:4px;" id="acct-info-detail"></div>
             <div style="font-size:12px;color:#6b7280;margin-top:2px;" id="acct-info-extra"></div>
+            <div style="font-size:12px;color:#059669;font-weight:600;margin-top:2px;" id="acct-info-balance"></div>
           </div>
         </div>
         <!-- Reference -->
@@ -94,7 +95,7 @@
 const accounts = [
   {% for a in accounts %}
   {% with cat=a.account_category %}
-  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ cat.name|escapejs }}", method: "{{ cat.name|lower|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}", category_type: "{{ cat.account_type|escapejs }}", holder: "{{ a.holder_name|escapejs }}", bank: "{{ a.bank_name|escapejs }}", acct_num: "{{ a.account_number|escapejs }}", mobile: "{{ a.mobile_number|escapejs }}", branch: "{{ a.branch|escapejs }}", routing: "{{ a.routing_number|escapejs }}", contact: "{{ a.contact_number|escapejs }}", currency: "{{ a.currency|escapejs }}"},
+  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ cat.name|escapejs }}", method: "{{ cat.name|lower|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}", category_type: "{{ cat.account_type|escapejs }}", holder: "{{ a.holder_name|escapejs }}", bank: "{{ a.bank_name|escapejs }}", acct_num: "{{ a.account_number|escapejs }}", mobile: "{{ a.mobile_number|escapejs }}", branch: "{{ a.branch|escapejs }}", routing: "{{ a.routing_number|escapejs }}", contact: "{{ a.contact_number|escapejs }}", currency: "{{ a.currency|escapejs }}", available_balance: "{{ a.available_balance|escapejs }}"},
   {% endwith %}
   {% endfor %}
 ];
@@ -229,7 +230,7 @@ function renderAcctDropdown(results) {
   results.forEach(function(a) {
     var item = document.createElement('div');
     item.className = 'acct-dropdown-item';
-    item.innerHTML = '<div class="acct-num">' + escHtml(a.display) + '</div><div class="acct-detail">' + escHtml(a.category) + ' · ' + escHtml(a.number) + '</div>';
+    item.innerHTML = '<div class="acct-num">' + escHtml(a.display) + '</div><div class="acct-detail">' + escHtml(a.category) + ' · ' + escHtml(a.number) + '</div><div class="acct-detail" style="color:#059669;">Balance: ৳' + escHtml(a.available_balance) + '</div>';
     item.addEventListener('click', function() { selectAccount(a); });
     acctDropdown.appendChild(item);
   });
@@ -258,6 +259,7 @@ function selectAccount(a) {
   if (a.contact) extra += (extra ? ' | ' : '') + 'Contact: ' + a.contact;
   if (a.currency) extra += (extra ? ' | ' : '') + 'Currency: ' + a.currency;
   document.getElementById('acct-info-extra').textContent = extra;
+  document.getElementById('acct-info-balance').textContent = 'Available Balance: ৳' + (a.available_balance || '0.00');
   acctInfoBox.style.display = 'block';
 }
 

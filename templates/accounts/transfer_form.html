@@ -53,6 +53,7 @@
                 <div style="font-size:13px;font-weight:600;" id="from-bank-info-name"></div>
                 <div style="font-size:12px;color:#374151;"><span id="from-bank-info-holder"></span> · <span id="from-bank-info-type"></span></div>
                 <div style="font-size:12px;color:#6b7280;" id="from-bank-info-number"></div>
+                <div style="font-size:12px;color:#059669;font-weight:600;" id="from-bank-info-balance"></div>
               </div>
             </div>
 
@@ -118,6 +119,7 @@
                 <div style="font-size:13px;font-weight:600;" id="to-bank-info-name"></div>
                 <div style="font-size:12px;color:#374151;"><span id="to-bank-info-holder"></span> · <span id="to-bank-info-type"></span></div>
                 <div style="font-size:12px;color:#6b7280;" id="to-bank-info-number"></div>
+                <div style="font-size:12px;color:#059669;font-weight:600;" id="to-bank-info-balance"></div>
               </div>
             </div>
 
@@ -256,7 +258,7 @@ function renderBankDropdown(side, accounts) {
   accounts.forEach(function(a) {
     var item = document.createElement('div');
     item.className = 'acct-dropdown-item';
-    item.innerHTML = '<div class="acct-num">' + escHtml(a.account_number) + '</div><div class="acct-detail">' + escHtml(a.account_name) + ' · ' + escHtml(a.bank_name) + (a.branch ? ' · ' + escHtml(a.branch) : '') + '</div>';
+    item.innerHTML = '<div class="acct-num">' + escHtml(a.account_number) + '</div><div class="acct-detail">' + escHtml(a.account_name) + ' · ' + escHtml(a.bank_name) + (a.branch ? ' · ' + escHtml(a.branch) : '') + '</div><div class="acct-detail" style="color:#059669;">Balance: ৳' + escHtml(a.available_balance) + '</div>';
     item.addEventListener('mousedown', function(e) {
       e.preventDefault();
       selectBankAccount(side, a);
@@ -274,6 +276,7 @@ function selectBankAccount(side, a) {
   document.getElementById(side + '-bank-info-holder').textContent = a.bank_name;
   document.getElementById(side + '-bank-info-type').textContent = 'Bank';
   document.getElementById(side + '-bank-info-number').textContent = 'A/C: ' + a.account_number + (a.branch ? ' · ' + a.branch : '');
+  document.getElementById(side + '-bank-info-balance').textContent = 'Available Balance: ৳' + a.available_balance;
   info.style.display = 'block';
   document.getElementById(side + '-acct-dropdown').style.display = 'none';
 }

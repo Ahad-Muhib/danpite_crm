@@ -583,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function(){
     var cache = [];
     function showInfo(a) {
       if (!a) { if (info) info.style.display = 'none'; return; }
-      info.textContent = a.account_name + ' · ' + a.bank_name + (a.branch ? ' · ' + a.branch : '') + '  [A/C: ' + a.account_number + ']';
+      info.textContent = a.account_name + ' · ' + a.bank_name + (a.branch ? ' · ' + a.branch : '') + '  [A/C: ' + a.account_number + ']  Balance: ৳' + a.available_balance;
       info.style.display = 'block';
     }
     function close() { dropdown.style.display = 'none'; }
@@ -593,7 +593,7 @@ document.addEventListener('DOMContentLoaded', function(){
       matches.forEach(function(a) {
         var item = document.createElement('div');
         item.className = 'acct-dropdown-item';
-        item.innerHTML = '<div class="acct-num">' + escJs(a.account_number) + '</div><div class="acct-detail">' + escJs(a.account_name) + ' · ' + escJs(a.bank_name) + '</div>';
+        item.innerHTML = '<div class="acct-num">' + escJs(a.account_number) + '</div><div class="acct-detail">' + escJs(a.account_name) + ' · ' + escJs(a.bank_name) + '</div><div class="acct-detail" style="color:#059669;">Balance: ৳' + escJs(a.available_balance) + '</div>';
         item.addEventListener('mousedown', function(e) {
           e.preventDefault();
           acctInput.value = a.account_number;

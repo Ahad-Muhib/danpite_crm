@@ -38,6 +38,7 @@
           <div id="account-info" class="mt-2 p-2 rounded" style="background:#f3eeff;border:1px solid #c4b5fd;display:none;">
             <div style="font-size:13px;font-weight:600;" id="acct-info-name"></div>
             <div style="font-size:12px;color:#6b7280;" id="acct-info-detail"></div>
+            <div style="font-size:12px;color:#059669;font-weight:600;" id="acct-info-balance"></div>
           </div>
         </div>
         <div class="col-md-6"><label class="form-label fw-medium">Receipt</label>{{ form.receipt }}</div>
@@ -54,7 +55,7 @@
 <script>
 const accounts = [
   {% for a in accounts %}
-  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ a.account_category.name|default:''|escapejs }}", type: "{{ a.account_category.account_type|default:''|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}", holder: "{% firstof a.holder_name a.account_name a.card_holder_name ''|escapejs %}"},
+  {pk: {{ a.pk }}, display: "{{ a.display_name|escapejs }}", category: "{{ a.account_category.name|default:''|escapejs }}", type: "{{ a.account_category.account_type|default:''|escapejs }}", number: "{% firstof a.account_number a.mobile_number ''|escapejs %}", holder: "{% firstof a.holder_name a.account_name a.card_holder_name ''|escapejs %}", available_balance: "{{ a.available_balance|escapejs }}"},
   {% endfor %}
 ];
 const searchInput = document.getElementById('expense-account-search');
@@ -63,6 +64,7 @@ const dropdown = document.getElementById('acct-dropdown');
 const infoBox = document.getElementById('account-info');
 const infoName = document.getElementById('acct-info-name');
 const infoDetail = document.getElementById('acct-info-detail');
+const infoBalance = document.getElementById('acct-info-balance');
 const methodSelect = document.getElementById('id_method');
 
 var selectedPk = pkInput.value || '';
@@ -80,7 +82,7 @@ function renderDropdown(results) {
   results.forEach(function(a) {
     var item = document.createElement('div');
     item.className = 'acct-dropdown-item';
-    item.innerHTML = '<div class="acct-num">' + escHtml(a.display) + '</div><div class="acct-detail">' + escHtml(a.category) + ' · ' + escHtml(a.number) + '</div>';
+    item.innerHTML = '<div class="acct-num">' + escHtml(a.display) + '</div><div class="acct-detail">' + escHtml(a.category) + ' · ' + escHtml(a.number) + '</div><div class="acct-detail" style="color:#059669;">Balance: ৳' + escHtml(a.available_balance) + '</div>';
     item.addEventListener('click', function() { selectAccount(a); });
     dropdown.appendChild(item);
   });
@@ -98,6 +100,7 @@ function selectAccount(a) {
   if (a.number) detail.push('Number: ' + a.number);
   detail.push(a.category);
   infoDetail.textContent = detail.join(' · ');
+  if (infoBalance) infoBalance.textContent = 'Available Balance: ৳' + (a.available_balance || '0.00');
   infoBox.style.display = 'block';
   if (methodSelect && a.category && !methodSelect.value) {
     methodSelect.value = a.category.toLowerCase();
