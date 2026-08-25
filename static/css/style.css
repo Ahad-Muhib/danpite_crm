@@ -178,9 +178,9 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 24px;
+  padding: 12px 24px;
   color: var(--sidebar-text);
-  font-size: 14.5px;
+  font-size: 15.5px;
   font-weight: 500;
   text-decoration: none;
   border-left: 4px solid transparent;
@@ -202,7 +202,7 @@ body {
   transform: translateX(2px);
 }
 #sidebar .nav-link .material-symbols-outlined {
-  font-size: 20px;
+  font-size: 22px;
   flex-shrink: 0;
   transition: transform .25s ease;
 }
@@ -214,8 +214,8 @@ body {
 
 /* Submenu */
 #sidebar .submenu .nav-link {
-  padding: 8px 24px 8px 56px;
-  font-size: 14px;
+  padding: 10px 24px 10px 56px;
+  font-size: 14.5px;
   font-weight: 400;
   color: #5a6270;
   transition: background-color .2s ease, color .2s ease, transform .2s ease;

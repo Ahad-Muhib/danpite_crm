@@ -632,6 +632,7 @@ document.addEventListener('DOMContentLoaded', function(){
       fetch('/accounts/bank-accounts-by-bank/?bank_name=' + encodeURIComponent(nameSel.value))
         .then(function(r) { return r.json(); })
         .then(function(data) {
+          cache = data.accounts;
           var a = data.accounts.find(function(x) { return x.account_number === acctInput.value; });
           if (a) { pk.value = a.id; showInfo(a); }
         });
@@ -693,11 +694,16 @@ document.addEventListener('DOMContentLoaded', function(){
     input.addEventListener('focus', function() { if (cache.length) render(cache); });
     input.addEventListener('blur', function() { setTimeout(close, 200); });
     if (methodSel.value && input.value) {
-      fetchData();
-      setTimeout(function() {
-        var exact = cache.find(function(a) { return a.mobile_number === input.value; });
-        if (exact) { if (holder) holder.value = exact.holder_name || ''; if (pk) pk.value = exact.id; show(exact); }
-      }, 300);
+      var catPk = METHOD_CATEGORY_MAP[methodSel.value];
+      if (catPk) {
+        fetch('/accounts/bank-accounts-by-bank/?category=' + catPk)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            cache = data.accounts;
+            var exact = cache.find(function(a) { return a.mobile_number === input.value; });
+            if (exact) { if (holder) holder.value = exact.holder_name || ''; if (pk) pk.value = exact.id; show(exact); }
+          });
+      }
     }
   }
 
@@ -782,11 +788,16 @@ document.addEventListener('DOMContentLoaded', function(){
     input.addEventListener('focus', function() { if (cache.length) render(cache); });
     input.addEventListener('blur', function() { setTimeout(close, 200); });
     if (input.value) {
-      fetchData();
-      setTimeout(function() {
-        var exact = cache.find(function(a) { return a.display_name === input.value; });
-        if (exact) { if (pk) pk.value = exact.id; show(exact); }
-      }, 300);
+      var catPk = METHOD_CATEGORY_MAP['card'];
+      if (catPk) {
+        fetch('/accounts/bank-accounts-by-bank/?category=' + catPk)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            cache = data.accounts;
+            var exact = cache.find(function(a) { return a.display_name === input.value; });
+            if (exact) { if (pk) pk.value = exact.id; show(exact); }
+          });
+      }
     }
   }
 

@@ -50,42 +50,44 @@
   .quick-action {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 9px 16px;
+    gap: 8px;
+    padding: 14px 24px;
     border-radius: 10px;
     background: linear-gradient(135deg, #4c1d95 0%, #5f2492 45%, #da0497 100%);
     background-size: 180% 100%;
     background-position: 0% 0;
     color: #fff;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 15px;
     text-decoration: none;
     position: relative;
     overflow: hidden;
     box-shadow: 0 6px 14px rgba(95, 36, 146, .28);
     transition: transform .18s ease, box-shadow .2s ease, background-position .3s ease;
   }
+  .quick-action::before,
   .quick-action::after {
     content: '';
     position: absolute;
+    width: 0;
+    height: 2px;
+    background: #ec4899;
+    transition: .3s;
+  }
+  .quick-action::before {
     top: 0;
-    left: -70%;
-    width: 45%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .45), transparent);
-    transform: skewX(-20deg);
-    opacity: 0;
+    left: 0;
   }
+  .quick-action::after {
+    bottom: 0;
+    right: 0;
+  }
+  .quick-action:hover::before,
   .quick-action:hover::after {
-    opacity: 1;
-    animation: qa-shine .9s ease forwards;
-  }
-  @keyframes qa-shine {
-    from { left: -70%; }
-    to { left: 130%; }
+    width: 100%;
   }
   .quick-action .material-symbols-outlined {
-    font-size: 18px;
+    font-size: 20px;
   }
   .quick-action:hover {
     color: #fff;
