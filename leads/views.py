@@ -521,8 +521,6 @@ def followup_create(request):
                       title=f'Follow-up: {obj.subject}', user=request.user)
         if obj.lead and obj.next_followup_date:
             _set_lead_next_date(obj.lead, obj.next_followup_date)
-        if obj.is_recurring and obj.next_followup_date:
-            _create_recurring_followup(obj)
         if lead_id:
             return redirect('lead_detail', pk=lead_id)
         messages.success(request, 'Follow-up logged.')

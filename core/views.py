@@ -267,9 +267,9 @@ def global_search(request):
     }
 
     try:
-        from accounts.models import Invoice, Payment, Order
+        from accounts.models import Invoice, Payment
         results['invoices'] = Invoice.objects.filter(
-            Q(code__icontains=q) | Q(client_name__icontains=q) | Q(phone__icontains=q)
+            Q(code__icontains=q) | Q(bill_to_name__icontains=q) | Q(phone__icontains=q)
         )[:10]
         results['payments'] = Payment.objects.filter(
             Q(reference__icontains=q)

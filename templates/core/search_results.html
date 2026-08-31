@@ -69,7 +69,7 @@
         {% for i in results.invoices %}
         <tr>
           <td class="fw-medium text-primary">{{ i.code }}</td>
-          <td>{{ i.client.name|default:i.client_name|default:"—" }}</td>
+          <td>{{ i.client.name|default:"—" }}</td>
           <td class="fw-medium">{{ i.total }}</td>
           <td><span class="badge bg-{{ i.status }}">{{ i.get_status_display }}</span></td>
           <td><a href="{% url 'invoice_detail' i.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>

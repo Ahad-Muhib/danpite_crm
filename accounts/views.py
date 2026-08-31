@@ -662,7 +662,7 @@ def payment_edit(request, pk):
             obj.client = None
         old_invoice = Payment.objects.get(pk=pk).invoice
         if obj.invoice:
-            subtract = old_invoice.amount if old_invoice and old_invoice.pk == obj.invoice.pk else 0
+            subtract = old_invoice.total if old_invoice and old_invoice.pk == obj.invoice.pk else 0
             if _payment_overflows(obj.invoice, obj.amount, subtract=subtract):
                 messages.error(request, f'This payment ({obj.amount}) would exceed the invoice total ({obj.invoice.total}). Please fix the amount.')
                 return render(request, 'accounts/payment_form.html', {
