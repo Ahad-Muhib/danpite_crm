@@ -1158,17 +1158,6 @@ def invoice_print(request, pk):
 
 
 @login_required
-def invoice_mark_paid(request, pk):
-    invoice = get_object_or_404(Invoice, pk=pk)
-    if request.method == 'POST':
-        invoice.status = 'paid'
-        invoice.received_payment = True
-        invoice.save()
-        messages.success(request, f'{invoice.code} marked as paid.')
-    return redirect('invoice_detail', pk=pk)
-
-
-@login_required
 def transfer_list(request):
     if request.method == 'POST' and 'bulk_action' in request.POST:
         selected_ids = request.POST.getlist('selected_transfers')

@@ -71,6 +71,7 @@
           </td>
           <td>
             {% if l.status == 'pending' %}
+              {% if user_role == 'admin' or user_role == 'manager' or user_role == 'hr' %}
             <form method="post" action="{% url 'leave_status' l.pk %}" class="d-inline">
               {% csrf_token %}<input type="hidden" name="status" value="approved">
               <button class="btn btn-sm btn-success btn-sm-action" title="Approve"><i class="bi bi-check-lg"></i></button>
@@ -79,6 +80,9 @@
               {% csrf_token %}<input type="hidden" name="status" value="rejected">
               <button class="btn btn-sm btn-danger btn-sm-action" title="Reject"><i class="bi bi-x-lg"></i></button>
             </form>
+              {% else %}
+            <span class="text-muted" style="font-size:12px;">Awaiting approval</span>
+              {% endif %}
             {% else %}
             <span class="text-muted" style="font-size:12px;">{{ l.approved_by.username|default:"—" }}</span>
             {% endif %}

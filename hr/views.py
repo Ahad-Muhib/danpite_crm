@@ -169,7 +169,12 @@ def leave_create(request):
 
 
 @login_required
+@require_POST
 def leave_status(request, pk):
+    from core.views import is_hr_or_above
+    if not is_hr_or_above(request.user):
+        messages.error(request, 'Only HR, managers, or admins can approve or reject leave requests.')
+        return redirect('leave_list')
     leave = get_object_or_404(Leave, pk=pk)
     status = request.POST.get('status')
     if status in ['approved', 'rejected']:

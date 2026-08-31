@@ -152,6 +152,195 @@
 </div>
 {% endif %}
 
+{% if results.payments %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-cash-stack me-2"></i>Payments ({{ results.payments|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Client</th><th>Amount</th><th>Method</th><th>Date</th><th>Reference</th><th></th></tr></thead>
+      <tbody>
+        {% for p in results.payments %}
+        <tr>
+          <td class="fw-medium">{{ p.client.name|default:"—" }}</td>
+          <td class="fw-medium">{{ p.amount }}</td>
+          <td>{{ p.get_method_display }}</td>
+          <td>{{ p.payment_date }}</td>
+          <td class="text-muted">{{ p.reference|default:"—" }}</td>
+          <td><a href="{% url 'payment_detail' p.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.expenses %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-receipt-cutoff me-2"></i>Expenses ({{ results.expenses|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Title</th><th>Amount</th><th>Category</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        {% for e in results.expenses %}
+        <tr>
+          <td class="fw-medium">{{ e.title }}</td>
+          <td class="fw-medium">{{ e.amount }}</td>
+          <td>{{ e.get_category_display }}</td>
+          <td>{{ e.expense_date }}</td>
+          <td><a href="{% url 'expense_detail' e.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.deals %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-bullseye me-2"></i>Deals ({{ results.deals|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>Contact</th><th>Value</th><th>Stage</th><th></th></tr></thead>
+      <tbody>
+        {% for d in results.deals %}
+        <tr>
+          <td class="fw-medium">{{ d.deal_name }}</td>
+          <td>{{ d.lead_contact.name|default:"—" }}</td>
+          <td class="fw-medium">{{ d.value }}</td>
+          <td><span class="badge bg-secondary">{{ d.get_stage_display }}</span></td>
+          <td><a href="{% url 'deal_edit' d.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.followups %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-calendar-check me-2"></i>Follow-ups ({{ results.followups|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Subject</th><th>Lead</th><th>Type</th><th>Next Date</th><th></th></tr></thead>
+      <tbody>
+        {% for f in results.followups %}
+        <tr>
+          <td class="fw-medium">{{ f.subject|default:"—" }}</td>
+          <td>{{ f.lead.name|default:"—" }}</td>
+          <td>{{ f.get_followup_type_display }}</td>
+          <td>{{ f.next_followup_date|default:"—" }}</td>
+          <td><a href="{% url 'followup_edit' f.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.bank_accounts %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-bank me-2"></i>Bank Accounts ({{ results.bank_accounts|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Account</th><th>Number</th><th>Type</th><th></th></tr></thead>
+      <tbody>
+        {% for b in results.bank_accounts %}
+        <tr>
+          <td class="fw-medium">{{ b.display_name|default:b.account_name }}</td>
+          <td class="text-muted">{{ b.account_number|default:b.mobile_number|default:"—" }}</td>
+          <td>{{ b.account_category.name|default:"—" }}</td>
+          <td><a href="{% url 'bank_account_detail' b.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.transfers %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-arrow-left-right me-2"></i>Transfers ({{ results.transfers|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>From</th><th>To</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        {% for t in results.transfers %}
+        <tr>
+          <td>{{ t.from_account|default:"—" }}</td>
+          <td>{{ t.to_account|default:"—" }}</td>
+          <td class="fw-medium">{{ t.amount }}</td>
+          <td>{{ t.transfer_date }}</td>
+          <td><a href="{% url 'transfer_detail' t.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.projects %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-folder me-2"></i>Projects ({{ results.projects|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for p in results.projects %}
+        <tr>
+          <td class="fw-medium">{{ p.name }}</td>
+          <td><span class="badge bg-secondary">{{ p.get_status_display }}</span></td>
+          <td><a href="{% url 'project_detail' p.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if results.schedules %}
+<div class="crm-card mb-3">
+  <div class="crm-card-header">
+    <span class="crm-card-title"><i class="bi bi-calendar3 me-2"></i>Schedules ({{ results.schedules|length }})</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Title</th><th>Start</th><th>Location</th><th></th></tr></thead>
+      <tbody>
+        {% for s in results.schedules %}
+        <tr>
+          <td class="fw-medium">{{ s.title }}</td>
+          <td>{{ s.start_datetime|date:"Y-m-d H:i" }}</td>
+          <td>{{ s.location|default:"—" }}</td>
+          <td><a href="{% url 'schedule_detail' s.pk %}" class="btn btn-sm btn-outline-primary btn-sm-action"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
 {% if total == 0 %}
 <div class="crm-card">
   <div class="text-center py-5 text-muted">

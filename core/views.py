@@ -251,34 +251,114 @@ def global_search(request):
     if not q:
         return redirect('dashboard')
 
+    LIMIT = 50
+
+    # Keyword -> section name mapping. When the search term matches one of these
+    # section keywords, that whole section is returned (all its records) instead of
+    # only searching by field values.
+    KEYWORD_SECTIONS = {
+        'lead': 'leads', 'leads': 'leads',
+        'client': 'clients', 'clients': 'clients', 'customer': 'clients', 'customers': 'clients',
+        'employee': 'employees', 'employees': 'employees', 'staff': 'employees',
+        'task': 'tasks', 'tasks': 'tasks',
+        'project': 'projects', 'projects': 'projects',
+        'schedule': 'schedules', 'schedules': 'schedules', 'calendar': 'schedules',
+        'invoice': 'invoices', 'invoices': 'invoices', 'bill': 'invoices', 'bills': 'invoices', 'quotation': 'invoices', 'quotations': 'invoices',
+        'payment': 'payments', 'payments': 'payments', 'paid': 'payments',
+        'expense': 'expenses', 'expenses': 'expenses',
+        'order': 'orders', 'orders': 'orders', 'sale': 'orders', 'sales': 'orders',
+        'bank': 'bank_accounts', 'banks': 'bank_accounts', 'account': 'bank_accounts', 'accounts': 'bank_accounts', 'bkash': 'bank_accounts', 'nagad': 'bank_accounts', 'rocket': 'bank_accounts',
+        'transfer': 'transfers', 'transfers': 'transfers',
+        'deal': 'deals', 'deals': 'deals', 'opportunity': 'deals',
+        'followup': 'followups', 'followups': 'followups', 'follow-up': 'followups', 'follow up': 'followups',
+    }
+
+    def _section_matches(q):
+        """Return the set of section names the search term explicitly refers to."""
+        ql = q.lower().strip()
+        matches = set()
+        for kw, section in KEYWORD_SECTIONS.items():
+            if ql == kw.lower().strip():
+                matches.add(section)
+        return matches
+
+    requested_sections = _section_matches(q)
+
+    # Build default (field-search) results
     results = {
         'leads': LeadContact.objects.filter(
-            Q(name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q) | Q(company__icontains=q)
-        )[:10],
+            Q(name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
+            | Q(company__icontains=q) | Q(lead_status__icontains=q) | Q(notes__icontains=q)
+        )[:LIMIT],
         'clients': Client.objects.filter(
-            Q(name__icontains=q) | Q(email__icontains=q) | Q(company__icontains=q) | Q(phone__icontains=q)
-        )[:10],
+            Q(name__icontains=q) | Q(email__icontains=q) | Q(company__icontains=q)
+            | Q(phone__icontains=q) | Q(mobile__icontains=q) | Q(notes__icontains=q)
+        )[:LIMIT],
         'employees': Employee.objects.filter(
-            Q(name__icontains=q) | Q(email__icontains=q) | Q(employee_id__icontains=q) | Q(phone__icontains=q)
-        )[:10],
+            Q(name__icontains=q) | Q(email__icontains=q) | Q(employee_id__icontains=q)
+            | Q(phone__icontains=q) | Q(role__icontains=q)
+        )[:LIMIT],
         'tasks': Task.objects.filter(
-            Q(title__icontains=q) | Q(description__icontains=q)
-        )[:10],
+            Q(title__icontains=q) | Q(description__icontains=q) | Q(priority__icontains=q)
+            | Q(status__icontains=q)
+        )[:LIMIT],
+        'projects': Project.objects.filter(
+            Q(name__icontains=q) | Q(description__icontains=q) | Q(status__icontains=q)
+        )[:LIMIT],
+        'schedules': Schedule.objects.filter(
+            Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q)
+        )[:LIMIT],
     }
 
     try:
-        from accounts.models import Invoice, Payment
+        from accounts.models import Invoice, Payment, Expense, BankAccount, Transfer
         results['invoices'] = Invoice.objects.filter(
             Q(code__icontains=q) | Q(bill_to_name__icontains=q) | Q(phone__icontains=q)
-        )[:10]
+            | Q(client__name__icontains=q) | Q(status__icontains=q)
+        )[:LIMIT]
         results['payments'] = Payment.objects.filter(
-            Q(reference__icontains=q)
-        )[:10]
+            Q(reference__icontains=q) | Q(client__name__icontains=q)
+            | Q(method__icontains=q) | Q(notes__icontains=q)
+        )[:LIMIT]
+        results['expenses'] = Expense.objects.filter(
+            Q(title__icontains=q) | Q(category__icontains=q)
+            | Q(description__icontains=q) | Q(method__icontains=q)
+        )[:LIMIT]
         results['orders'] = Order.objects.filter(
             Q(order_number__icontains=q) | Q(client__name__icontains=q)
-        )[:10]
+            | Q(status__icontains=q) | Q(notes__icontains=q)
+        )[:LIMIT]
+        results['bank_accounts'] = BankAccount.objects.filter(
+            Q(bank_name__icontains=q) | Q(account_name__icontains=q)
+            | Q(account_number__icontains=q) | Q(mobile_number__icontains=q)
+            | Q(holder_name__icontains=q) | Q(contact_number__icontains=q)
+        )[:LIMIT]
+        results['transfers'] = Transfer.objects.filter(
+            Q(from_account__account_name__icontains=q) | Q(to_account__account_name__icontains=q)
+            | Q(from_account__bank_name__icontains=q) | Q(to_account__bank_name__icontains=q)
+            | Q(reference__icontains=q) | Q(description__icontains=q)
+        )[:LIMIT]
     except Exception:
         pass
+
+    try:
+        from leads.models import Deal, FollowUp
+        results['deals'] = Deal.objects.filter(
+            Q(deal_name__icontains=q) | Q(pipeline__icontains=q) | Q(stage__icontains=q)
+            | Q(description__icontains=q) | Q(lead_contact__name__icontains=q)
+        )[:LIMIT]
+        results['followups'] = FollowUp.objects.filter(
+            Q(subject__icontains=q) | Q(notes__icontains=q) | Q(followup_type__icontains=q)
+            | Q(outcome__icontains=q) | Q(lead__name__icontains=q)
+        )[:LIMIT]
+    except Exception:
+        pass
+
+    # If the search term explicitly names one or more sections, show all records of
+    # those sections instead of limiting to field-value matches.
+    for section in requested_sections:
+        if section in results:
+            results[section] = list(results[section].model.objects.all()[:LIMIT])
 
     total = sum(len(v) for v in results.values())
 

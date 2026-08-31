@@ -171,12 +171,6 @@
         {% endif %}
         <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit Invoice</a>
         <a href="{% url 'invoice_print' invoice.pk %}" class="btn btn-outline-primary btn-sm" target="_blank"><i class="bi bi-file-earmark-pdf me-1"></i>Download PDF</a>
-        {% if invoice.status != 'paid' %}
-        <form method="post" action="{% url 'invoice_mark_paid' invoice.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-check-circle me-1"></i>Mark as Paid</button>
-        </form>
-        {% endif %}
         <a href="{% url 'payment_create' %}?invoice={{ invoice.pk }}&client_name={% if invoice.client %}{{ invoice.client.name }}{% else %}{{ invoice.bill_to_name }}{% endif %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-cash me-1"></i>Record Payment</a>
       </div>
     </div>
