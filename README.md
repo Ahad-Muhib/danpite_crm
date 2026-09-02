@@ -4,7 +4,7 @@ A comprehensive, production-ready Customer Relationship Management (CRM) and Ent
 
 ---
 
-## 🚀 Key Modules & Capabilities
+##  Key Modules & Capabilities
 
 - **Executive Dashboard**: Real-time sales analytics, deal win rates, revenue vs expense graphs, upcoming follow-ups, and key financial summaries.
 - **Lead & Deal Pipeline**: Complete sales funnel management, activity tracking (calls, emails, meetings), recurring follow-ups, and one-click lead-to-client conversion.
@@ -17,7 +17,7 @@ A comprehensive, production-ready Customer Relationship Management (CRM) and Ent
 
 ---
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 - **Backend**: Python 3.11+ / Django 5.2 (LTS)
 - **Database**: PostgreSQL (Production) / SQLite (Development)
@@ -28,7 +28,7 @@ A comprehensive, production-ready Customer Relationship Management (CRM) and Ent
 
 ---
 
-## 💻 Local Development Setup
+##  Local Development Setup
 
 ### 1. Clone the repository & enter the directory:
 ```bash
@@ -78,7 +78,7 @@ Navigate to `http://127.0.0.1:8000` in your web browser and log in with your sup
 
 ---
 
-## 🌐 Production Deployment Guide (Ubuntu 22.04 / 24.04 LTS)
+##  Production Deployment Guide (Ubuntu 22.04 / 24.04 LTS)
 
 Follow these steps to deploy Danpite CRM to a production Linux VPS with **PostgreSQL**, **Gunicorn**, **Nginx**, and **Let's Encrypt SSL**.
 
@@ -213,7 +213,7 @@ sudo certbot --nginx -d crm.yourdomain.com
 
 ---
 
-## 🔒 Environment Configuration Reference
+##  Environment Configuration Reference
 
 | Variable | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
@@ -234,7 +234,7 @@ sudo certbot --nginx -d crm.yourdomain.com
 
 ---
 
-## 💾 Maintenance & Backup
+##  Maintenance & Backup
 
 ### Automated PostgreSQL Backup Script
 Create `/home/ubuntu/backup_crm.sh`:
@@ -262,5 +262,5 @@ chmod +x /home/ubuntu/backup_crm.sh
 
 ---
 
-## 📄 License & Commercial Terms
+##  License & Commercial Terms
 Proprietary commercial software. Unauthorized copying, distribution, or decompilation of this software is strictly prohibited.
