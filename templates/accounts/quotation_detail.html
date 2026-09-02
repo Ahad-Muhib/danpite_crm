@@ -115,219 +115,48 @@
       {% endif %}
 
       <!-- Included Features Breakdown -->
+      {% if quotation.feature_sections %}
       <div class="mb-5">
         <h5 class="fw-bold text-dark mb-3 border-start border-4 border-primary ps-2">Scope of Work & Features Included</h5>
         
         <div class="row g-4">
-          {% if quotation.feature_sections %}
-            {% for sec in quotation.feature_sections %}
-              {% if sec.title or sec.content %}
-              <div class="col-md-6">
-                <div class="card h-100 border shadow-sm">
-                  <div class="card-header bg-light fw-bold text-primary">
-                    <i class="bi bi-layers me-2"></i>{{ sec.title|default:"Feature Section" }}
-                  </div>
-                  <div class="card-body p-3 small">
-                    {{ sec.content|render_rich_text }}
-                  </div>
+          {% for sec in quotation.feature_sections %}
+            {% if sec.title or sec.content %}
+            <div class="col-md-6">
+              <div class="card h-100 border shadow-sm">
+                <div class="card-header bg-light fw-bold text-primary">
+                  <i class="bi bi-layers me-2"></i>{{ sec.title|default:"Feature Section" }}
+                </div>
+                <div class="card-body p-3 small">
+                  {{ sec.content|render_rich_text }}
                 </div>
               </div>
-              {% endif %}
-            {% endfor %}
-          {% else %}
-            {% if quotation.crm_features %}
-            <div class="col-md-6">
-              <div class="card h-100 border">
-                <div class="card-header bg-light fw-bold text-primary"><i class="bi bi-person-workspace me-2"></i>CRM Features</div>
-                <ul class="list-group list-group-flush small">
-                  {% for f in quotation.crm_features %}
-                  <li class="list-group-item"><i class="bi bi-check2 text-success me-2"></i>{{ f }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
             </div>
             {% endif %}
-
-            {% if quotation.hrm_features %}
-            <div class="col-md-6">
-              <div class="card h-100 border">
-                <div class="card-header bg-light fw-bold text-info"><i class="bi bi-people me-2"></i>HRM Features</div>
-                <ul class="list-group list-group-flush small">
-                  {% for f in quotation.hrm_features %}
-                  <li class="list-group-item"><i class="bi bi-check2 text-success me-2"></i>{{ f }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.mobile_app_features %}
-            <div class="col-md-6">
-              <div class="card h-100 border">
-                <div class="card-header bg-light fw-bold text-success"><i class="bi bi-phone me-2"></i>Mobile App Features</div>
-                <ul class="list-group list-group-flush small">
-                  {% for f in quotation.mobile_app_features %}
-                  <li class="list-group-item"><i class="bi bi-check2 text-success me-2"></i>{{ f }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.system_features %}
-            <div class="col-md-6">
-              <div class="card h-100 border">
-                <div class="card-header bg-light fw-bold text-secondary"><i class="bi bi-gear-wide-connected me-2"></i>System & General Features</div>
-                <ul class="list-group list-group-flush small">
-                  {% for f in quotation.system_features %}
-                  <li class="list-group-item"><i class="bi bi-check2 text-success me-2"></i>{{ f }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.tech_stack %}
-            <div class="col-md-6">
-              <div class="card h-100 border">
-                <div class="card-header bg-light fw-bold text-warning text-dark"><i class="bi bi-code-slash me-2"></i>Technology Stack</div>
-                <ul class="list-group list-group-flush small">
-                  {% for f in quotation.tech_stack %}
-                  <li class="list-group-item"><i class="bi bi-check2 text-primary me-2"></i>{{ f }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.security_features %}
-            <div class="col-md-6">
-              <div class="card h-100 border">
-                <div class="card-header bg-light fw-bold text-danger"><i class="bi bi-shield-lock me-2"></i>Security Features</div>
-                <ul class="list-group list-group-flush small">
-                  {% for f in quotation.security_features %}
-                  <li class="list-group-item"><i class="bi bi-check2 text-success me-2"></i>{{ f }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.training_support %}
-            <div class="col-md-6">
-              <div class="card h-100 border">
-                <div class="card-header bg-light fw-bold text-primary"><i class="bi bi-headset me-2"></i>Training & Support</div>
-                <ul class="list-group list-group-flush small">
-                  {% for f in quotation.training_support %}
-                  <li class="list-group-item"><i class="bi bi-check2 text-success me-2"></i>{{ f }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.deliverables %}
-            <div class="col-md-6">
-              <div class="card h-100 border">
-                <div class="card-header bg-light fw-bold text-success"><i class="bi bi-box-seam me-2"></i>Deliverables</div>
-                <ul class="list-group list-group-flush small">
-                  {% for f in quotation.deliverables %}
-                  <li class="list-group-item"><i class="bi bi-check2 text-success me-2"></i>{{ f }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-            </div>
-            {% endif %}
-          {% endif %}
+          {% endfor %}
         </div>
       </div>
+      {% endif %}
 
       <!-- Terms & Conditions Breakdown -->
+      {% if quotation.terms_sections %}
       <div class="mb-4">
         <h5 class="fw-bold text-dark mb-3 border-start border-4 border-primary ps-2">Terms, Conditions & Warranty</h5>
         
         <div class="row g-3">
-          {% if quotation.terms_sections %}
-            {% for term in quotation.terms_sections %}
-              {% if term.title or term.content %}
-              <div class="col-md-6">
-                <div class="p-3 bg-light rounded border h-100">
-                  <div class="fw-bold text-dark mb-2">{{ term.title }}</div>
-                  <div class="small text-muted">{{ term.content|render_rich_text }}</div>
-                </div>
-              </div>
-              {% endif %}
-            {% endfor %}
-          {% else %}
-            {% if quotation.payment_terms %}
+          {% for term in quotation.terms_sections %}
+            {% if term.title or term.content %}
             <div class="col-md-6">
               <div class="p-3 bg-light rounded border h-100">
-                <div class="fw-bold text-dark mb-2">Payment Terms</div>
-                <div class="small text-muted">{{ quotation.payment_terms|render_rich_text }}</div>
+                <div class="fw-bold text-dark mb-2">{{ term.title }}</div>
+                <div class="small text-muted">{{ term.content|render_rich_text }}</div>
               </div>
             </div>
             {% endif %}
-
-            {% if quotation.delivery_terms %}
-            <div class="col-md-6">
-              <div class="p-3 bg-light rounded border h-100">
-                <div class="fw-bold text-dark mb-2">Delivery & Support</div>
-                <div class="small text-muted">{{ quotation.delivery_terms|render_rich_text }}</div>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.terms_conditions %}
-            <div class="col-md-6">
-              <div class="p-3 bg-light rounded border h-100">
-                <div class="fw-bold text-dark mb-2">Terms & Conditions</div>
-                <div class="small text-muted">{{ quotation.terms_conditions|render_rich_text }}</div>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.warranty %}
-            <div class="col-md-6">
-              <div class="p-3 bg-light rounded border h-100">
-                <div class="fw-bold text-dark mb-2">Warranty</div>
-                <div class="small text-muted">{{ quotation.warranty|render_rich_text }}</div>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.not_included %}
-            <div class="col-md-6">
-              <div class="p-3 bg-light rounded border h-100">
-                <div class="fw-bold text-dark mb-2">Not Included (Exclusions)</div>
-                <div class="small text-muted">{{ quotation.not_included|render_rich_text }}</div>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.why_danpite %}
-            <div class="col-md-6">
-              <div class="p-3 bg-light rounded border h-100">
-                <div class="fw-bold text-dark mb-2">Why Danpite Tech?</div>
-                <div class="small text-muted">{{ quotation.why_danpite|render_rich_text }}</div>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if quotation.custom_terms %}
-              {% for ct in quotation.custom_terms %}
-                {% if ct.title or ct.content %}
-                <div class="col-md-6">
-                  <div class="p-3 bg-light rounded border h-100">
-                    <div class="fw-bold text-dark mb-2">{{ ct.title }}</div>
-                    <div class="small text-muted">{{ ct.content|render_rich_text }}</div>
-                  </div>
-                </div>
-                {% endif %}
-              {% endfor %}
-            {% endif %}
-          {% endif %}
+          {% endfor %}
         </div>
       </div>
+      {% endif %}
 
       <!-- Proposal Footer -->
       <div class="border-top pt-4 mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -338,7 +167,7 @@
         </div>
         <div class="text-end">
           <a href="{% url 'quotation_pdf' quotation.pk %}" target="_blank" class="btn btn-primary btn-sm">
-            <i class="bi bi-file-earmark-pdf me-1"></i>Generate Official 5-Page PDF
+            <i class="bi bi-printer me-1"></i>Print / Download PDF
           </a>
         </div>
       </div>

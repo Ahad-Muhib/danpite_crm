@@ -1325,15 +1325,15 @@ def quotation_list(request):
 
 
 def _extract_quotation_lists(request):
-    """Extract and sanitize multi-select feature lists and pricing plans from POST."""
-    crm_features = request.POST.getlist('crm_features') or DEFAULT_CRM_FEATURES
-    hrm_features = request.POST.getlist('hrm_features') or DEFAULT_HRM_FEATURES
-    mobile_app_features = request.POST.getlist('mobile_app_features') or DEFAULT_MOBILE_FEATURES
-    system_features = request.POST.getlist('system_features') or DEFAULT_SYSTEM_FEATURES
-    tech_stack = request.POST.getlist('tech_stack') or DEFAULT_TECH_STACK
-    security_features = request.POST.getlist('security_features') or DEFAULT_SECURITY_FEATURES
-    training_support = request.POST.getlist('training_support') or DEFAULT_TRAINING_SUPPORT
-    deliverables = request.POST.getlist('deliverables') or DEFAULT_DELIVERABLES
+    """Extract and sanitize multi-select feature lists, pricing plans and dynamic sections from POST."""
+    crm_features = request.POST.getlist('crm_features') if 'crm_features' in request.POST else []
+    hrm_features = request.POST.getlist('hrm_features') if 'hrm_features' in request.POST else []
+    mobile_app_features = request.POST.getlist('mobile_app_features') if 'mobile_app_features' in request.POST else []
+    system_features = request.POST.getlist('system_features') if 'system_features' in request.POST else []
+    tech_stack = request.POST.getlist('tech_stack') if 'tech_stack' in request.POST else []
+    security_features = request.POST.getlist('security_features') if 'security_features' in request.POST else []
+    training_support = request.POST.getlist('training_support') if 'training_support' in request.POST else []
+    deliverables = request.POST.getlist('deliverables') if 'deliverables' in request.POST else []
 
     # Dynamic pricing plans
     pricing_plans = []
@@ -1350,7 +1350,7 @@ def _extract_quotation_lists(request):
             prc = request.POST.get(f'plan_prc_{i}', '').strip()
             dt = request.POST.get(f'plan_dt_{i}', '').strip()
             is_sel = (request.POST.get(f'plan_sel_{i}') in ('on', 'true', '1')) or (request.POST.get('plan_selected_radio') == str(i))
-            if pkg:
+            if pkg or prc:
                 pricing_plans.append({
                     'package': pkg,
                     'license': lic,
@@ -1358,8 +1358,6 @@ def _extract_quotation_lists(request):
                     'delivery_time': dt,
                     'is_selected': is_sel,
                 })
-    if not pricing_plans:
-        pricing_plans = DEFAULT_PRICING_PLANS
 
     # Extract Dynamic Feature Sections
     sections_count = int(request.POST.get('sections_count', 0))
@@ -1402,6 +1400,7 @@ def _extract_quotation_lists(request):
 
 @login_required
 def quotation_create(request):
+    from core.models import CurrencySettings
     clients = Client.objects.filter(status='active').order_by('name')
 
     if request.method == 'POST':
@@ -1410,6 +1409,7 @@ def quotation_create(request):
             quotation = form.save(commit=False)
             quotation.created_by = request.user
             quotation.updated_by = request.user
+            quotation.currency = getattr(CurrencySettings.load(), 'currency_code', 'BDT')
 
             extracted = _extract_quotation_lists(request)
             for k, v in extracted.items():
@@ -1434,6 +1434,7 @@ def quotation_create(request):
 
 @login_required
 def quotation_edit(request, pk):
+    from core.models import CurrencySettings
     quotation = get_object_or_404(Quotation, pk=pk)
     clients = Client.objects.filter(status='active').order_by('name')
 
@@ -1442,6 +1443,8 @@ def quotation_edit(request, pk):
         if form.is_valid():
             quotation = form.save(commit=False)
             quotation.updated_by = request.user
+            if not quotation.currency:
+                quotation.currency = getattr(CurrencySettings.load(), 'currency_code', 'BDT')
 
             extracted = _extract_quotation_lists(request)
             for k, v in extracted.items():

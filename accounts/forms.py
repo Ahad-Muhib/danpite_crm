@@ -392,13 +392,17 @@ class QuotationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from core.models import CurrencySettings
+        global_curr = getattr(CurrencySettings.load(), 'currency_code', 'BDT')
         if self.instance and self.instance.client:
             self.fields['client_search'].initial = self.instance.client.name
         if not self.instance.pk:
             self.fields['quotation_date'].initial = date.today()
             self.fields['valid_days'].initial = 15
             self.fields['status'].initial = 'draft'
-            self.fields['currency'].initial = 'BDT'
+            self.fields['currency'].initial = global_curr
+        elif not self.instance.currency:
+            self.fields['currency'].initial = global_curr
         for f in self.fields:
             self.fields[f].required = False
 

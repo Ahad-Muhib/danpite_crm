@@ -627,13 +627,7 @@ def schedule_delete(request, pk):
 
 @login_required
 def currency_settings(request):
-    obj = CurrencySettings.load()
-    form = CurrencySettingsForm(request.POST or None, instance=obj)
-    if form.is_valid():
-        form.save()
-        messages.success(request, 'Currency settings updated.')
-        return redirect('currency_settings')
-    return render(request, 'core/currency_settings.html', {'form': form})
+    return redirect('site_settings')
 
 
 @login_required
@@ -659,13 +653,28 @@ def site_settings(request):
         messages.error(request, 'Only superusers can manage site settings.')
         return redirect('dashboard')
     settings = SiteSettings.load()
+    curr_settings = CurrencySettings.load()
+    currency_form = CurrencySettingsForm(instance=curr_settings)
+
     if request.method == 'POST':
-        if request.FILES.get('logo_image'):
-            settings.logo_image = request.FILES['logo_image']
-            settings.save()
-            messages.success(request, 'Logo updated.')
-        return redirect('site_settings')
-    return render(request, 'core/site_settings.html', {'settings': settings})
+        action = request.POST.get('action')
+        if action == 'currency':
+            currency_form = CurrencySettingsForm(request.POST, instance=curr_settings)
+            if currency_form.is_valid():
+                currency_form.save()
+                messages.success(request, 'Currency settings updated.')
+                return redirect('site_settings')
+        elif request.FILES.get('logo_image') or action == 'logo':
+            if request.FILES.get('logo_image'):
+                settings.logo_image = request.FILES['logo_image']
+                settings.save()
+                messages.success(request, 'Company logo updated.')
+            return redirect('site_settings')
+
+    return render(request, 'core/site_settings.html', {
+        'settings': settings,
+        'currency_form': currency_form,
+    })
 
 
 @login_required

@@ -354,20 +354,23 @@
         <input type="hidden" name="terms_count" id="terms_count" value="{{ default_terms_sections|length }}">
       </div>
 
-      <!-- Section 6: Status & Currency -->
+      <!-- Section 6: Status & Save Quotation -->
       <div class="crm-card p-4 mb-4">
         <div class="row g-3 align-items-center">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Quotation Status</label>
-            {{ form.status }}
+          <div class="col-md-6">
+            <label for="id_status" class="form-label fw-semibold">Quotation Status</label>
+            <select name="status" id="id_status" class="form-select fw-medium">
+              <option value="draft" {% if form.status.value == 'draft' or not form.status.value %}selected{% endif %}>Draft</option>
+              <option value="sent" {% if form.status.value == 'sent' %}selected{% endif %}>Sent</option>
+              <option value="accepted" {% if form.status.value == 'accepted' %}selected{% endif %}>Accepted</option>
+              <option value="rejected" {% if form.status.value == 'rejected' %}selected{% endif %}>Rejected</option>
+              <option value="expired" {% if form.status.value == 'expired' %}selected{% endif %}>Expired</option>
+            </select>
+            <div class="form-text">Quotation uses global system currency automatically.</div>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Currency</label>
-            {{ form.currency }}
-          </div>
-          <div class="col-md-4 text-end pt-3">
+          <div class="col-md-6 text-end pt-3">
             <a href="{% url 'quotation_list' %}" class="btn btn-secondary me-2">Cancel</a>
-            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2-circle me-1"></i>Save Quotation</button>
+            <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold"><i class="bi bi-check2-circle me-1"></i>Save Quotation</button>
           </div>
         </div>
       </div>

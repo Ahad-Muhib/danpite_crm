@@ -216,17 +216,10 @@
         <span class="material-symbols-outlined">expand_more</span>
       </div>
       <ul>
-        <li>
-          <a href="{% url 'currency_settings' %}"
-            class="nav-link {% if request.resolver_match.url_name == 'currency_settings' %}active{% endif %}">
-            <span class="material-symbols-outlined">currency_exchange</span>
-            <span>Currency</span>
-          </a>
-        </li>
         {% if request.user.is_superuser %}
         <li>
           <a href="{% url 'site_settings' %}"
-            class="nav-link {% if request.resolver_match.url_name == 'site_settings' %}active{% endif %}">
+            class="nav-link {% if request.resolver_match.url_name == 'site_settings' or request.resolver_match.url_name == 'currency_settings' %}active{% endif %}">
             <span class="material-symbols-outlined">settings</span>
             <span>Settings</span>
           </a>

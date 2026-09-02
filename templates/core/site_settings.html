@@ -1,27 +1,62 @@
 {% extends 'base.html' %}
-{% block title %}Site Settings{% endblock %}
-{% block page_title %}Site Settings{% endblock %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
 {% block content %}
-<div class="crm-card">
-  <div class="crm-card-header"><span class="crm-card-title">Site Settings</span></div>
-  <div class="p-4">
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      <div class="mb-3">
-        <label class="form-label fw-medium">Company Logo</label>
-        <div class="mb-2 d-flex align-items-center gap-3">
-          <div style="background:#fff;border:1px solid var(--dash-line, #deded8);border-radius:8px;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;max-width:220px;min-height:58px;">
-            <img src="{% if settings.logo_image %}{{ settings.logo_image.url }}{% else %}{{ MEDIA_URL }}invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg{% endif %}" alt="Logo" style="max-height:38px;width:auto;border-radius:3px;">
+
+<div class="row g-4">
+  <!-- Company Branding & Logo Settings -->
+  <div class="col-lg-6">
+    <div class="crm-card h-100">
+      <div class="crm-card-header d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-primary">image</span>
+        <span class="crm-card-title">Company Logo & Branding</span>
+      </div>
+      <div class="p-4">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="logo">
+          <div class="mb-3">
+            <label class="form-label fw-medium">Current Logo</label>
+            <div class="mb-2 d-flex align-items-center gap-3">
+              <div style="background:#fff;border:1px solid var(--dash-line, #deded8);border-radius:8px;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;max-width:220px;min-height:58px;">
+                <img src="{% if settings.logo_image %}{{ settings.logo_image.url }}{% else %}{{ MEDIA_URL }}invoice_logos/danpite-ezgif.com-webp-to-jpg-converter.jpg{% endif %}" alt="Logo" style="max-height:38px;width:auto;border-radius:3px;">
+              </div>
+            </div>
+            <label class="form-label fw-medium mt-2">Upload New Logo</label>
+            <input type="file" name="logo_image" class="form-control" accept="image/*" required style="max-width:340px;">
+            <div class="form-text">This logo is displayed in the sidebar, on invoices, and on quotations. Recommended size: 200x60px. PNG or JPEG.</div>
           </div>
-        </div>
-        <input type="file" name="logo_image" class="form-control" accept="image/*" required style="max-width:320px;">
-        <div class="form-text">This logo is shown in the sidebar and on invoices. Recommended size: 200x60px. PNG or JPEG.</div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Update Logo</button>
+          </div>
+        </form>
       </div>
-      <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Update Logo</button>
-        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </div>
+
+  <!-- System Currency Settings -->
+  <div class="col-lg-6">
+    <div class="crm-card h-100">
+      <div class="crm-card-header d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-success">currency_exchange</span>
+        <span class="crm-card-title">System Currency</span>
       </div>
-    </form>
+      <div class="p-4">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="currency">
+          <div class="mb-3">
+            <label class="form-label fw-medium">Default System Currency</label>
+            {{ currency_form.currency_code }}
+            <div class="form-text mt-2">This currency is used globally across all invoices, payments, expenses, and financial reports in the CRM.</div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle me-1"></i>Save Currency Settings</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
+
 {% endblock %}
