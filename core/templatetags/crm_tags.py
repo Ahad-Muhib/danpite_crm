@@ -69,3 +69,44 @@ def render_rich_text(value):
         return mark_safe(val)
     return mark_safe(linebreaksbr(val))
 
+
+@register.filter(name='normalize_pricing_table')
+def normalize_pricing_table(pricing_plans):
+    """
+    Normalizes pricing_plans JSON data (dict with columns/rows or legacy list)
+    into a standardized dict: {'columns': [...], 'rows': [{'is_selected': bool, 'cells': [...]}]}
+    """
+    if not pricing_plans:
+        return None
+    if isinstance(pricing_plans, dict):
+        cols = pricing_plans.get('columns', [])
+        raw_rows = pricing_plans.get('rows', [])
+        valid_rows = []
+        for r in raw_rows:
+            cells = r.get('cells', [])
+            if any(str(c).strip() for c in cells):
+                valid_rows.append({
+                    'is_selected': bool(r.get('is_selected', False)),
+                    'cells': cells
+                })
+        if cols and valid_rows:
+            return {'columns': cols, 'rows': valid_rows}
+        return None
+    elif isinstance(pricing_plans, list):
+        cols = ['Package', 'License', 'Price', 'Delivery Time']
+        valid_rows = []
+        for p in pricing_plans:
+            pkg = p.get('package', '')
+            lic = p.get('license', '')
+            prc = p.get('price', '')
+            dt = p.get('delivery_time', '')
+            if pkg or prc:
+                valid_rows.append({
+                    'is_selected': bool(p.get('is_selected', False)),
+                    'cells': [pkg, lic, prc, dt]
+                })
+        if valid_rows:
+            return {'columns': cols, 'rows': valid_rows}
+        return None
+    return None
+

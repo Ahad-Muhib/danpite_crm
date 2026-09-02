@@ -99,6 +99,37 @@
     font-weight: 400;
     color: #9ca3af;
   }
+
+  /* Google Docs Style Table Grid Picker */
+  .table-grid-picker {
+    display: grid;
+    grid-template-columns: repeat(8, 22px);
+    grid-gap: 3px;
+    padding: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    width: fit-content;
+    margin: 0 auto;
+    user-select: none;
+  }
+  .grid-cell {
+    width: 22px;
+    height: 22px;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.12s ease-in-out;
+  }
+  .grid-cell.highlighted {
+    background-color: #e0e7ff !important;
+    border-color: #6366f1 !important;
+  }
+  .grid-cell.active-corner {
+    background-color: #6366f1 !important;
+    border-color: #4338ca !important;
+  }
 </style>
 {% endblock %}
 
@@ -277,45 +308,46 @@
 
       </div>
 
-      <!-- Section 4: Pricing Plan Table -->
+      <!-- Section 4: Dynamic Commercial Proposal & Pricing Table -->
       <div class="crm-card p-4 mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-          <h5 class="fw-bold text-primary mb-0"><i class="bi bi-tag me-2"></i>4. Pricing Plan & Package Options</h5>
-          <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-plan">
-            <i class="bi bi-plus-lg me-1"></i>Add Package Row
-          </button>
+          <div>
+            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-tag me-2"></i>4. Commercial Proposal & Pricing Plan</h5>
+            <div class="text-muted small">Select dimensions via visual grid picker or add custom columns & rows</div>
+          </div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Google Docs Style Interactive Table Grid Picker -->
+            <div class="dropdown">
+              <button class="btn btn-sm btn-primary dropdown-toggle d-flex align-items-center gap-1 shadow-sm px-3 py-1" type="button" id="btn-grid-picker" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Hover and click to choose table dimensions like Google Docs">
+                <i class="bi bi-grid-3x3 me-1"></i>Table Size (<span id="grid-current-dim">4×1</span>)
+              </button>
+              <div class="dropdown-menu dropdown-menu-end p-3 shadow-lg border" style="min-width: 240px; z-index: 1050;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="small fw-bold text-muted text-uppercase" style="font-size: 10.5px; letter-spacing: 0.5px;">Table Dimensions</span>
+                  <span class="badge bg-primary px-2" id="grid-hover-label">4 × 1</span>
+                </div>
+                <div class="table-grid-picker" id="table-grid-picker">
+                  <!-- Generated interactive cells -->
+                </div>
+                <div class="text-center mt-2 small text-muted" style="font-size: 11px;">Hover over squares & click to set size</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="table-responsive">
-          <table class="table table-bordered table-hover align-middle mb-2" id="plans-table">
-            <thead class="table-dark">
-              <tr>
-                <th style="width: 50px; text-align: center;">Selected</th>
-                <th>Package Name</th>
-                <th>License Type</th>
-                <th>Price</th>
-                <th>Delivery Timeline</th>
-                <th style="width: 50px; text-align: center;">Action</th>
+          <table class="table table-bordered table-hover align-middle mb-2 bg-white" id="dynamic-pricing-table">
+            <thead class="table-light">
+              <tr id="pricing-header-row">
+                <!-- Dynamically populated -->
               </tr>
             </thead>
-            <tbody id="plans-body">
-              {% for plan in default_pricing_plans %}
-              <tr class="plan-row">
-                <td class="text-center">
-                  <input type="checkbox" name="plan_sel_{{ forloop.counter0 }}" class="form-check-input" {% if plan.is_selected %}checked{% endif %} title="Check if this package is recommended/selected">
-                </td>
-                <td><input type="text" name="plan_pkg_{{ forloop.counter0 }}" value="{{ plan.package }}" class="form-control form-control-sm" placeholder="e.g. CRM Solution"></td>
-                <td><input type="text" name="plan_lic_{{ forloop.counter0 }}" value="{{ plan.license }}" class="form-control form-control-sm" placeholder="e.g. One-Time / SaaS"></td>
-                <td><input type="text" name="plan_prc_{{ forloop.counter0 }}" value="{{ plan.price }}" class="form-control form-control-sm fw-bold" placeholder="e.g. BDT 100,000"></td>
-                <td><input type="text" name="plan_dt_{{ forloop.counter0 }}" value="{{ plan.delivery_time }}" class="form-control form-control-sm" placeholder="e.g. 15 Days"></td>
-                <td class="text-center">
-                  <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i class="bi bi-trash"></i></button>
-                </td>
-              </tr>
-              {% endfor %}
+            <tbody id="pricing-table-body">
+              <!-- Dynamically populated -->
             </tbody>
           </table>
-          <input type="hidden" name="pricing_plans_count" id="pricing_plans_count" value="{{ default_pricing_plans|length }}">
+          <script id="initial-pricing-data" type="application/json">{{ default_pricing_table_json|safe }}</script>
+          <input type="hidden" name="pricing_table_json" id="pricing_table_json" value="">
         </div>
       </div>
 
@@ -959,46 +991,307 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Dynamic Pricing Table
-  var plansBody = document.getElementById('plans-body');
-  var countInput = document.getElementById('pricing_plans_count');
+  // Dynamic Pricing Table Builder (Custom Columns & Rows)
+  var pricingDataEl = document.getElementById('initial-pricing-data');
+  var initialPricingData = {
+    columns: ["Package Name", "License Type", "Price", "Delivery Timeline"],
+    rows: [
+      { is_selected: true, cells: ["", "", "", ""] }
+    ]
+  };
+  if (pricingDataEl && pricingDataEl.textContent.trim()) {
+    try {
+      var parsed = JSON.parse(pricingDataEl.textContent);
+      if (parsed && parsed.columns && parsed.columns.length) {
+        initialPricingData = parsed;
+      }
+    } catch(e){}
+  }
 
-  function updateRowCount() {
-    var rows = plansBody.querySelectorAll('.plan-row');
-    countInput.value = rows.length;
-    rows.forEach(function(row, idx) {
-      row.querySelector('input[type="checkbox"]').name = 'plan_sel_' + idx;
-      row.querySelectorAll('input[type="text"]')[0].name = 'plan_pkg_' + idx;
-      row.querySelectorAll('input[type="text"]')[1].name = 'plan_lic_' + idx;
-      row.querySelectorAll('input[type="text"]')[2].name = 'plan_prc_' + idx;
-      row.querySelectorAll('input[type="text"]')[3].name = 'plan_dt_' + idx;
+  // Dynamic Pricing Table Builder (Custom Columns & Rows)
+  var pricingDataEl = document.getElementById('initial-pricing-data');
+  var initialPricingData = {
+    columns: ["Package Name", "License Type", "Price", "Delivery Timeline"],
+    rows: [
+      { is_selected: true, cells: ["", "", "", ""] }
+    ]
+  };
+  if (pricingDataEl && pricingDataEl.textContent.trim()) {
+    try {
+      var parsed = JSON.parse(pricingDataEl.textContent);
+      if (parsed && parsed.columns && parsed.columns.length) {
+        initialPricingData = parsed;
+      }
+    } catch(e){}
+  }
+
+  var currentColumns = (initialPricingData.columns && initialPricingData.columns.length) ? initialPricingData.columns : ["Package Name", "License Type", "Price", "Delivery Timeline"];
+  var tableHeaderRow = document.getElementById('pricing-header-row');
+  var tableBody = document.getElementById('pricing-table-body');
+  var pricingTableJsonInput = document.getElementById('pricing_table_json');
+  var gridPicker = document.getElementById('table-grid-picker');
+  var gridHoverLabel = document.getElementById('grid-hover-label');
+  var gridCurrentDim = document.getElementById('grid-current-dim');
+  var MAX_GRID_ROWS = 8;
+  var MAX_GRID_COLS = 8;
+
+  function updateGridDimensionDisplay() {
+    var curCols = currentColumns.length;
+    var curRows = tableBody ? tableBody.querySelectorAll('.dynamic-plan-row').length : 1;
+    if (gridCurrentDim) {
+      gridCurrentDim.innerText = curCols + '×' + curRows;
+    }
+  }
+
+  function renderTableHeaders() {
+    if (!tableHeaderRow) return;
+    tableHeaderRow.innerHTML = '';
+    
+    // Selected checkbox header
+    var thSel = document.createElement('th');
+    thSel.style.width = '65px';
+    thSel.className = 'text-center align-middle bg-light text-dark fw-bold border-bottom';
+    thSel.innerText = 'Selected';
+    tableHeaderRow.appendChild(thSel);
+
+    // Dynamic column headers
+    currentColumns.forEach(function(colName, colIdx) {
+      var th = document.createElement('th');
+      th.className = 'align-middle bg-light border-bottom';
+      th.innerHTML = `
+        <div class="d-flex align-items-center gap-1">
+          <input type="text" class="form-control form-control-sm bg-white text-dark border fw-bold col-title-input shadow-none" value="${escHtml(colName)}" placeholder="Column Title" data-col="${colIdx}">
+          ${currentColumns.length > 1 ? `<button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1 btn-remove-col" data-col="${colIdx}" title="Delete Column"><i class="bi bi-x-circle-fill"></i></button>` : ''}
+        </div>
+      `;
+      tableHeaderRow.appendChild(th);
+    });
+
+    // Action header
+    var thAct = document.createElement('th');
+    thAct.style.width = '55px';
+    thAct.className = 'text-center align-middle bg-light text-dark fw-bold border-bottom';
+    thAct.innerText = 'Action';
+    tableHeaderRow.appendChild(thAct);
+  }
+
+  function addTableRow(rowData) {
+    if (!tableBody) return;
+    var tr = document.createElement('tr');
+    tr.className = 'dynamic-plan-row bg-white';
+    
+    var isChecked = rowData && rowData.is_selected ? 'checked' : '';
+    var cells = (rowData && rowData.cells) ? rowData.cells : currentColumns.map(function() { return ''; });
+
+    var html = `<td class="text-center align-middle"><input type="checkbox" class="form-check-input row-select-checkbox" ${isChecked} title="Recommended / Selected Package"></td>`;
+    
+    currentColumns.forEach(function(colName, colIdx) {
+      var cellVal = cells[colIdx] !== undefined ? cells[colIdx] : '';
+      var isPrice = colName.toLowerCase().indexOf('price') !== -1;
+      html += `<td><input type="text" class="form-control form-control-sm bg-white text-dark cell-input ${isPrice ? 'fw-bold text-primary' : ''}" value="${escHtml(cellVal)}" placeholder="e.g. ${escHtml(colName)}"></td>`;
+    });
+
+    html += `<td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-remove-table-row" title="Delete Row"><i class="bi bi-trash"></i></button></td>`;
+    
+    tr.innerHTML = html;
+    tableBody.appendChild(tr);
+    updateGridDimensionDisplay();
+  }
+
+  function getCurrentRowsData() {
+    var rows = [];
+    if (!tableBody) return rows;
+    tableBody.querySelectorAll('.dynamic-plan-row').forEach(function(tr) {
+      var isSel = tr.querySelector('.row-select-checkbox')?.checked || false;
+      var cellInputs = tr.querySelectorAll('.cell-input');
+      var cells = [];
+      cellInputs.forEach(function(inp) {
+        cells.push(inp.value);
+      });
+      rows.push({
+        is_selected: isSel,
+        cells: cells
+      });
+    });
+    return rows;
+  }
+
+  function serializePricingTable() {
+    if (!tableHeaderRow) return;
+    var colInputs = tableHeaderRow.querySelectorAll('.col-title-input');
+    var cols = [];
+    colInputs.forEach(function(inp) {
+      cols.push(inp.value.trim() || 'Column');
+    });
+    if (!cols.length) cols = currentColumns;
+
+    var rows = getCurrentRowsData();
+    var payload = {
+      columns: cols,
+      rows: rows
+    };
+    if (pricingTableJsonInput) {
+      pricingTableJsonInput.value = JSON.stringify(payload);
+    }
+  }
+
+  // Google Docs Table Grid Interactive Picker (Up to 8x8)
+  if (gridPicker) {
+    gridPicker.innerHTML = '';
+    for (var r = 1; r <= MAX_GRID_ROWS; r++) {
+      for (var c = 1; c <= MAX_GRID_COLS; c++) {
+        var cell = document.createElement('div');
+        cell.className = 'grid-cell';
+        cell.setAttribute('data-row', r);
+        cell.setAttribute('data-col', c);
+        gridPicker.appendChild(cell);
+      }
+    }
+
+    function setGridHighlight(hoverRow, hoverCol) {
+      gridPicker.querySelectorAll('.grid-cell').forEach(function(cell) {
+        var cr = parseInt(cell.getAttribute('data-row'), 10);
+        var cc = parseInt(cell.getAttribute('data-col'), 10);
+        if (cr <= hoverRow && cc <= hoverCol) {
+          cell.classList.add('highlighted');
+          if (cr === hoverRow && cc === hoverCol) {
+            cell.classList.add('active-corner');
+          } else {
+            cell.classList.remove('active-corner');
+          }
+        } else {
+          cell.classList.remove('highlighted', 'active-corner');
+        }
+      });
+      if (gridHoverLabel) {
+        gridHoverLabel.innerText = hoverCol + ' × ' + hoverRow;
+      }
+    }
+
+    gridPicker.addEventListener('mousemove', function(e) {
+      var cell = e.target.closest('.grid-cell');
+      if (cell) {
+        var r = parseInt(cell.getAttribute('data-row'), 10);
+        var c = parseInt(cell.getAttribute('data-col'), 10);
+        setGridHighlight(r, c);
+      }
+    });
+
+    gridPicker.addEventListener('mouseleave', function() {
+      var curCols = currentColumns.length;
+      var curRows = tableBody ? tableBody.querySelectorAll('.dynamic-plan-row').length : 1;
+      setGridHighlight(Math.min(curRows, MAX_GRID_ROWS), Math.min(curCols, MAX_GRID_COLS));
+    });
+
+    gridPicker.addEventListener('click', function(e) {
+      var cell = e.target.closest('.grid-cell');
+      if (cell) {
+        var targetRows = parseInt(cell.getAttribute('data-row'), 10);
+        var targetCols = parseInt(cell.getAttribute('data-col'), 10);
+        applyTableDimensions(targetCols, targetRows);
+
+        var dropdownBtn = document.getElementById('btn-grid-picker');
+        if (dropdownBtn && window.bootstrap && bootstrap.Dropdown) {
+          var bsDropdown = bootstrap.Dropdown.getInstance(dropdownBtn) || new bootstrap.Dropdown(dropdownBtn);
+          bsDropdown.hide();
+        }
+      }
     });
   }
 
-  document.getElementById('btn-add-plan')?.addEventListener('click', function() {
-    var idx = plansBody.querySelectorAll('.plan-row').length;
-    var tr = document.createElement('tr');
-    tr.className = 'plan-row';
-    tr.innerHTML = `
-      <td class="text-center"><input type="checkbox" name="plan_sel_${idx}" class="form-check-input"></td>
-      <td><input type="text" name="plan_pkg_${idx}" class="form-control form-control-sm" placeholder="e.g. CRM Solution"></td>
-      <td><input type="text" name="plan_lic_${idx}" class="form-control form-control-sm" placeholder="e.g. One-Time / SaaS"></td>
-      <td><input type="text" name="plan_prc_${idx}" class="form-control form-control-sm fw-bold" placeholder="e.g. BDT 100,000"></td>
-      <td><input type="text" name="plan_dt_${idx}" class="form-control form-control-sm" placeholder="e.g. 15 Days"></td>
-      <td class="text-center">
-        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i class="bi bi-trash"></i></button>
-      </td>
-    `;
-    plansBody.appendChild(tr);
-    updateRowCount();
+  function applyTableDimensions(targetCols, targetRows) {
+    var rowsData = getCurrentRowsData();
+    var defaultHeaders = ["Package Name", "License Type", "Price", "Delivery Timeline", "Users Included", "Billing Term", "Support SLA", "Deployment"];
+
+    // Adjust columns
+    if (targetCols > currentColumns.length) {
+      while (currentColumns.length < targetCols) {
+        var nextIdx = currentColumns.length;
+        var newTitle = defaultHeaders[nextIdx] || ('Column ' + (nextIdx + 1));
+        currentColumns.push(newTitle);
+        rowsData.forEach(function(r) {
+          r.cells.push('');
+        });
+      }
+    } else if (targetCols < currentColumns.length) {
+      currentColumns = currentColumns.slice(0, targetCols);
+      rowsData.forEach(function(r) {
+        r.cells = r.cells.slice(0, targetCols);
+      });
+    }
+
+    // Adjust rows
+    if (targetRows > rowsData.length) {
+      while (rowsData.length < targetRows) {
+        rowsData.push({
+          is_selected: false,
+          cells: currentColumns.map(function() { return ''; })
+        });
+      }
+    } else if (targetRows < rowsData.length) {
+      rowsData = rowsData.slice(0, targetRows);
+    }
+
+    renderTableHeaders();
+    tableBody.innerHTML = '';
+    rowsData.forEach(function(r) {
+      addTableRow(r);
+    });
+    updateGridDimensionDisplay();
+  }
+
+  // Initial render of dynamic table
+  if (tableHeaderRow && tableBody) {
+    renderTableHeaders();
+    if (initialPricingData.rows && initialPricingData.rows.length) {
+      initialPricingData.rows.forEach(function(r) {
+        addTableRow(r);
+      });
+    } else {
+      addTableRow({ is_selected: true, cells: currentColumns.map(function() { return ''; }) });
+    }
+    updateGridDimensionDisplay();
+  }
+
+  // Remove Column Event
+  tableHeaderRow?.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-remove-col');
+    if (!btn) return;
+    var colIdx = parseInt(btn.getAttribute('data-col'), 10);
+    if (isNaN(colIdx) || currentColumns.length <= 1) return;
+    
+    if (confirm('Delete column "' + currentColumns[colIdx] + '"?')) {
+      var rowsData = getCurrentRowsData();
+      currentColumns.splice(colIdx, 1);
+      rowsData.forEach(function(r) {
+        r.cells.splice(colIdx, 1);
+      });
+      renderTableHeaders();
+      tableBody.innerHTML = '';
+      rowsData.forEach(function(r) {
+        addTableRow(r);
+      });
+      updateGridDimensionDisplay();
+    }
   });
 
-  plansBody?.addEventListener('click', function(e) {
-    if (e.target.closest('.btn-remove-row')) {
-      var row = e.target.closest('.plan-row');
-      if (plansBody.querySelectorAll('.plan-row').length > 1) {
-        row.remove();
-        updateRowCount();
+  // Column Title Input Change
+  tableHeaderRow?.addEventListener('input', function(e) {
+    if (e.target.classList.contains('col-title-input')) {
+      var colIdx = parseInt(e.target.getAttribute('data-col'), 10);
+      if (!isNaN(colIdx)) {
+        currentColumns[colIdx] = e.target.value.trim();
+      }
+    }
+  });
+
+  // Remove Row Event
+  tableBody?.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-remove-table-row');
+    if (btn) {
+      if (tableBody.querySelectorAll('.dynamic-plan-row').length > 1) {
+        btn.closest('.dynamic-plan-row').remove();
+        updateGridDimensionDisplay();
       } else {
         alert('You must have at least one pricing package row.');
       }
@@ -1021,6 +1314,9 @@ document.addEventListener('DOMContentLoaded', function() {
       alert('Error: You must select a registered client from the dropdown list. Quotations cannot be created without a valid client.');
       return false;
     }
+
+    // Serialize Dynamic Pricing Table JSON
+    serializePricingTable();
 
     // Sync Intro Letter
     if (introLetterEditor && introField) {

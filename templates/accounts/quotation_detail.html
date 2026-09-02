@@ -81,30 +81,29 @@
       </div>
 
       <!-- Pricing Plans Table -->
-      {% if quotation.pricing_plans %}
+      {% with table=quotation.pricing_plans|normalize_pricing_table %}
+      {% if table %}
       <div class="mb-5">
-        <h5 class="fw-bold text-dark mb-3 border-start border-4 border-primary ps-2">Pricing Plan & Packages</h5>
+        <h5 class="fw-bold text-dark mb-3 border-start border-4 border-primary ps-2">Commercial Proposal & Pricing Plan</h5>
         <div class="table-responsive">
-          <table class="table table-bordered table-hover align-middle mb-0">
-            <thead class="table-dark">
+          <table class="table table-bordered table-hover align-middle mb-0 bg-white">
+            <thead class="table-light">
               <tr>
-                <th style="width: 40px;" class="text-center">#</th>
-                <th>Package Name</th>
-                <th>License</th>
-                <th>Price</th>
-                <th>Delivery Time</th>
+                <th style="width: 45px;" class="text-center">#</th>
+                {% for col in table.columns %}
+                <th>{{ col }}</th>
+                {% endfor %}
               </tr>
             </thead>
             <tbody>
-              {% for plan in quotation.pricing_plans %}
-              <tr {% if plan.is_selected %}class="table-primary fw-semibold"{% endif %}>
+              {% for row in table.rows %}
+              <tr {% if row.is_selected %}class="table-primary fw-semibold"{% endif %}>
                 <td class="text-center">
-                  {% if plan.is_selected %}<i class="bi bi-check-circle-fill text-primary"></i>{% else %}{{ forloop.counter }}{% endif %}
+                  {% if row.is_selected %}<i class="bi bi-check-circle-fill text-primary" title="Recommended Package"></i>{% else %}{{ forloop.counter }}{% endif %}
                 </td>
-                <td class="fw-bold">{{ plan.package }}</td>
-                <td><span class="badge bg-light text-dark border">{{ plan.license }}</span></td>
-                <td class="text-primary fw-bold">{{ plan.price }}</td>
-                <td>{{ plan.delivery_time }}</td>
+                {% for cell in row.cells %}
+                <td {% if forloop.first %}class="fw-bold"{% endif %}>{{ cell }}</td>
+                {% endfor %}
               </tr>
               {% endfor %}
             </tbody>
@@ -113,6 +112,7 @@
         </div>
       </div>
       {% endif %}
+      {% endwith %}
 
       <!-- Included Features Breakdown -->
       {% if quotation.feature_sections %}

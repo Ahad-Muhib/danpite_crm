@@ -279,14 +279,34 @@
     font-size: 11px;
   }
 
+  .page-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 350px;
+    opacity: 0.08;
+    z-index: 0;
+    pointer-events: none;
+    text-align: center;
+  }
+  .watermark-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    mix-blend-mode: multiply;
+  }
+
   .page-footer {
-    border-top: 1px solid #d1d5db;
-    padding-top: 8px;
+    background: var(--brand-purple);
+    color: #ffffff;
+    padding: 7px 16px;
     margin-top: 30px;
     text-align: center;
-    font-size: 9.5px;
-    color: #111827;
-    font-weight: 600;
+    font-size: 9px;
+    font-weight: 500;
+    border-radius: 4px;
+    letter-spacing: 0.2px;
   }
 
   /* ── Print Setup ── */
@@ -304,10 +324,24 @@
       margin: 0 !important;
       padding: 0 !important;
       box-shadow: none !important;
+      position: relative;
     }
     .avoid-break, .text-block, .pricing-table, .closing-signoff-section, .meta-section, .letter-paragraph {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
+    }
+    .page-watermark {
+      position: fixed !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      width: 350px !important;
+      opacity: 0.08 !important;
+      z-index: 0 !important;
+    }
+    .watermark-img {
+      width: 100% !important;
+      height: auto !important;
     }
     .page-footer {
       position: fixed !important;
@@ -315,15 +349,17 @@
       left: 0 !important;
       right: 0 !important;
       width: 100% !important;
-      height: 20px;
+      height: 22px;
+      line-height: 22px;
       margin: 0 !important;
-      padding: 4px 0 0 0 !important;
-      border-top: 1px solid #d1d5db !important;
+      padding: 0 16px !important;
+      border-top: none !important;
       text-align: center !important;
       font-size: 8.5pt !important;
-      font-weight: 600 !important;
-      color: #111827 !important;
-      background: #ffffff !important;
+      font-weight: 500 !important;
+      color: #ffffff !important;
+      background: #481b66 !important;
+      border-radius: 0 !important;
       z-index: 9999;
     }
     @page {
@@ -342,6 +378,11 @@
 </div>
 
 <div class="proposal-document">
+
+  <!-- Centered Background Watermark (Every Page) -->
+  <div class="page-watermark">
+    <img src="/media/logos/logoss.png" alt="Danpite Watermark" class="watermark-img">
+  </div>
 
   <!-- Header Banner -->
   <div class="header-banner">
@@ -415,35 +456,33 @@
     {% endfor %}
   {% endif %}
 
-  <!-- Pricing Plan Table -->
-  {% if quotation.pricing_plans %}
+  <!-- Pricing Plan Table (Dynamic Columns & Rows) -->
+  {% with table=quotation.pricing_plans|normalize_pricing_table %}
+  {% if table %}
   <div class="avoid-break" style="margin-bottom: 14px;">
     <div class="sub-heading">PRICING PLAN</div>
     <table class="pricing-table">
       <thead>
         <tr>
-          <th>Package</th>
-          <th>License</th>
-          <th>Price</th>
-          <th>Delivery Time</th>
+          {% for col in table.columns %}
+          <th>{{ col }}</th>
+          {% endfor %}
         </tr>
       </thead>
       <tbody>
-        {% for plan in quotation.pricing_plans %}
-        {% if plan.package or plan.price %}
-        <tr {% if plan.is_selected %}class="selected-row"{% endif %}>
-          <td>{{ plan.package }}</td>
-          <td>{{ plan.license }}</td>
-          <td>{{ plan.price }}</td>
-          <td>{{ plan.delivery_time }}</td>
+        {% for row in table.rows %}
+        <tr {% if row.is_selected %}class="selected-row"{% endif %}>
+          {% for cell in row.cells %}
+          <td>{{ cell }}</td>
+          {% endfor %}
         </tr>
-        {% endif %}
         {% endfor %}
       </tbody>
     </table>
     <div class="vat-note">*Prices are exclusive of VAT and Taxes (if applicable)</div>
   </div>
   {% endif %}
+  {% endwith %}
 
   <!-- Terms, Conditions & Warranty Sections -->
   {% if quotation.terms_sections %}
@@ -474,9 +513,9 @@
     </div>
   </div>
 
-  <!-- Bottom Page Footer -->
+  <!-- Bottom Page Footer (Purple Banner matching photo) -->
   <div class="page-footer">
-    Head Office Address: Mirpur-6, House No. 1, Walton Plaza building 5th floor, Block B Road-2, Dhaka 1216
+    📍 LIFT-9,Room-1008, Shah Ali Plaza Mirpur 10 Roundabout, Dhaka-1216
   </div>
 
 </div>

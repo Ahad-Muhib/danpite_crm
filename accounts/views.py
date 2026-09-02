@@ -1335,29 +1335,53 @@ def _extract_quotation_lists(request):
     training_support = request.POST.getlist('training_support') if 'training_support' in request.POST else []
     deliverables = request.POST.getlist('deliverables') if 'deliverables' in request.POST else []
 
-    # Dynamic pricing plans
-    pricing_plans = []
-    total_plans = 0
-    try:
-        total_plans = int(request.POST.get('pricing_plans_count', 0))
-    except (ValueError, TypeError):
-        total_plans = 0
+    # Dynamic Pricing Table (Custom Columns & Rows)
+    pricing_table_json = request.POST.get('pricing_table_json', '').strip()
+    pricing_plans = None
+    if pricing_table_json:
+        try:
+            parsed = json.loads(pricing_table_json)
+            if isinstance(parsed, dict) and 'columns' in parsed and 'rows' in parsed:
+                cols = [c.strip() for c in parsed['columns'] if str(c).strip()]
+                valid_rows = []
+                for r in parsed['rows']:
+                    cells = r.get('cells', [])
+                    if any(str(c).strip() for c in cells):
+                        valid_rows.append({
+                            'is_selected': bool(r.get('is_selected', False)),
+                            'cells': [str(c).strip() for c in cells]
+                        })
+                if cols and valid_rows:
+                    pricing_plans = {'columns': cols, 'rows': valid_rows}
+        except Exception:
+            pricing_plans = None
 
-    if total_plans > 0:
-        for i in range(total_plans):
-            pkg = request.POST.get(f'plan_pkg_{i}', '').strip()
-            lic = request.POST.get(f'plan_lic_{i}', '').strip()
-            prc = request.POST.get(f'plan_prc_{i}', '').strip()
-            dt = request.POST.get(f'plan_dt_{i}', '').strip()
-            is_sel = (request.POST.get(f'plan_sel_{i}') in ('on', 'true', '1')) or (request.POST.get('plan_selected_radio') == str(i))
-            if pkg or prc:
-                pricing_plans.append({
-                    'package': pkg,
-                    'license': lic,
-                    'price': prc,
-                    'delivery_time': dt,
-                    'is_selected': is_sel,
-                })
+    # Fallback to legacy row inputs if pricing_table_json not provided
+    if pricing_plans is None:
+        total_plans = 0
+        try:
+            total_plans = int(request.POST.get('pricing_plans_count', 0))
+        except (ValueError, TypeError):
+            total_plans = 0
+
+        legacy_rows = []
+        if total_plans > 0:
+            for i in range(total_plans):
+                pkg = request.POST.get(f'plan_pkg_{i}', '').strip()
+                lic = request.POST.get(f'plan_lic_{i}', '').strip()
+                prc = request.POST.get(f'plan_prc_{i}', '').strip()
+                dt = request.POST.get(f'plan_dt_{i}', '').strip()
+                is_sel = (request.POST.get(f'plan_sel_{i}') in ('on', 'true', '1')) or (request.POST.get('plan_selected_radio') == str(i))
+                if pkg or prc:
+                    legacy_rows.append({
+                        'is_selected': is_sel,
+                        'cells': [pkg, lic, prc, dt]
+                    })
+        if legacy_rows:
+            pricing_plans = {
+                'columns': ['Package Name', 'License Type', 'Price', 'Delivery Timeline'],
+                'rows': legacy_rows
+            }
 
     # Extract Dynamic Feature Sections
     sections_count = int(request.POST.get('sections_count', 0))
@@ -1422,13 +1446,18 @@ def quotation_create(request):
     else:
         form = QuotationForm()
 
+    default_pricing_table = {
+        'columns': ['Package Name', 'License Type', 'Price', 'Delivery Timeline'],
+        'rows': [{'is_selected': True, 'cells': ['', '', '', '']}]
+    }
+
     return render(request, 'accounts/quotation_form.html', {
         'form': form,
         'action': 'Create',
         'clients': clients,
         'default_feature_sections': get_default_feature_sections(),
         'default_terms_sections': get_default_terms_sections(),
-        'default_pricing_plans': DEFAULT_PRICING_PLANS,
+        'default_pricing_table_json': json.dumps(default_pricing_table),
     })
 
 
@@ -1481,6 +1510,27 @@ def quotation_edit(request, pk):
                 legacy_terms.append({'title': ct.get('title', 'Additional Terms'), 'content': ct.get('content', '')})
         terms_sections = legacy_terms if legacy_terms else get_default_terms_sections()
 
+    default_pricing_table = None
+    if quotation.pricing_plans:
+        if isinstance(quotation.pricing_plans, dict):
+            default_pricing_table = quotation.pricing_plans
+        elif isinstance(quotation.pricing_plans, list):
+            rows = []
+            for p in quotation.pricing_plans:
+                rows.append({
+                    'is_selected': bool(p.get('is_selected', False)),
+                    'cells': [p.get('package', ''), p.get('license', ''), p.get('price', ''), p.get('delivery_time', '')]
+                })
+            default_pricing_table = {
+                'columns': ['Package Name', 'License Type', 'Price', 'Delivery Timeline'],
+                'rows': rows
+            }
+    if not default_pricing_table:
+        default_pricing_table = {
+            'columns': ['Package Name', 'License Type', 'Price', 'Delivery Timeline'],
+            'rows': [{'is_selected': True, 'cells': ['', '', '', '']}]
+        }
+
     return render(request, 'accounts/quotation_form.html', {
         'form': form,
         'action': 'Edit',
@@ -1488,7 +1538,7 @@ def quotation_edit(request, pk):
         'clients': clients,
         'default_feature_sections': feature_sections,
         'default_terms_sections': terms_sections,
-        'default_pricing_plans': quotation.pricing_plans or DEFAULT_PRICING_PLANS,
+        'default_pricing_table_json': json.dumps(default_pricing_table),
     })
 
 
