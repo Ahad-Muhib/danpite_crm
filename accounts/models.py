@@ -364,6 +364,44 @@ DEFAULT_PRICING_PLANS = [
     {"package": "CRM + HRM + App SaaS", "license": "Setup Fee + Monthly", "price": "BDT 60,000 + BDT 4,500", "delivery_time": "30 Days", "is_selected": False},
 ]
 
+
+def get_default_feature_sections():
+    return [
+        {
+            "title": "CRM FEATURES",
+            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_CRM_FEATURES) + "</ul>"
+        },
+        {
+            "title": "HRM FEATURES",
+            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_HRM_FEATURES) + "</ul>"
+        },
+        {
+            "title": "MOBILE APP FEATURES",
+            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_MOBILE_FEATURES) + "</ul>"
+        },
+        {
+            "title": "GENERAL / SYSTEM FEATURES",
+            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_SYSTEM_FEATURES) + "</ul>"
+        },
+        {
+            "title": "TECHNOLOGY STACK",
+            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_TECH_STACK) + "</ul>"
+        },
+        {
+            "title": "SECURITY FEATURES",
+            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_SECURITY_FEATURES) + "</ul>"
+        },
+        {
+            "title": "TRAINING & SUPPORT",
+            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_TRAINING_SUPPORT) + "</ul>"
+        },
+        {
+            "title": "DELIVERABLES",
+            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_DELIVERABLES) + "</ul>"
+        },
+    ]
+
+
 DEFAULT_PAYMENT_TERMS = """• One-Time License:
   - 40% Advance
   - 30% Before Testing
@@ -429,7 +467,8 @@ class Quotation(models.Model):
         default='Thank you for your interest in our CRM & HRM solution. Based on your requirements, we are pleased to submit the following quotation for our CRM & HRM Software Solution.'
     )
 
-    # Feature Modules (JSON lists)
+    # Feature Modules & Custom Scope Sections (Dynamic JSON list of {title, content})
+    feature_sections = models.JSONField(default=list, blank=True)
     crm_features = models.JSONField(default=list, blank=True)
     hrm_features = models.JSONField(default=list, blank=True)
     mobile_app_features = models.JSONField(default=list, blank=True)

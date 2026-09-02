@@ -19,7 +19,7 @@ from .models import (AccountCategory, AccountType, BankAccount, Expense, Expense
                      METHOD_CHOICES, CATEGORY_KEY_MAP,
                      DEFAULT_CRM_FEATURES, DEFAULT_HRM_FEATURES, DEFAULT_MOBILE_FEATURES, DEFAULT_SYSTEM_FEATURES,
                      DEFAULT_TECH_STACK, DEFAULT_SECURITY_FEATURES, DEFAULT_TRAINING_SUPPORT, DEFAULT_DELIVERABLES,
-                     DEFAULT_PRICING_PLANS)
+                     DEFAULT_PRICING_PLANS, get_default_feature_sections)
 from orders.models import Order, OrderItem
 from datetime import date
 
@@ -1361,7 +1361,20 @@ def _extract_quotation_lists(request):
     if not pricing_plans:
         pricing_plans = DEFAULT_PRICING_PLANS
 
+    # Extract Dynamic Feature Sections
+    sections_count = int(request.POST.get('sections_count', 0))
+    feature_sections = []
+    for i in range(sections_count):
+        title = request.POST.get(f'section_title_{i}', '').strip()
+        content = request.POST.get(f'section_content_{i}', '').strip()
+        if title or (content and content not in ('<p><br></p>', '<p></p>', '')):
+            feature_sections.append({
+                'title': title,
+                'content': content
+            })
+
     return {
+        'feature_sections': feature_sections,
         'crm_features': crm_features,
         'hrm_features': hrm_features,
         'mobile_app_features': mobile_app_features,
@@ -1400,14 +1413,7 @@ def quotation_create(request):
         'form': form,
         'action': 'Create',
         'clients': clients,
-        'default_crm_features': DEFAULT_CRM_FEATURES,
-        'default_hrm_features': DEFAULT_HRM_FEATURES,
-        'default_mobile_features': DEFAULT_MOBILE_FEATURES,
-        'default_system_features': DEFAULT_SYSTEM_FEATURES,
-        'default_tech_stack': DEFAULT_TECH_STACK,
-        'default_security_features': DEFAULT_SECURITY_FEATURES,
-        'default_training_support': DEFAULT_TRAINING_SUPPORT,
-        'default_deliverables': DEFAULT_DELIVERABLES,
+        'default_feature_sections': get_default_feature_sections(),
         'default_pricing_plans': DEFAULT_PRICING_PLANS,
     })
 
@@ -1434,19 +1440,15 @@ def quotation_edit(request, pk):
     else:
         form = QuotationForm(instance=quotation)
 
+    # Use existing feature sections or fallback to defaults
+    feature_sections = quotation.feature_sections if quotation.feature_sections else get_default_feature_sections()
+
     return render(request, 'accounts/quotation_form.html', {
         'form': form,
         'action': 'Edit',
         'quotation': quotation,
         'clients': clients,
-        'default_crm_features': DEFAULT_CRM_FEATURES,
-        'default_hrm_features': DEFAULT_HRM_FEATURES,
-        'default_mobile_features': DEFAULT_MOBILE_FEATURES,
-        'default_system_features': DEFAULT_SYSTEM_FEATURES,
-        'default_tech_stack': DEFAULT_TECH_STACK,
-        'default_security_features': DEFAULT_SECURITY_FEATURES,
-        'default_training_support': DEFAULT_TRAINING_SUPPORT,
-        'default_deliverables': DEFAULT_DELIVERABLES,
+        'default_feature_sections': feature_sections,
         'default_pricing_plans': quotation.pricing_plans or DEFAULT_PRICING_PLANS,
     })
 

@@ -358,95 +358,108 @@
     </div>
   </div>
 
-  <!-- Scope of Work & Feature Bullet Points -->
+  <!-- Scope of Work & Feature Sections -->
   <div class="main-heading">Scope of Work / Features Included</div>
 
-  {% if quotation.crm_features %}
-  <div class="avoid-break">
-    <div class="sub-heading">CRM FEATURES</div>
-    <ul class="bullet-list">
-      {% for f in quotation.crm_features %}
-      <li>{{ f }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
+  {% if quotation.feature_sections %}
+    {% for sec in quotation.feature_sections %}
+      {% if sec.title or sec.content %}
+      <div class="avoid-break" style="margin-bottom: 12px;">
+        {% if sec.title %}<div class="sub-heading">{{ sec.title|upper }}</div>{% endif %}
+        <div class="text-block">
+          {{ sec.content|render_rich_text }}
+        </div>
+      </div>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    {% if quotation.crm_features %}
+    <div class="avoid-break">
+      <div class="sub-heading">CRM FEATURES</div>
+      <ul class="bullet-list">
+        {% for f in quotation.crm_features %}
+        <li>{{ f }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
 
-  {% if quotation.hrm_features %}
-  <div class="avoid-break">
-    <div class="sub-heading">HRM FEATURES</div>
-    <ul class="bullet-list">
-      {% for f in quotation.hrm_features %}
-      <li>{{ f }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
+    {% if quotation.hrm_features %}
+    <div class="avoid-break">
+      <div class="sub-heading">HRM FEATURES</div>
+      <ul class="bullet-list">
+        {% for f in quotation.hrm_features %}
+        <li>{{ f }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
 
-  {% if quotation.mobile_app_features %}
-  <div class="avoid-break">
-    <div class="sub-heading">MOBILE APP FEATURES</div>
-    <ul class="bullet-list">
-      {% for f in quotation.mobile_app_features %}
-      <li>{{ f }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
+    {% if quotation.mobile_app_features %}
+    <div class="avoid-break">
+      <div class="sub-heading">MOBILE APP FEATURES</div>
+      <ul class="bullet-list">
+        {% for f in quotation.mobile_app_features %}
+        <li>{{ f }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
 
-  {% if quotation.system_features %}
-  <div class="avoid-break">
-    <div class="sub-heading">SYSTEM & GENERAL FEATURES</div>
-    <ul class="bullet-list">
-      {% for f in quotation.system_features %}
-      <li>{{ f }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
+    {% if quotation.system_features %}
+    <div class="avoid-break">
+      <div class="sub-heading">SYSTEM & GENERAL FEATURES</div>
+      <ul class="bullet-list">
+        {% for f in quotation.system_features %}
+        <li>{{ f }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
 
-  {% if quotation.tech_stack %}
-  <div class="avoid-break">
-    <div class="sub-heading">TECHNOLOGY STACK</div>
-    <ul class="bullet-list">
-      {% for f in quotation.tech_stack %}
-      <li>{{ f }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
+    {% if quotation.tech_stack %}
+    <div class="avoid-break">
+      <div class="sub-heading">TECHNOLOGY STACK</div>
+      <ul class="bullet-list">
+        {% for f in quotation.tech_stack %}
+        <li>{{ f }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
 
-  {% if quotation.security_features %}
-  <div class="avoid-break">
-    <div class="sub-heading">SECURITY FEATURES</div>
-    <ul class="bullet-list">
-      {% for f in quotation.security_features %}
-      <li>{{ f }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
+    {% if quotation.security_features %}
+    <div class="avoid-break">
+      <div class="sub-heading">SECURITY FEATURES</div>
+      <ul class="bullet-list">
+        {% for f in quotation.security_features %}
+        <li>{{ f }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
 
-  {% if quotation.training_support %}
-  <div class="avoid-break">
-    <div class="sub-heading">TRAINING & SUPPORT</div>
-    <ul class="bullet-list">
-      {% for f in quotation.training_support %}
-      <li>{{ f }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
+    {% if quotation.training_support %}
+    <div class="avoid-break">
+      <div class="sub-heading">TRAINING & SUPPORT</div>
+      <ul class="bullet-list">
+        {% for f in quotation.training_support %}
+        <li>{{ f }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
 
-  {% if quotation.deliverables %}
-  <div class="avoid-break">
-    <div class="sub-heading">DELIVERABLES</div>
-    <ul class="bullet-list">
-      {% for f in quotation.deliverables %}
-      <li>{{ f }}</li>
-      {% endfor %}
-    </ul>
-  </div>
+    {% if quotation.deliverables %}
+    <div class="avoid-break">
+      <div class="sub-heading">DELIVERABLES</div>
+      <ul class="bullet-list">
+        {% for f in quotation.deliverables %}
+        <li>{{ f }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
   {% endif %}
 
   <!-- Pricing Plan Table -->
