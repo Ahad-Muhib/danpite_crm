@@ -401,3 +401,62 @@ class QuotationForm(forms.ModelForm):
             self.fields['currency'].initial = 'BDT'
         for f in self.fields:
             self.fields[f].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        client = cleaned.get('client')
+
+        if not client:
+            self.add_error('client_search', 'A registered client must be selected from the system. Quotations cannot be created for unlisted or non-client names.')
+            return cleaned
+
+        # Validate that organization and contact details match the registered client record
+        company_name = (cleaned.get('company_name') or '').strip()
+        contact_person = (cleaned.get('contact_person') or '').strip()
+        contact_number = (cleaned.get('contact_number') or '').strip()
+        email = (cleaned.get('email') or '').strip()
+
+        # Check Company / Organization Name
+        expected_company = (client.company or client.name).strip()
+        if company_name and expected_company and company_name.lower() != expected_company.lower():
+            self.add_error(
+                'company_name',
+                f"Organization name '{company_name}' does not match registered client company '{expected_company}'. Please edit the client profile in the Clients module first."
+            )
+
+        # Check Contact Person
+        if contact_person and contact_person.lower() != client.name.strip().lower():
+            self.add_error(
+                'contact_person',
+                f"Contact person '{contact_person}' does not match registered client name '{client.name}'. Please edit the client profile in the Clients module first."
+            )
+
+        # Check Contact Number
+        valid_phones = [p.strip() for p in [client.phone, client.mobile] if p and p.strip()]
+        if contact_number and valid_phones:
+            if contact_number not in valid_phones:
+                self.add_error(
+                    'contact_number',
+                    f"Contact number '{contact_number}' is not listed in client profile (Registered: {', '.join(valid_phones)}). Please edit the client profile first."
+                )
+        elif contact_number and not valid_phones:
+            self.add_error(
+                'contact_number',
+                f"Client '{client.name}' has no registered contact number. Please add phone/mobile to the client profile first."
+            )
+
+        # Check Email
+        if email and client.email:
+            if email.lower() != client.email.strip().lower():
+                self.add_error(
+                    'email',
+                    f"Email '{email}' does not match registered client email '{client.email}'. Please edit the client profile first."
+                )
+        elif email and not client.email:
+            self.add_error(
+                'email',
+                f"Client '{client.name}' has no registered email. Please add email to the client profile first."
+            )
+
+        return cleaned
+

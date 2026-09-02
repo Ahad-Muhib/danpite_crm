@@ -107,15 +107,19 @@
           </a>
         </li>
         <li>
+          <a href="{% url 'quotation_list' %}" class="nav-link {% if 'quotation' in request.path %}active{% endif %}">
+            <span class="material-symbols-outlined">request_quote</span>
+            <span>Quotations</span>
+          </a>
+        </li>
+        <li>
           <a class="nav-link" data-bs-toggle="collapse" href="#accMenu" role="button"
-            aria-expanded="{% if '/accounts/' in request.path %}true{% else %}false{% endif %}">
+            aria-expanded="{% if '/accounts/' in request.path and 'quotation' not in request.path %}true{% else %}false{% endif %}">
             <span class="material-symbols-outlined">wallet</span>
             <span>Sales</span>
             <span class="material-symbols-outlined arrow">expand_more</span>
           </a>
-          <div class="collapse submenu {% if '/accounts/' in request.path %}show{% endif %}" id="accMenu">
-            <a href="{% url 'quotation_list' %}"
-              class="nav-link {% if 'quotation' in request.path %}active{% endif %}">Quotations</a>
+          <div class="collapse submenu {% if '/accounts/' in request.path and 'quotation' not in request.path %}show{% endif %}" id="accMenu">
             <a href="{% url 'invoice_list' %}"
               class="nav-link {% if request.resolver_match.url_name == 'invoice_list' %}active{% endif %}">Invoices</a>
             <a href="{% url 'payment_list' %}"
