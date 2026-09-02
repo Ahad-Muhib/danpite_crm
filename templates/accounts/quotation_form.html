@@ -6,6 +6,8 @@
 {% block extra_head %}
 <!-- Quill CSS -->
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+<!-- SortableJS for drag and drop reordering -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
   .ql-toolbar.ql-snow {
     border-top-left-radius: 6px;
@@ -27,7 +29,7 @@
   .quill-section-editor {
     height: 180px;
   }
-  /* Searchable Client Dropdown */
+  /* Searchable Autocomplete Dropdown */
   .acct-dropdown {
     position: absolute;
     top: 100%;
@@ -38,7 +40,7 @@
     border: 1px solid #d1d5db;
     border-radius: 6px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    max-height: 240px;
+    max-height: 250px;
     overflow-y: auto;
     margin-top: 4px;
   }
@@ -54,13 +56,13 @@
   .acct-dropdown-item:hover, .acct-dropdown-item.active {
     background: #eff6ff;
   }
-  .acct-dropdown-item .client-title {
-    font-weight: 600;
+  .acct-dropdown-item .preset-title {
+    font-weight: 500;
     font-size: 13px;
     color: #111827;
   }
-  .acct-dropdown-item .client-sub {
-    font-size: 11.5px;
+  .acct-dropdown-item .preset-sub {
+    font-size: 11px;
     color: #6b7280;
     margin-top: 2px;
   }
@@ -69,6 +71,29 @@
   }
   .feature-section-card:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  .drag-handle {
+    cursor: grab;
+    user-select: none;
+  }
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+  .sortable-ghost {
+    opacity: 0.4;
+    background-color: #f1f5f9 !important;
+    border: 2px dashed #6366f1 !important;
+  }
+  .sortable-chosen {
+    background-color: #fafafa;
+  }
+  .section-title-input {
+    font-weight: 500;
+    color: #1f2937;
+  }
+  .section-title-input::placeholder {
+    font-weight: 400;
+    color: #9ca3af;
   }
 </style>
 {% endblock %}
@@ -134,7 +159,7 @@
               <div class="small">
                 <i class="bi bi-person-check-fill text-success me-1"></i><strong>Linked Client:</strong>
                 <span id="badge-client-display">{% if quotation and quotation.client %}{{ quotation.client.name }}{% if quotation.client.company %} ({{ quotation.client.company }}){% endif %}{% endif %}</span>
-                <span class="text-muted ms-2">— Organization & contact details are synchronized with client profile.</span>
+                <span class="text-muted ms-2">— Details auto-filled and can be customized below.</span>
               </div>
               <a id="badge-client-edit-btn" href="{% if quotation and quotation.client %}{% url 'client_edit' quotation.client.pk %}{% else %}#{% endif %}" target="_blank" class="btn btn-sm btn-outline-primary bg-white">
                 <i class="bi bi-pencil-square me-1"></i>Edit Client in CRM
@@ -143,14 +168,14 @@
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Company / Organization Name <span class="text-muted fw-normal small">(From Client Profile)</span></label>
+            <label class="form-label fw-semibold">Company / Organization Name <span class="text-muted fw-normal small">(Auto-filled, editable)</span></label>
             {{ form.company_name }}
             {% if form.company_name.errors %}
               <div class="text-danger small mt-1">{{ form.company_name.errors.0 }}</div>
             {% endif %}
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Contact Person <span class="text-muted fw-normal small">(From Client Profile)</span></label>
+            <label class="form-label fw-semibold">Contact Person <span class="text-muted fw-normal small">(Auto-filled, can be different)</span></label>
             {{ form.contact_person }}
             {% if form.contact_person.errors %}
               <div class="text-danger small mt-1">{{ form.contact_person.errors.0 }}</div>
@@ -162,14 +187,14 @@
             {{ form.designation }}
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Contact Phone / Mobile <span class="text-muted fw-normal small">(From Client Profile)</span></label>
+            <label class="form-label fw-semibold">Contact Phone / Mobile <span class="text-muted fw-normal small">(Auto-filled, can be different)</span></label>
             {{ form.contact_number }}
             {% if form.contact_number.errors %}
               <div class="text-danger small mt-1">{{ form.contact_number.errors.0 }}</div>
             {% endif %}
           </div>
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Email Address <span class="text-muted fw-normal small">(From Client Profile)</span></label>
+            <label class="form-label fw-semibold">Email Address <span class="text-muted fw-normal small">(Auto-filled, can be different)</span></label>
             {{ form.email }}
             {% if form.email.errors %}
               <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
@@ -214,40 +239,35 @@
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
           <div>
             <h5 class="fw-bold text-primary mb-0"><i class="bi bi-layers me-2"></i>3. Scope of Work & Feature Sections</h5>
-            <div class="text-muted small">Add dynamic feature sections with custom header names and editable rich text/bullet points</div>
+            <div class="text-muted small">Search or type below to insert preset feature modules, or drag sections to reorder</div>
           </div>
+          <!-- Typeahead Preset Search -->
           <div class="d-flex flex-wrap gap-2 align-items-center">
-            <div class="dropdown">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-plus-circle me-1"></i>Add Standard Preset
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end shadow">
-                <li><a class="dropdown-item btn-add-preset" href="#" data-preset="CRM"><i class="bi bi-person-workspace text-primary me-2"></i>CRM Features</a></li>
-                <li><a class="dropdown-item btn-add-preset" href="#" data-preset="HRM"><i class="bi bi-people text-info me-2"></i>HRM Features</a></li>
-                <li><a class="dropdown-item btn-add-preset" href="#" data-preset="MOBILE"><i class="bi bi-phone text-success me-2"></i>Mobile App Features</a></li>
-                <li><a class="dropdown-item btn-add-preset" href="#" data-preset="SYSTEM"><i class="bi bi-gear text-secondary me-2"></i>General / System Features</a></li>
-                <li><a class="dropdown-item btn-add-preset" href="#" data-preset="TECH"><i class="bi bi-code-slash text-warning me-2"></i>Technology Stack</a></li>
-                <li><a class="dropdown-item btn-add-preset" href="#" data-preset="SECURITY"><i class="bi bi-shield-lock text-danger me-2"></i>Security Features</a></li>
-                <li><a class="dropdown-item btn-add-preset" href="#" data-preset="TRAINING"><i class="bi bi-headset text-primary me-2"></i>Training & Support</a></li>
-                <li><a class="dropdown-item btn-add-preset" href="#" data-preset="DELIVERABLES"><i class="bi bi-box-seam text-success me-2"></i>Deliverables</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger" href="#" id="btn-clear-sections"><i class="bi bi-trash me-2"></i>Clear All Sections</a></li>
-              </ul>
+            <div style="position: relative; min-width: 280px; max-width: 360px;">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="preset-search-input" class="form-control border-start-0 ps-0" placeholder="Type preset name (e.g. CRM, HRM)..." autocomplete="off">
+              </div>
+              <div id="preset-search-dropdown" class="acct-dropdown" style="display: none;"></div>
             </div>
             <button type="button" class="btn btn-sm btn-primary" id="btn-add-section">
-              <i class="bi bi-plus-lg me-1"></i>+ Add Section
+              <i class="bi bi-plus-lg me-1"></i>Add Section
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="btn-clear-sections" title="Clear all sections">
+              <i class="bi bi-trash"></i>
             </button>
           </div>
         </div>
 
-        <!-- Dynamic Feature Sections List -->
+        <!-- Dynamic Feature Sections List (Draggable) -->
         <div id="feature-sections-container" class="d-flex flex-column gap-3">
           {% for sec in default_feature_sections %}
           <div class="card border rounded feature-section-card" data-index="{{ forloop.counter0 }}">
             <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center gap-2">
               <div class="d-flex align-items-center gap-2 flex-grow-1">
+                <span class="drag-handle text-muted me-1" title="Click and drag to reorder section"><i class="bi bi-grip-vertical fs-5"></i></span>
                 <span class="badge bg-secondary">Section <span class="sec-num">{{ forloop.counter }}</span></span>
-                <input type="text" name="section_title_{{ forloop.counter0 }}" value="{{ sec.title }}" class="form-control form-control-sm fw-bold border-0 bg-white" placeholder="Section Header Name (e.g. CRM FEATURES)" style="max-width: 400px;">
+                <input type="text" name="section_title_{{ forloop.counter0 }}" value="{{ sec.title }}" class="form-control form-control-sm border-0 bg-white section-title-input" placeholder="e.g. General Features" style="max-width: 420px;">
               </div>
               <button type="button" class="btn btn-sm btn-outline-danger btn-remove-section py-1 px-2" title="Delete this section">
                 <i class="bi bi-trash"></i>
@@ -566,8 +586,13 @@ document.addEventListener('DOMContentLoaded', function() {
       card.setAttribute('data-index', idx);
       var numSpan = card.querySelector('.sec-num');
       if (numSpan) numSpan.textContent = idx + 1;
-      var titleInput = card.querySelector('input[type="text"]');
-      if (titleInput) titleInput.name = 'section_title_' + idx;
+      var titleInput = card.querySelector('.section-title-input');
+      if (titleInput) {
+        titleInput.name = 'section_title_' + idx;
+        if (!titleInput.placeholder || titleInput.placeholder.startsWith('e.g. Module Feature')) {
+          titleInput.placeholder = 'e.g. Module Feature ' + (idx + 1);
+        }
+      }
       var hiddenArea = card.querySelector('textarea');
       if (hiddenArea) {
         hiddenArea.name = 'section_content_' + idx;
@@ -576,17 +601,142 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Add Dynamic Section
+  // Initialize Drag-and-Drop with SortableJS
+  if (typeof Sortable !== 'undefined' && sectionsContainer) {
+    new Sortable(sectionsContainer, {
+      handle: '.drag-handle',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onEnd: function() {
+        reindexSections();
+      }
+    });
+  }
+
+  // Standard Presets Library
+  var standardPresets = [
+    {
+      key: 'CRM',
+      title: 'CRM Features',
+      desc: '19 features: Dashboard, Leads, Quotations, Sales, Reports...',
+      content: '<ul><li>Dashboard</li><li>User Management</li><li>Role & Permission Management</li><li>Branch Management</li><li>Activity Management</li><li>Follow-up Management</li><li>Lead Management</li><li>Quotation Management</li><li>Sales Management</li><li>Product Category & Subcategory Management</li><li>Brand Management</li><li>Organization Management</li><li>Organization Category & Type Management</li><li>Division, District, Upazila & Union Management</li><li>Sales Report</li><li>Leads Report</li><li>Project Report</li><li>Activity Report</li><li>Business Settings</li></ul>'
+    },
+    {
+      key: 'HRM',
+      title: 'HRM Features',
+      desc: '12 features: Employee, Attendance, Leave, Payroll, Exit...',
+      content: '<ul><li>Employee Management</li><li>Department & Designation</li><li>Attendance Management</li><li>Leave Management</li><li>Holiday Management</li><li>Payroll & Payslip</li><li>Salary Advance</li><li>Employee Documents</li><li>Notice & Announcement</li><li>Employee Performance</li><li>Resignation & Exit Management</li><li>HRM Reports</li></ul>'
+    },
+    {
+      key: 'MOBILE',
+      title: 'Mobile App Features',
+      desc: '13 features: Mobile Dashboard, Task, Follow-ups, Payroll...',
+      content: '<ul><li>Dashboard</li><li>Lead Management</li><li>Follow-up Management</li><li>Customer Management</li><li>Organization Management</li><li>Activity & Task Management</li><li>Quotation Management</li><li>Sales Management</li><li>Product Management</li><li>Employee Management</li><li>Attendance Management</li><li>Leave Management</li><li>Payroll Management</li></ul>'
+    },
+    {
+      key: 'SYSTEM',
+      title: 'General / System Features',
+      desc: '7 features: Responsive UI, Notifications, Export, Logging...',
+      content: '<ul><li>Responsive Web Design</li><li>Real-Time Notifications</li><li>Search & Filtering</li><li>Export to PDF & Excel</li><li>User Activity Logging</li><li>Custom Theme & Branding</li><li>Role-based Permissions</li></ul>'
+    },
+    {
+      key: 'TECH',
+      title: 'Technology Stack',
+      desc: '6 features: Laravel, Flutter, MySQL, REST API, SSL...',
+      content: '<ul><li>Frontend: Bootstrap, Laravel Blade, HTML, CSS, JavaScript, jQuery</li><li>Backend: PHP Laravel (REST API)</li><li>Mobile App: Flutter (Android & iOS)</li><li>Database: MySQL</li><li>Authentication: Laravel Sanctum</li><li>Deployment: Linux, Apache/Nginx, Git, SSL</li></ul>'
+    },
+    {
+      key: 'SECURITY',
+      title: 'Security Features',
+      desc: '8 features: MFA, RBAC, Encryption, Audit Logs, Backup...',
+      content: '<ul><li>Multi-Factor Authentication (MFA)</li><li>Role-Based Access Control (RBAC)</li><li>End-to-End Data Encryption</li><li>Secure REST API</li><li>Audit Trail & Activity Logs</li><li>Automated Backup & Disaster Recovery</li><li>SSL/TLS Secure Communication</li><li>Advanced Threat Protection</li></ul>'
+    },
+    {
+      key: 'TRAINING',
+      title: 'Training & Support',
+      desc: '6 features: Installation, Training, Bug Fix, Remote Help...',
+      content: '<ul><li>Installation</li><li>User Training</li><li>Bug Fix Support</li><li>Technical Support</li><li>Pre-recorded Video</li><li>Remote Assistance</li></ul>'
+    },
+    {
+      key: 'DELIVERABLES',
+      title: 'Deliverables',
+      desc: '7 items: Web App, Mobile App, Source Code, Database, Docs...',
+      content: '<ul><li>Web Application</li><li>Android Mobile Application</li><li>REST API</li><li>Admin Panel</li><li>Source Code (One-Time License Only)</li><li>MySQL Database</li><li>User Documentation</li></ul>'
+    }
+  ];
+
+  // Check if a title is a generic/default placeholder name
+  function isGenericName(name) {
+    if (!name) return true;
+    var lower = name.trim().toLowerCase();
+    return lower === '' ||
+           lower === 'general features' ||
+           lower === 'general section' ||
+           lower.startsWith('module feature') ||
+           lower.startsWith('new feature') ||
+           lower.startsWith('feature ') ||
+           lower === 'feature' ||
+           lower === 'section' ||
+           lower.startsWith('section ');
+  }
+
+  // Load custom presets from LocalStorage (cleaning out any generic names)
+  function getCustomPresets() {
+    try {
+      var saved = localStorage.getItem('crm_custom_quotation_presets');
+      if (!saved) return [];
+      var list = JSON.parse(saved);
+      var cleaned = list.filter(function(p) { return !isGenericName(p.title); });
+      if (cleaned.length !== list.length) {
+        localStorage.setItem('crm_custom_quotation_presets', JSON.stringify(cleaned));
+      }
+      return cleaned;
+    } catch(e) {
+      return [];
+    }
+  }
+
+  function saveCustomPreset(title, content) {
+    if (!title || !title.trim() || isGenericName(title)) return;
+    var trimmed = title.trim();
+    var customs = getCustomPresets();
+    var exists = customs.some(function(p) { return p.title.toLowerCase() === trimmed.toLowerCase(); }) || 
+                 standardPresets.some(function(p) { return p.title.toLowerCase() === trimmed.toLowerCase(); });
+    if (!exists) {
+      customs.push({
+        key: 'CUSTOM_' + Date.now(),
+        title: trimmed,
+        desc: 'Custom user-saved preset',
+        content: content || '<ul><li>Feature item 1</li><li>Feature item 2</li></ul>'
+      });
+      try {
+        localStorage.setItem('crm_custom_quotation_presets', JSON.stringify(customs));
+      } catch(e) {}
+    }
+  }
+
+  function getAllPresets() {
+    return standardPresets.concat(getCustomPresets());
+  }
+
+  // Add Dynamic Section to Container
   function addSection(title, defaultHtml) {
-    var idx = sectionsContainer.querySelectorAll('.feature-section-card').length;
+    var existingCards = sectionsContainer.querySelectorAll('.feature-section-card');
+    var idx = existingCards.length;
+    var secNumber = idx + 1;
+    var initialValue = (title && !isGenericName(title)) ? title : '';
+    var placeholderText = 'e.g. Module Feature ' + secNumber;
+
     var card = document.createElement('div');
     card.className = 'card border rounded feature-section-card';
     card.setAttribute('data-index', idx);
     card.innerHTML = `
       <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center gap-2">
         <div class="d-flex align-items-center gap-2 flex-grow-1">
-          <span class="badge bg-secondary">Section <span class="sec-num">${idx + 1}</span></span>
-          <input type="text" name="section_title_${idx}" value="${escHtml(title || '')}" class="form-control form-control-sm fw-bold border-0 bg-white" placeholder="Section Header Name (e.g. CRM FEATURES)" style="max-width: 400px;">
+          <span class="drag-handle text-muted me-1" title="Click and drag to reorder section"><i class="bi bi-grip-vertical fs-5"></i></span>
+          <span class="badge bg-secondary">Section <span class="sec-num">${secNumber}</span></span>
+          <input type="text" name="section_title_${idx}" value="${escHtml(initialValue)}" class="form-control form-control-sm border-0 bg-white section-title-input" placeholder="${placeholderText}" style="max-width: 420px;">
         </div>
         <button type="button" class="btn btn-sm btn-outline-danger btn-remove-section py-1 px-2" title="Delete this section">
           <i class="bi bi-trash"></i>
@@ -600,56 +750,87 @@ document.addEventListener('DOMContentLoaded', function() {
     sectionsContainer.appendChild(card);
     initSectionEditor(idx);
     reindexSections();
+
+    // Register into custom presets only if non-generic
+    if (title && !isGenericName(title)) {
+      saveCustomPreset(title, defaultHtml);
+    }
   }
 
-  document.getElementById('btn-add-section')?.addEventListener('click', function() {
-    addSection('NEW FEATURE SECTION', '<ul><li>Feature item 1</li><li>Feature item 2</li></ul>');
+  // Typeahead Preset Dropdown
+  var presetSearchInput = document.getElementById('preset-search-input');
+  var presetSearchDropdown = document.getElementById('preset-search-dropdown');
+
+  function renderPresetDropdown(q) {
+    presetSearchDropdown.innerHTML = '';
+    var query = (q || '').trim().toLowerCase();
+    var all = getAllPresets();
+    var results = all.filter(function(p) {
+      return !query || p.title.toLowerCase().includes(query) || (p.desc && p.desc.toLowerCase().includes(query));
+    });
+
+    if (query && !isGenericName(query) && !results.some(function(p) { return p.title.toLowerCase() === query; })) {
+      var createItem = document.createElement('div');
+      createItem.className = 'acct-dropdown-item bg-light';
+      createItem.innerHTML = `<span class="text-primary"><i class="bi bi-plus-circle me-1"></i>Add & Save as New Preset: "<strong>${escHtml(q)}</strong>"</span>`;
+      createItem.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        addSection(q, '<ul><li>Feature item 1</li><li>Feature item 2</li></ul>');
+        presetSearchInput.value = '';
+        presetSearchDropdown.style.display = 'none';
+      });
+      presetSearchDropdown.appendChild(createItem);
+    }
+
+    if (!results.length && !query) {
+      presetSearchDropdown.style.display = 'none';
+      return;
+    }
+
+    results.forEach(function(p) {
+      var item = document.createElement('div');
+      item.className = 'acct-dropdown-item';
+      item.innerHTML = `
+        <div class="preset-title"><i class="bi bi-plus-square-dotted text-primary me-1"></i>${escHtml(p.title)}</div>
+        ${p.desc ? `<div class="preset-sub">${escHtml(p.desc)}</div>` : ''}
+      `;
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        addSection(p.title, p.content);
+        presetSearchInput.value = '';
+        presetSearchDropdown.style.display = 'none';
+      });
+      presetSearchDropdown.appendChild(item);
+    });
+
+    presetSearchDropdown.style.display = 'block';
+  }
+
+  function closePresetDropdown() {
+    if (presetSearchDropdown) presetSearchDropdown.style.display = 'none';
+  }
+
+  if (presetSearchInput) {
+    presetSearchInput.addEventListener('input', function() {
+      renderPresetDropdown(this.value);
+    });
+    presetSearchInput.addEventListener('focus', function() {
+      renderPresetDropdown(this.value);
+    });
+    presetSearchInput.addEventListener('blur', function() {
+      setTimeout(closePresetDropdown, 200);
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#preset-search-input') && !e.target.closest('#preset-search-dropdown')) {
+      closePresetDropdown();
+    }
   });
 
-  // Standard Preset Section Presets
-  var standardPresets = {
-    'CRM': {
-      title: 'CRM FEATURES',
-      content: '<ul><li>Dashboard</li><li>User Management</li><li>Role & Permission Management</li><li>Branch Management</li><li>Activity Management</li><li>Follow-up Management</li><li>Lead Management</li><li>Quotation Management</li><li>Sales Management</li><li>Product Category & Subcategory Management</li><li>Brand Management</li><li>Organization Management</li><li>Organization Category & Type Management</li><li>Division, District, Upazila & Union Management</li><li>Sales Report</li><li>Leads Report</li><li>Project Report</li><li>Activity Report</li><li>Business Settings</li></ul>'
-    },
-    'HRM': {
-      title: 'HRM FEATURES',
-      content: '<ul><li>Employee Management</li><li>Department & Designation</li><li>Attendance Management</li><li>Leave Management</li><li>Holiday Management</li><li>Payroll & Payslip</li><li>Salary Advance</li><li>Employee Documents</li><li>Notice & Announcement</li><li>Employee Performance</li><li>Resignation & Exit Management</li><li>HRM Reports</li></ul>'
-    },
-    'MOBILE': {
-      title: 'MOBILE APP FEATURES',
-      content: '<ul><li>Dashboard</li><li>Lead Management</li><li>Follow-up Management</li><li>Customer Management</li><li>Organization Management</li><li>Activity & Task Management</li><li>Quotation Management</li><li>Sales Management</li><li>Product Management</li><li>Employee Management</li><li>Attendance Management</li><li>Leave Management</li><li>Payroll Management</li></ul>'
-    },
-    'SYSTEM': {
-      title: 'GENERAL / SYSTEM FEATURES',
-      content: '<ul><li>Responsive Web Design</li><li>Real-Time Notifications</li><li>Search & Filtering</li><li>Export to PDF & Excel</li><li>User Activity Logging</li><li>Custom Theme & Branding</li><li>Role-based Permissions</li></ul>'
-    },
-    'TECH': {
-      title: 'TECHNOLOGY STACK',
-      content: '<ul><li>Frontend: Bootstrap, Laravel Blade, HTML, CSS, JavaScript, jQuery</li><li>Backend: PHP Laravel (REST API)</li><li>Mobile App: Flutter (Android & iOS)</li><li>Database: MySQL</li><li>Authentication: Laravel Sanctum</li><li>Deployment: Linux, Apache/Nginx, Git, SSL</li></ul>'
-    },
-    'SECURITY': {
-      title: 'SECURITY FEATURES',
-      content: '<ul><li>Multi-Factor Authentication (MFA)</li><li>Role-Based Access Control (RBAC)</li><li>End-to-End Data Encryption</li><li>Secure REST API</li><li>Audit Trail & Activity Logs</li><li>Automated Backup & Disaster Recovery</li><li>SSL/TLS Secure Communication</li><li>Advanced Threat Protection</li></ul>'
-    },
-    'TRAINING': {
-      title: 'TRAINING & SUPPORT',
-      content: '<ul><li>Installation</li><li>User Training</li><li>Bug Fix Support</li><li>Technical Support</li><li>Pre-recorded Video</li><li>Remote Assistance</li></ul>'
-    },
-    'DELIVERABLES': {
-      title: 'DELIVERABLES',
-      content: '<ul><li>Web Application</li><li>Android Mobile Application</li><li>REST API</li><li>Admin Panel</li><li>Source Code (One-Time License Only)</li><li>MySQL Database</li><li>User Documentation</li></ul>'
-    }
-  };
-
-  document.querySelectorAll('.btn-add-preset').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      var key = this.getAttribute('data-preset');
-      if (standardPresets[key]) {
-        addSection(standardPresets[key].title, standardPresets[key].content);
-      }
-    });
+  // Single "Add Section" button click handler
+  document.getElementById('btn-add-section')?.addEventListener('click', function() {
+    addSection('', '<ul><li>Feature item 1</li><li>Feature item 2</li></ul>');
   });
 
   document.getElementById('btn-clear-sections')?.addEventListener('click', function(e) {
@@ -658,6 +839,14 @@ document.addEventListener('DOMContentLoaded', function() {
       sectionsContainer.innerHTML = '';
       sectionEditors = {};
       sectionsCountInput.value = 0;
+    }
+  });
+
+  // Track title updates to register custom presets
+  sectionsContainer?.addEventListener('change', function(e) {
+    if (e.target.classList.contains('section-title-input')) {
+      var title = e.target.value.trim();
+      if (title) saveCustomPreset(title, '');
     }
   });
 

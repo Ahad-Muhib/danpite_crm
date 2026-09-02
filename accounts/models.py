@@ -368,37 +368,9 @@ DEFAULT_PRICING_PLANS = [
 def get_default_feature_sections():
     return [
         {
-            "title": "CRM FEATURES",
-            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_CRM_FEATURES) + "</ul>"
-        },
-        {
-            "title": "HRM FEATURES",
-            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_HRM_FEATURES) + "</ul>"
-        },
-        {
-            "title": "MOBILE APP FEATURES",
-            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_MOBILE_FEATURES) + "</ul>"
-        },
-        {
-            "title": "GENERAL / SYSTEM FEATURES",
-            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_SYSTEM_FEATURES) + "</ul>"
-        },
-        {
-            "title": "TECHNOLOGY STACK",
-            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_TECH_STACK) + "</ul>"
-        },
-        {
-            "title": "SECURITY FEATURES",
-            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_SECURITY_FEATURES) + "</ul>"
-        },
-        {
-            "title": "TRAINING & SUPPORT",
-            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_TRAINING_SUPPORT) + "</ul>"
-        },
-        {
-            "title": "DELIVERABLES",
-            "content": "<ul>" + "".join(f"<li>{item}</li>" for item in DEFAULT_DELIVERABLES) + "</ul>"
-        },
+            "title": "General Features",
+            "content": "<ul><li>Feature item 1</li><li>Feature item 2</li></ul>"
+        }
     ]
 
 
