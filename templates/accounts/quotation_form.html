@@ -153,18 +153,6 @@
             {% if form.client_search.errors %}
               <div class="text-danger small mt-1">{{ form.client_search.errors.0 }}</div>
             {% endif %}
-            
-            <!-- Verified Client Action Bar -->
-            <div id="client-info-badge" class="alert alert-light border py-2 px-3 mt-2 d-flex justify-content-between align-items-center flex-wrap gap-2" {% if not quotation or not quotation.client %}style="display: none;"{% endif %}>
-              <div class="small">
-                <i class="bi bi-person-check-fill text-success me-1"></i><strong>Linked Client:</strong>
-                <span id="badge-client-display">{% if quotation and quotation.client %}{{ quotation.client.name }}{% if quotation.client.company %} ({{ quotation.client.company }}){% endif %}{% endif %}</span>
-                <span class="text-muted ms-2">— Details auto-filled and can be customized below.</span>
-              </div>
-              <a id="badge-client-edit-btn" href="{% if quotation and quotation.client %}{% url 'client_edit' quotation.client.pk %}{% else %}#{% endif %}" target="_blank" class="btn btn-sm btn-outline-primary bg-white">
-                <i class="bi bi-pencil-square me-1"></i>Edit Client in CRM
-              </a>
-            </div>
           </div>
 
           <div class="col-md-6">
@@ -312,10 +300,10 @@
                 <td class="text-center">
                   <input type="checkbox" name="plan_sel_{{ forloop.counter0 }}" class="form-check-input" {% if plan.is_selected %}checked{% endif %} title="Check if this package is recommended/selected">
                 </td>
-                <td><input type="text" name="plan_pkg_{{ forloop.counter0 }}" value="{{ plan.package }}" class="form-control form-control-sm" placeholder="Package name"></td>
-                <td><input type="text" name="plan_lic_{{ forloop.counter0 }}" value="{{ plan.license }}" class="form-control form-control-sm" placeholder="One-Time / SaaS"></td>
-                <td><input type="text" name="plan_prc_{{ forloop.counter0 }}" value="{{ plan.price }}" class="form-control form-control-sm fw-bold" placeholder="Price"></td>
-                <td><input type="text" name="plan_dt_{{ forloop.counter0 }}" value="{{ plan.delivery_time }}" class="form-control form-control-sm" placeholder="Delivery time"></td>
+                <td><input type="text" name="plan_pkg_{{ forloop.counter0 }}" value="{{ plan.package }}" class="form-control form-control-sm" placeholder="e.g. CRM Solution"></td>
+                <td><input type="text" name="plan_lic_{{ forloop.counter0 }}" value="{{ plan.license }}" class="form-control form-control-sm" placeholder="e.g. One-Time / SaaS"></td>
+                <td><input type="text" name="plan_prc_{{ forloop.counter0 }}" value="{{ plan.price }}" class="form-control form-control-sm fw-bold" placeholder="e.g. BDT 100,000"></td>
+                <td><input type="text" name="plan_dt_{{ forloop.counter0 }}" value="{{ plan.delivery_time }}" class="form-control form-control-sm" placeholder="e.g. 15 Days"></td>
                 <td class="text-center">
                   <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i class="bi bi-trash"></i></button>
                 </td>
@@ -513,16 +501,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Client Validation before form submit
-  document.getElementById('quotation-form').addEventListener('submit', function(e) {
-    var clientPk = clientPkInput ? clientPkInput.value.trim() : '';
-    if (!clientPk) {
+  // Prevent accidental Enter key submissions in all form inputs
+  var quotationForm = document.getElementById('quotation-form');
+  var isExplicitSaveClicked = false;
+
+  quotationForm.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'submit') {
       e.preventDefault();
-      clientSearchInput.focus();
-      clientSearchInput.classList.add('is-invalid');
-      alert('Error: You must select a registered client from the dropdown list. Quotations cannot be created without a valid client.');
-      return;
+      return false;
     }
+  });
+
+  document.querySelectorAll('#quotation-form button[type="submit"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      isExplicitSaveClicked = true;
+    });
   });
 
   // Quill Editor Initializer
@@ -908,10 +901,10 @@ document.addEventListener('DOMContentLoaded', function() {
     tr.className = 'plan-row';
     tr.innerHTML = `
       <td class="text-center"><input type="checkbox" name="plan_sel_${idx}" class="form-check-input"></td>
-      <td><input type="text" name="plan_pkg_${idx}" class="form-control form-control-sm" placeholder="Package name"></td>
-      <td><input type="text" name="plan_lic_${idx}" class="form-control form-control-sm" placeholder="One-Time / SaaS"></td>
-      <td><input type="text" name="plan_prc_${idx}" class="form-control form-control-sm fw-bold" placeholder="Price"></td>
-      <td><input type="text" name="plan_dt_${idx}" class="form-control form-control-sm" placeholder="Delivery time"></td>
+      <td><input type="text" name="plan_pkg_${idx}" class="form-control form-control-sm" placeholder="e.g. CRM Solution"></td>
+      <td><input type="text" name="plan_lic_${idx}" class="form-control form-control-sm" placeholder="e.g. One-Time / SaaS"></td>
+      <td><input type="text" name="plan_prc_${idx}" class="form-control form-control-sm fw-bold" placeholder="e.g. BDT 100,000"></td>
+      <td><input type="text" name="plan_dt_${idx}" class="form-control form-control-sm" placeholder="e.g. 15 Days"></td>
       <td class="text-center">
         <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i class="bi bi-trash"></i></button>
       </td>
@@ -932,8 +925,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Sync Quill HTML to hidden fields on Form Submit
-  document.getElementById('quotation-form').addEventListener('submit', function() {
+  // Sync Quill HTML and validate on Form Submit
+  quotationForm.addEventListener('submit', function(e) {
+    if (!isExplicitSaveClicked) {
+      e.preventDefault();
+      return false;
+    }
+
+    var clientPk = clientPkInput ? clientPkInput.value.trim() : '';
+    if (!clientPk) {
+      e.preventDefault();
+      isExplicitSaveClicked = false;
+      clientSearchInput.focus();
+      clientSearchInput.classList.add('is-invalid');
+      alert('Error: You must select a registered client from the dropdown list. Quotations cannot be created without a valid client.');
+      return false;
+    }
+
     // Sync Note Editors
     for (var key in noteEditors) {
       var q = noteEditors[key];

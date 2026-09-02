@@ -356,12 +356,7 @@ DEFAULT_DELIVERABLES = [
 ]
 
 DEFAULT_PRICING_PLANS = [
-    {"package": "CRM", "license": "One-Time", "price": "BDT 100,000", "delivery_time": "10 Days", "is_selected": True},
-    {"package": "CRM + HRM", "license": "One-Time", "price": "BDT 180,000", "delivery_time": "20 Days", "is_selected": False},
-    {"package": "CRM + HRM + App", "license": "One-Time", "price": "BDT 260,000", "delivery_time": "30 Days", "is_selected": False},
-    {"package": "CRM SaaS", "license": "Setup Fee + Monthly", "price": "BDT 30,000 + BDT 3,000", "delivery_time": "7 Days", "is_selected": False},
-    {"package": "CRM + HRM SaaS", "license": "Setup Fee + Monthly", "price": "BDT 45,000 + BDT 4,000", "delivery_time": "20 Days", "is_selected": False},
-    {"package": "CRM + HRM + App SaaS", "license": "Setup Fee + Monthly", "price": "BDT 60,000 + BDT 4,500", "delivery_time": "30 Days", "is_selected": False},
+    {"package": "", "license": "", "price": "", "delivery_time": "", "is_selected": True},
 ]
 
 
