@@ -490,64 +490,92 @@
   </div>
   {% endif %}
 
-  <!-- Payment Terms -->
-  {% if quotation.payment_terms %}
-  <div class="avoid-break">
-    <div class="sub-heading">PAYMENT TERMS</div>
-    <div class="text-block">
-      {{ quotation.payment_terms|render_rich_text }}
+  <!-- Terms, Conditions & Warranty Sections -->
+  {% if quotation.terms_sections %}
+    {% for term in quotation.terms_sections %}
+      {% if term.title or term.content %}
+      <div class="avoid-break" style="margin-bottom: 12px;">
+        {% if term.title %}<div class="sub-heading">{{ term.title|upper }}</div>{% endif %}
+        <div class="text-block">
+          {{ term.content|render_rich_text }}
+        </div>
+      </div>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    <!-- Payment Terms -->
+    {% if quotation.payment_terms %}
+    <div class="avoid-break">
+      <div class="sub-heading">PAYMENT TERMS</div>
+      <div class="text-block">
+        {{ quotation.payment_terms|render_rich_text }}
+      </div>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Delivery & Support -->
-  {% if quotation.delivery_terms %}
-  <div class="avoid-break">
-    <div class="sub-heading">DELIVERY & SUPPORT</div>
-    <div class="text-block">
-      {{ quotation.delivery_terms|render_rich_text }}
+    <!-- Delivery & Support -->
+    {% if quotation.delivery_terms %}
+    <div class="avoid-break">
+      <div class="sub-heading">DELIVERY & SUPPORT</div>
+      <div class="text-block">
+        {{ quotation.delivery_terms|render_rich_text }}
+      </div>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Terms & Conditions -->
-  {% if quotation.terms_conditions %}
-  <div class="avoid-break">
-    <div class="sub-heading">TERMS & CONDITIONS</div>
-    <div class="text-block">
-      {{ quotation.terms_conditions|render_rich_text }}
+    <!-- Terms & Conditions -->
+    {% if quotation.terms_conditions %}
+    <div class="avoid-break">
+      <div class="sub-heading">TERMS & CONDITIONS</div>
+      <div class="text-block">
+        {{ quotation.terms_conditions|render_rich_text }}
+      </div>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Warranty -->
-  {% if quotation.warranty %}
-  <div class="avoid-break">
-    <div class="sub-heading">WARRANTY</div>
-    <div class="text-block">
-      {{ quotation.warranty|render_rich_text }}
+    <!-- Warranty -->
+    {% if quotation.warranty %}
+    <div class="avoid-break">
+      <div class="sub-heading">WARRANTY</div>
+      <div class="text-block">
+        {{ quotation.warranty|render_rich_text }}
+      </div>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Not Included -->
-  {% if quotation.not_included %}
-  <div class="avoid-break">
-    <div class="sub-heading">NOT INCLUDED</div>
-    <div class="text-block">
-      {{ quotation.not_included|render_rich_text }}
+    <!-- Not Included -->
+    {% if quotation.not_included %}
+    <div class="avoid-break">
+      <div class="sub-heading">NOT INCLUDED</div>
+      <div class="text-block">
+        {{ quotation.not_included|render_rich_text }}
+      </div>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Why Danpite Tech? -->
-  {% if quotation.why_danpite %}
-  <div class="avoid-break">
-    <div class="sub-heading">WHY DANPITE TECH?</div>
-    <div class="text-block">
-      {{ quotation.why_danpite|render_rich_text }}
+    <!-- Why Danpite Tech? -->
+    {% if quotation.why_danpite %}
+    <div class="avoid-break">
+      <div class="sub-heading">WHY DANPITE TECH?</div>
+      <div class="text-block">
+        {{ quotation.why_danpite|render_rich_text }}
+      </div>
     </div>
-  </div>
+    {% endif %}
+
+    <!-- Custom Terms & Policies -->
+    {% if quotation.custom_terms %}
+      {% for ct in quotation.custom_terms %}
+        {% if ct.title or ct.content %}
+        <div class="avoid-break" style="margin-bottom: 12px;">
+          {% if ct.title %}<div class="sub-heading">{{ ct.title|upper }}</div>{% endif %}
+          <div class="text-block">
+            {{ ct.content|render_rich_text }}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
   {% endif %}
 
   <!-- Closing & Sign-off -->

@@ -19,7 +19,7 @@ from .models import (AccountCategory, AccountType, BankAccount, Expense, Expense
                      METHOD_CHOICES, CATEGORY_KEY_MAP,
                      DEFAULT_CRM_FEATURES, DEFAULT_HRM_FEATURES, DEFAULT_MOBILE_FEATURES, DEFAULT_SYSTEM_FEATURES,
                      DEFAULT_TECH_STACK, DEFAULT_SECURITY_FEATURES, DEFAULT_TRAINING_SUPPORT, DEFAULT_DELIVERABLES,
-                     DEFAULT_PRICING_PLANS, get_default_feature_sections)
+                     DEFAULT_PRICING_PLANS, get_default_feature_sections, get_default_terms_sections)
 from orders.models import Order, OrderItem
 from datetime import date
 
@@ -1373,8 +1373,21 @@ def _extract_quotation_lists(request):
                 'content': content
             })
 
+    # Extract Dynamic Terms Sections (Draggable)
+    terms_count = int(request.POST.get('terms_count', 0))
+    terms_sections = []
+    for i in range(terms_count):
+        title = request.POST.get(f'term_title_{i}', '').strip()
+        content = request.POST.get(f'term_content_{i}', '').strip()
+        if title or (content and content not in ('<p><br></p>', '<p></p>', '')):
+            terms_sections.append({
+                'title': title or 'Terms Section',
+                'content': content
+            })
+
     return {
         'feature_sections': feature_sections,
+        'terms_sections': terms_sections,
         'crm_features': crm_features,
         'hrm_features': hrm_features,
         'mobile_app_features': mobile_app_features,
@@ -1414,6 +1427,7 @@ def quotation_create(request):
         'action': 'Create',
         'clients': clients,
         'default_feature_sections': get_default_feature_sections(),
+        'default_terms_sections': get_default_terms_sections(),
         'default_pricing_plans': DEFAULT_PRICING_PLANS,
     })
 
@@ -1443,12 +1457,34 @@ def quotation_edit(request, pk):
     # Use existing feature sections or fallback to defaults
     feature_sections = quotation.feature_sections if quotation.feature_sections else get_default_feature_sections()
 
+    # Use existing terms sections or fallback to legacy terms / defaults
+    terms_sections = quotation.terms_sections
+    if not terms_sections:
+        legacy_terms = []
+        if quotation.payment_terms:
+            legacy_terms.append({'title': 'Payment Terms', 'content': quotation.payment_terms})
+        if quotation.delivery_terms:
+            legacy_terms.append({'title': 'Delivery & Support Policy', 'content': quotation.delivery_terms})
+        if quotation.terms_conditions:
+            legacy_terms.append({'title': 'Terms & Conditions', 'content': quotation.terms_conditions})
+        if quotation.warranty:
+            legacy_terms.append({'title': 'Warranty Details', 'content': quotation.warranty})
+        if quotation.not_included:
+            legacy_terms.append({'title': 'Not Included / Exclusions', 'content': quotation.not_included})
+        if quotation.why_danpite:
+            legacy_terms.append({'title': 'Why Danpite Tech?', 'content': quotation.why_danpite})
+        if quotation.custom_terms:
+            for ct in quotation.custom_terms:
+                legacy_terms.append({'title': ct.get('title', 'Additional Terms'), 'content': ct.get('content', '')})
+        terms_sections = legacy_terms if legacy_terms else get_default_terms_sections()
+
     return render(request, 'accounts/quotation_form.html', {
         'form': form,
         'action': 'Edit',
         'quotation': quotation,
         'clients': clients,
         'default_feature_sections': feature_sections,
+        'default_terms_sections': terms_sections,
         'default_pricing_plans': quotation.pricing_plans or DEFAULT_PRICING_PLANS,
     })
 
@@ -1510,6 +1546,7 @@ def quotation_update_status(request, pk):
             quotation.updated_by = request.user
             quotation.save(update_fields=['status', 'updated_by', 'updated_at'])
             log_action(request, 'update', 'Quotation', quotation, description=f'Changed status to {new_status}')
-            messages.success(request, f'Status updated to {quotation.get_status_display()}.')
-    return redirect('quotation_detail', pk=pk)
+            messages.success(request, f'Status updated to "{quotation.get_status_display()}".')
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or 'quotation_list'
+    return redirect(next_url)
 

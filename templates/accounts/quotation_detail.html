@@ -247,58 +247,84 @@
         <h5 class="fw-bold text-dark mb-3 border-start border-4 border-primary ps-2">Terms, Conditions & Warranty</h5>
         
         <div class="row g-3">
-          {% if quotation.payment_terms %}
-          <div class="col-md-6">
-            <div class="p-3 bg-light rounded border h-100">
-              <div class="fw-bold text-dark mb-2">Payment Terms</div>
-              <div class="small text-muted">{{ quotation.payment_terms|render_rich_text }}</div>
+          {% if quotation.terms_sections %}
+            {% for term in quotation.terms_sections %}
+              {% if term.title or term.content %}
+              <div class="col-md-6">
+                <div class="p-3 bg-light rounded border h-100">
+                  <div class="fw-bold text-dark mb-2">{{ term.title }}</div>
+                  <div class="small text-muted">{{ term.content|render_rich_text }}</div>
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            {% if quotation.payment_terms %}
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border h-100">
+                <div class="fw-bold text-dark mb-2">Payment Terms</div>
+                <div class="small text-muted">{{ quotation.payment_terms|render_rich_text }}</div>
+              </div>
             </div>
-          </div>
-          {% endif %}
+            {% endif %}
 
-          {% if quotation.delivery_terms %}
-          <div class="col-md-6">
-            <div class="p-3 bg-light rounded border h-100">
-              <div class="fw-bold text-dark mb-2">Delivery & Support</div>
-              <div class="small text-muted">{{ quotation.delivery_terms|render_rich_text }}</div>
+            {% if quotation.delivery_terms %}
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border h-100">
+                <div class="fw-bold text-dark mb-2">Delivery & Support</div>
+                <div class="small text-muted">{{ quotation.delivery_terms|render_rich_text }}</div>
+              </div>
             </div>
-          </div>
-          {% endif %}
+            {% endif %}
 
-          {% if quotation.terms_conditions %}
-          <div class="col-md-6">
-            <div class="p-3 bg-light rounded border h-100">
-              <div class="fw-bold text-dark mb-2">Terms & Conditions</div>
-              <div class="small text-muted">{{ quotation.terms_conditions|render_rich_text }}</div>
+            {% if quotation.terms_conditions %}
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border h-100">
+                <div class="fw-bold text-dark mb-2">Terms & Conditions</div>
+                <div class="small text-muted">{{ quotation.terms_conditions|render_rich_text }}</div>
+              </div>
             </div>
-          </div>
-          {% endif %}
+            {% endif %}
 
-          {% if quotation.warranty %}
-          <div class="col-md-6">
-            <div class="p-3 bg-light rounded border h-100">
-              <div class="fw-bold text-dark mb-2">Warranty</div>
-              <div class="small text-muted">{{ quotation.warranty|render_rich_text }}</div>
+            {% if quotation.warranty %}
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border h-100">
+                <div class="fw-bold text-dark mb-2">Warranty</div>
+                <div class="small text-muted">{{ quotation.warranty|render_rich_text }}</div>
+              </div>
             </div>
-          </div>
-          {% endif %}
+            {% endif %}
 
-          {% if quotation.not_included %}
-          <div class="col-md-6">
-            <div class="p-3 bg-light rounded border h-100">
-              <div class="fw-bold text-dark mb-2">Not Included (Exclusions)</div>
-              <div class="small text-muted">{{ quotation.not_included|render_rich_text }}</div>
+            {% if quotation.not_included %}
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border h-100">
+                <div class="fw-bold text-dark mb-2">Not Included (Exclusions)</div>
+                <div class="small text-muted">{{ quotation.not_included|render_rich_text }}</div>
+              </div>
             </div>
-          </div>
-          {% endif %}
+            {% endif %}
 
-          {% if quotation.why_danpite %}
-          <div class="col-md-6">
-            <div class="p-3 bg-light rounded border h-100">
-              <div class="fw-bold text-dark mb-2">Why Danpite Tech?</div>
-              <div class="small text-muted">{{ quotation.why_danpite|render_rich_text }}</div>
+            {% if quotation.why_danpite %}
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border h-100">
+                <div class="fw-bold text-dark mb-2">Why Danpite Tech?</div>
+                <div class="small text-muted">{{ quotation.why_danpite|render_rich_text }}</div>
+              </div>
             </div>
-          </div>
+            {% endif %}
+
+            {% if quotation.custom_terms %}
+              {% for ct in quotation.custom_terms %}
+                {% if ct.title or ct.content %}
+                <div class="col-md-6">
+                  <div class="p-3 bg-light rounded border h-100">
+                    <div class="fw-bold text-dark mb-2">{{ ct.title }}</div>
+                    <div class="small text-muted">{{ ct.content|render_rich_text }}</div>
+                  </div>
+                </div>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
           {% endif %}
         </div>
       </div>

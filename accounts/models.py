@@ -1,3 +1,4 @@
+from datetime import date
 from django.contrib.auth.models import User
 from django.db import models
 from django.core.validators import MinValueValidator
@@ -361,45 +362,26 @@ DEFAULT_PRICING_PLANS = [
 
 
 def get_default_feature_sections():
+    return []
+
+
+def get_default_terms_sections():
     return [
-        {
-            "title": "General Features",
-            "content": "<ul><li>Feature item 1</li><li>Feature item 2</li></ul>"
-        }
+        {"title": "Payment Terms", "content": ""},
+        {"title": "Delivery & Support Policy", "content": ""},
+        {"title": "Terms & Conditions", "content": ""},
+        {"title": "Warranty Details", "content": ""},
+        {"title": "Not Included / Exclusions", "content": ""},
+        {"title": "Why Danpite Tech?", "content": ""},
     ]
 
 
-DEFAULT_PAYMENT_TERMS = """• One-Time License:
-  - 40% Advance
-  - 30% Before Testing
-  - 30% Before Final Delivery
-
-• SaaS:
-  - Setup Fee: 100% Advance
-  - Monthly Subscription: Payable in Advance"""
-
-DEFAULT_DELIVERY_SUPPORT = """• Deployment Time: 7–30 Working Days after confirmation
-• Training: Basic system training included
-• Support: Standard technical support included"""
-
-DEFAULT_TERMS_CONDITIONS = """• Monthly subscription fee payable in advance
-• SaaS access will be activated after payment confirmation
-• Any additional customization will be charged separately
-• Client will provide Domain, Hosting and Console account (Not for SaaS)"""
-
-DEFAULT_WARRANTY = """• 3 Months Free Bug Fix Warranty (One-Time License)
-• SaaS Customers receive free updates during the active subscription."""
-
-DEFAULT_NOT_INCLUDED = """• Third-party API Charges
-• SMS Gateway Charges
-• Domain & Hosting Charges (One-Time License)
-• Google Play & Apple Developer Fees"""
-
-DEFAULT_WHY_DANPITE = """✓ Custom Software Development
-✓ Modern UI/UX
-✓ Secure Architecture
-✓ Lifetime Scalability
-✓ Dedicated Support"""
+DEFAULT_PAYMENT_TERMS = ""
+DEFAULT_DELIVERY_SUPPORT = ""
+DEFAULT_TERMS_CONDITIONS = ""
+DEFAULT_WARRANTY = ""
+DEFAULT_NOT_INCLUDED = ""
+DEFAULT_WHY_DANPITE = ""
 
 
 class Quotation(models.Model):
@@ -411,8 +393,15 @@ class Quotation(models.Model):
         ('expired', 'Expired'),
     ]
 
+    CURRENCY_CHOICES = [
+        ('BDT', 'BDT (৳)'),
+        ('USD', 'USD ($)'),
+        ('EUR', 'EUR (€)'),
+        ('GBP', 'GBP (£)'),
+    ]
+
     code = models.CharField(max_length=50, unique=True, blank=True)
-    quotation_date = models.DateField(null=True, blank=True)
+    quotation_date = models.DateField(default=date.today)
     valid_days = models.IntegerField(default=15)
 
     # Linked Client / Lead
@@ -428,10 +417,10 @@ class Quotation(models.Model):
     address = models.TextField(blank=True)
 
     # Proposal Introduction
-    subject = models.CharField(max_length=300, default='Quotation for CRM & HRM Software Solution')
+    subject = models.CharField(max_length=300, blank=True, default='')
     intro_letter = models.TextField(
         blank=True,
-        default='Thank you for your interest in our CRM & HRM solution. Based on your requirements, we are pleased to submit the following quotation for our CRM & HRM Software Solution.'
+        default=''
     )
 
     # Feature Modules & Custom Scope Sections (Dynamic JSON list of {title, content})
@@ -447,12 +436,14 @@ class Quotation(models.Model):
 
     # Pricing Table & Terms
     pricing_plans = models.JSONField(default=list, blank=True)
-    payment_terms = models.TextField(blank=True, default=DEFAULT_PAYMENT_TERMS)
-    delivery_terms = models.TextField(blank=True, default=DEFAULT_DELIVERY_SUPPORT)
-    terms_conditions = models.TextField(blank=True, default=DEFAULT_TERMS_CONDITIONS)
-    warranty = models.TextField(blank=True, default=DEFAULT_WARRANTY)
-    not_included = models.TextField(blank=True, default=DEFAULT_NOT_INCLUDED)
-    why_danpite = models.TextField(blank=True, default=DEFAULT_WHY_DANPITE)
+    payment_terms = models.TextField(blank=True, default='')
+    delivery_terms = models.TextField(blank=True, default='')
+    terms_conditions = models.TextField(blank=True, default='')
+    warranty = models.TextField(blank=True, default='')
+    not_included = models.TextField(blank=True, default='')
+    why_danpite = models.TextField(blank=True, default='')
+    custom_terms = models.JSONField(default=list, blank=True)
+    terms_sections = models.JSONField(default=list, blank=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0, blank=True)

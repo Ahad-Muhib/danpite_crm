@@ -134,19 +134,47 @@
           <td style="white-space:nowrap;">{{ quo.quotation_date|date:"d M Y" }}</td>
           <td><span class="badge bg-light text-dark border">{{ quo.valid_days }} Days</span></td>
           <td>
-            <form method="post" action="{% url 'quotation_update_status' quo.pk %}" class="d-inline">
-              {% csrf_token %}
-              <select name="status" onchange="this.form.submit()" class="form-select form-select-sm
-                {% if quo.status == 'accepted' %}bg-success text-white border-0
-                {% elif quo.status == 'sent' %}bg-primary text-white border-0
-                {% elif quo.status == 'rejected' %}bg-danger text-white border-0
-                {% elif quo.status == 'expired' %}bg-warning text-dark border-0
-                {% else %}bg-secondary text-white border-0{% endif %}" style="width: auto; font-size: 11px; padding: 2px 20px 2px 8px; cursor: pointer;">
+            <div class="dropdown">
+              <button class="btn btn-sm rounded-pill dropdown-toggle fw-semibold d-inline-flex align-items-center gap-1 shadow-xs
+                {% if quo.status == 'accepted' %}bg-success-subtle text-success border border-success
+                {% elif quo.status == 'sent' %}bg-primary-subtle text-primary border border-primary
+                {% elif quo.status == 'rejected' %}bg-danger-subtle text-danger border border-danger
+                {% elif quo.status == 'expired' %}bg-warning-subtle text-warning-emphasis border border-warning
+                {% else %}bg-secondary-subtle text-secondary border border-secondary{% endif %}" 
+                type="button" data-bs-toggle="dropdown" aria-expanded="false" 
+                style="font-size: 11.5px; padding: 4px 12px; border-width: 1.5px;">
+                <span class="rounded-circle d-inline-block me-1
+                  {% if quo.status == 'accepted' %}bg-success
+                  {% elif quo.status == 'sent' %}bg-primary
+                  {% elif quo.status == 'rejected' %}bg-danger
+                  {% elif quo.status == 'expired' %}bg-warning
+                  {% else %}bg-secondary{% endif %}" style="width: 7px; height: 7px;"></span>
+                <span>{{ quo.get_status_display }}</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-sm py-1" style="font-size: 12px; min-width: 140px; z-index: 1050;">
                 {% for s_key, s_label in quo.STATUS_CHOICES %}
-                <option value="{{ s_key }}" {% if quo.status == s_key %}selected{% endif %} class="bg-white text-dark">{{ s_label }}</option>
+                <li>
+                  <form method="post" action="{% url 'quotation_update_status' quo.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <input type="hidden" name="status" value="{{ s_key }}">
+                    <button type="submit" class="dropdown-item py-1.5 px-3 d-flex align-items-center justify-content-between {% if quo.status == s_key %}active fw-semibold{% endif %}">
+                      <span class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle d-inline-block
+                          {% if s_key == 'accepted' %}bg-success
+                          {% elif s_key == 'sent' %}bg-primary
+                          {% elif s_key == 'rejected' %}bg-danger
+                          {% elif s_key == 'expired' %}bg-warning
+                          {% else %}bg-secondary{% endif %}" style="width: 6px; height: 6px;"></span>
+                        {{ s_label }}
+                      </span>
+                      {% if quo.status == s_key %}<i class="bi bi-check2"></i>{% endif %}
+                    </button>
+                  </form>
+                </li>
                 {% endfor %}
-              </select>
-            </form>
+              </ul>
+            </div>
           </td>
           <td class="text-end">
             <div class="btn-group btn-group-sm">

@@ -66,17 +66,21 @@
     color: #6b7280;
     margin-top: 2px;
   }
-  .feature-section-card {
+  .feature-section-card,
+  .terms-section-card {
     transition: box-shadow 0.2s ease;
   }
-  .feature-section-card:hover {
+  .feature-section-card:hover,
+  .terms-section-card:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   }
-  .drag-handle {
+  .drag-handle,
+  .drag-handle-terms {
     cursor: grab;
     user-select: none;
   }
-  .drag-handle:active {
+  .drag-handle:active,
+  .drag-handle-terms:active {
     cursor: grabbing;
   }
   .sortable-ghost {
@@ -315,47 +319,39 @@
         </div>
       </div>
 
-      <!-- Section 5: Terms, Warranty & Company Pitch (Rich Editable Notes) -->
+      <!-- Section 5: Terms, Warranty & Company Pitch (Draggable & Editable Notes) -->
       <div class="crm-card p-4 mb-4">
-        <h5 class="fw-bold text-primary mb-3"><i class="bi bi-file-earmark-lock me-2"></i>5. Terms, Conditions & Warranty (Editable Notes)</h5>
-        
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Payment Terms</label>
-            <div id="quill-payment-terms" class="quill-note-editor"></div>
-            <textarea name="payment_terms" id="id_payment_terms" style="display:none;">{{ form.payment_terms.value|default:'' }}</textarea>
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-file-earmark-lock me-2"></i>5. Terms, Conditions & Warranty (Editable Notes)</h5>
+            <div class="text-muted small">Drag sections using <i class="bi bi-grip-vertical"></i> to reorder terms, or add new custom terms sections</div>
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Delivery & Support Policy</label>
-            <div id="quill-delivery-terms" class="quill-note-editor"></div>
-            <textarea name="delivery_terms" id="id_delivery_terms" style="display:none;">{{ form.delivery_terms.value|default:'' }}</textarea>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Terms & Conditions</label>
-            <div id="quill-terms-conditions" class="quill-note-editor"></div>
-            <textarea name="terms_conditions" id="id_terms_conditions" style="display:none;">{{ form.terms_conditions.value|default:'' }}</textarea>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Warranty Details</label>
-            <div id="quill-warranty" class="quill-note-editor"></div>
-            <textarea name="warranty" id="id_warranty" style="display:none;">{{ form.warranty.value|default:'' }}</textarea>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Not Included / Exclusions</label>
-            <div id="quill-not-included" class="quill-note-editor"></div>
-            <textarea name="not_included" id="id_not_included" style="display:none;">{{ form.not_included.value|default:'' }}</textarea>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Why Danpite Tech?</label>
-            <div id="quill-why-danpite" class="quill-note-editor"></div>
-            <textarea name="why_danpite" id="id_why_danpite" style="display:none;">{{ form.why_danpite.value|default:'' }}</textarea>
-          </div>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-add-term-section">
+            <i class="bi bi-plus-lg me-1"></i>Add Terms Section
+          </button>
         </div>
+        
+        <div id="terms-sections-container" class="row g-3">
+          {% for term in default_terms_sections %}
+          <div class="col-md-6 terms-section-card" data-index="{{ forloop.counter0 }}">
+            <div class="p-3 bg-light rounded border h-100 position-relative d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                  <span class="drag-handle-terms text-muted" style="cursor: grab;" title="Click and drag to reorder term"><i class="bi bi-grip-vertical fs-5"></i></span>
+                  <input type="text" name="term_title_{{ forloop.counter0 }}" value="{{ term.title }}" class="form-control form-control-sm fw-semibold bg-white term-title-input" placeholder="e.g. Terms Section Title">
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-term py-1 px-2" title="Delete this terms section">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+              <div id="quill-term-{{ forloop.counter0 }}" class="quill-term-editor flex-grow-1"></div>
+              <textarea name="term_content_{{ forloop.counter0 }}" id="id_term_content_{{ forloop.counter0 }}" style="display:none;">{{ term.content|safe }}</textarea>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <input type="hidden" name="terms_count" id="terms_count" value="{{ default_terms_sections|length }}">
       </div>
 
       <!-- Section 6: Status & Currency -->
@@ -853,31 +849,112 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Terms & Notes Quill Editors
-  var noteEditors = {
-    intro_letter: makeQuill('#quill-intro-letter', 'Write introductory greeting message...'),
-    payment_terms: makeQuill('#quill-payment-terms', 'Write payment terms...'),
-    delivery_terms: makeQuill('#quill-delivery-terms', 'Write delivery and support terms...'),
-    terms_conditions: makeQuill('#quill-terms-conditions', 'Write terms & conditions...'),
-    warranty: makeQuill('#quill-warranty', 'Write warranty details...'),
-    not_included: makeQuill('#quill-not-included', 'Write exclusions...'),
-    why_danpite: makeQuill('#quill-why-danpite', 'Write why choose Danpite Tech...'),
-  };
-
-  // Populate Note Editors from hidden textareas
-  for (var key in noteEditors) {
-    var q = noteEditors[key];
-    if (!q) continue;
-    var field = document.getElementById('id_' + key);
-    if (field && field.value && field.value.trim()) {
-      var val = field.value.trim();
-      if (val.indexOf('<p>') !== -1 || val.indexOf('<ul>') !== -1 || val.indexOf('<li>') !== -1 || val.indexOf('<br>') !== -1) {
-        q.root.innerHTML = val;
-      } else {
-        q.setText(val);
-      }
+  // Intro Letter Quill Editor
+  var introLetterEditor = makeQuill('#quill-intro-letter', 'Write introductory greeting message...');
+  var introField = document.getElementById('id_intro_letter');
+  if (introField && introField.value && introField.value.trim() && introLetterEditor) {
+    var val = introField.value.trim();
+    if (val.indexOf('<p>') !== -1 || val.indexOf('<ul>') !== -1 || val.indexOf('<li>') !== -1 || val.indexOf('<br>') !== -1) {
+      introLetterEditor.root.innerHTML = val;
+    } else {
+      introLetterEditor.setText(val);
     }
   }
+
+  // Dynamic Terms Sections (Draggable with SortableJS)
+  var termsContainer = document.getElementById('terms-sections-container');
+  var termsCountInput = document.getElementById('terms_count');
+  var termEditors = {};
+
+  if (termsContainer) {
+    new Sortable(termsContainer, {
+      animation: 150,
+      handle: '.drag-handle-terms',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      onEnd: function() {
+        reindexTerms();
+      }
+    });
+  }
+
+  function initTermEditor(index) {
+    var sel = '#quill-term-' + index;
+    if (document.querySelector(sel)) {
+      var q = makeQuill(sel, 'Write terms, policy or condition details...');
+      var hiddenField = document.getElementById('id_term_content_' + index);
+      if (hiddenField && hiddenField.value && hiddenField.value.trim()) {
+        var val = hiddenField.value.trim();
+        if (val.indexOf('<p>') !== -1 || val.indexOf('<ul>') !== -1 || val.indexOf('<li>') !== -1 || val.indexOf('<br>') !== -1) {
+          q.root.innerHTML = val;
+        } else {
+          q.setText(val);
+        }
+      }
+      termEditors[index] = q;
+    }
+  }
+
+  // Initialize preloaded term editors
+  if (termsContainer) {
+    termsContainer.querySelectorAll('.terms-section-card').forEach(function(card, idx) {
+      initTermEditor(idx);
+    });
+  }
+
+  function reindexTerms() {
+    var cards = termsContainer.querySelectorAll('.terms-section-card');
+    termsCountInput.value = cards.length;
+    cards.forEach(function(card, idx) {
+      card.setAttribute('data-index', idx);
+      var titleInput = card.querySelector('.term-title-input');
+      if (titleInput) titleInput.name = 'term_title_' + idx;
+      var hiddenArea = card.querySelector('textarea');
+      if (hiddenArea) {
+        hiddenArea.name = 'term_content_' + idx;
+        hiddenArea.id = 'id_term_content_' + idx;
+      }
+    });
+  }
+
+  function addTermSection(title, defaultHtml) {
+    var idx = termsContainer.querySelectorAll('.terms-section-card').length;
+    var card = document.createElement('div');
+    card.className = 'col-md-6 terms-section-card';
+    card.setAttribute('data-index', idx);
+    card.innerHTML = `
+      <div class="p-3 bg-light rounded border h-100 position-relative d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+          <div class="d-flex align-items-center gap-2 flex-grow-1">
+            <span class="drag-handle-terms text-muted" style="cursor: grab;" title="Click and drag to reorder term"><i class="bi bi-grip-vertical fs-5"></i></span>
+            <input type="text" name="term_title_${idx}" value="${escHtml(title || '')}" class="form-control form-control-sm fw-semibold bg-white term-title-input" placeholder="e.g. Terms Section Title">
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger btn-remove-term py-1 px-2" title="Delete this terms section">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+        <div id="quill-term-${idx}" class="quill-term-editor flex-grow-1"></div>
+        <textarea name="term_content_${idx}" id="id_term_content_${idx}" style="display:none;">${defaultHtml || ''}</textarea>
+      </div>
+    `;
+    termsContainer.appendChild(card);
+    initTermEditor(idx);
+    reindexTerms();
+  }
+
+  document.getElementById('btn-add-term-section')?.addEventListener('click', function() {
+    addTermSection('', '');
+  });
+
+  termsContainer?.addEventListener('click', function(e) {
+    var rmBtn = e.target.closest('.btn-remove-term');
+    if (rmBtn) {
+      var card = rmBtn.closest('.terms-section-card');
+      card.remove();
+      reindexTerms();
+    }
+  });
 
   // Dynamic Pricing Table
   var plansBody = document.getElementById('plans-body');
@@ -942,14 +1019,9 @@ document.addEventListener('DOMContentLoaded', function() {
       return false;
     }
 
-    // Sync Note Editors
-    for (var key in noteEditors) {
-      var q = noteEditors[key];
-      if (!q) continue;
-      var field = document.getElementById('id_' + key);
-      if (field) {
-        field.value = q.root.innerHTML;
-      }
+    // Sync Intro Letter
+    if (introLetterEditor && introField) {
+      introField.value = introLetterEditor.root.innerHTML;
     }
 
     // Sync Dynamic Feature Section Editors
@@ -964,6 +1036,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
     });
+
+    // Sync Dynamic Terms Section Editors (Draggable)
+    if (termsContainer) {
+      var tCards = termsContainer.querySelectorAll('.terms-section-card');
+      tCards.forEach(function(card, idx) {
+        var hiddenArea = card.querySelector('textarea');
+        var editorDiv = card.querySelector('.quill-term-editor');
+        if (editorDiv && hiddenArea) {
+          var qInst = Quill.find(editorDiv);
+          if (qInst) {
+            hiddenArea.value = qInst.root.innerHTML;
+          }
+        }
+      });
+    }
   });
 
 });
