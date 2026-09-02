@@ -1,0 +1,563 @@
+{% load crm_tags static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quotation_{{ quotation.code }}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Liberation+Sans:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --brand-purple: #481b66;
+    --brand-purple-dark: #350f4f;
+    --text-color: #111827;
+    --line-color: #374151;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Inter', Arial, Helvetica, sans-serif;
+    color: var(--text-color);
+    background-color: #f3f4f6;
+    font-size: 11.5px;
+    line-height: 1.45;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Floating Screen Toolbar */
+  .screen-toolbar {
+    position: fixed;
+    top: 15px;
+    right: 25px;
+    z-index: 9999;
+    display: flex;
+    gap: 10px;
+  }
+  .btn-print {
+    background: var(--brand-purple);
+    color: #ffffff;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(72, 27, 102, 0.35);
+  }
+  .btn-print:hover {
+    background: var(--brand-purple-dark);
+  }
+  .btn-back {
+    background: #ffffff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    text-decoration: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  /* Document Container */
+  .proposal-document {
+    max-width: 210mm;
+    margin: 20px auto 40px auto;
+    background: #ffffff;
+    padding: 16mm 20mm 20mm 20mm;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+
+  /* ── Header Banner (Exact replica of photo letterhead) ── */
+  .header-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--brand-purple);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+
+  .brand-logo-block {
+    display: flex;
+    flex-direction: column;
+  }
+  .brand-logo-text {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--brand-purple);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .brand-logo-sub {
+    font-size: 8px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 2px;
+    font-weight: 600;
+  }
+
+  .banner-contacts-pill {
+    background: var(--brand-purple);
+    color: #ffffff;
+    border-top-left-radius: 35px;
+    border-bottom-left-radius: 35px;
+    padding: 7px 18px 7px 24px;
+    font-size: 9.5px;
+    line-height: 1.45;
+  }
+  .banner-contacts-row {
+    display: flex;
+    gap: 16px;
+  }
+
+  /* ── Letter & Meta Info ── */
+  .doc-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin: 12px 0 18px 0;
+  }
+
+  .meta-section {
+    margin-bottom: 16px;
+    font-size: 11.5px;
+    line-height: 1.5;
+  }
+  .meta-section .meta-line {
+    margin-bottom: 1px;
+  }
+  .meta-section .meta-line strong {
+    font-weight: 700;
+  }
+
+  .subject-line {
+    font-weight: 700;
+    font-size: 12px;
+    margin: 14px 0 8px 0;
+  }
+
+  .letter-paragraph {
+    font-size: 11.5px;
+    line-height: 1.45;
+    margin-bottom: 14px;
+  }
+
+  /* ── Section Headings & Bullets (Clean & exactly like photo) ── */
+  .main-heading {
+    font-weight: 800;
+    font-size: 12px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+  }
+  .sub-heading {
+    font-weight: 800;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    margin-top: 12px;
+    margin-bottom: 5px;
+  }
+
+  .bullet-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-bottom: 10px;
+  }
+  .bullet-list li {
+    position: relative;
+    padding-left: 18px;
+    margin-bottom: 3px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #111827;
+  }
+  .bullet-list li::before {
+    content: "•";
+    position: absolute;
+    left: 6px;
+    top: -1px;
+    font-size: 13px;
+    color: #111827;
+  }
+
+  .check-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-bottom: 10px;
+  }
+  .check-list li {
+    position: relative;
+    padding-left: 18px;
+    margin-bottom: 3px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #111827;
+  }
+  .check-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #111827;
+  }
+
+  .text-block {
+    font-size: 11px;
+    line-height: 1.45;
+    margin-bottom: 10px;
+  }
+
+  /* ── Pricing Table (Matching photo table) ── */
+  .pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 4px 0;
+    font-size: 11px;
+  }
+  .pricing-table th, .pricing-table td {
+    border: 1px solid #111827;
+    padding: 5px 8px;
+    text-align: left;
+  }
+  .pricing-table th {
+    font-weight: 800;
+    background: #ffffff;
+  }
+  .pricing-table tr.selected-row td:first-child::before {
+    content: "✓ ";
+    font-weight: bold;
+  }
+  .vat-note {
+    font-size: 9.5px;
+    margin-bottom: 12px;
+  }
+
+  /* ── Sign-off & Footer ── */
+  .closing-text {
+    font-size: 11px;
+    line-height: 1.45;
+    margin-top: 16px;
+    margin-bottom: 16px;
+  }
+  .sign-off-block {
+    font-size: 11px;
+    line-height: 1.4;
+    margin-top: 14px;
+  }
+  .sign-off-block .company-title {
+    font-weight: 800;
+    margin-top: 2px;
+  }
+
+  .page-footer {
+    border-top: 1px solid #d1d5db;
+    padding-top: 8px;
+    margin-top: 24px;
+    text-align: center;
+    font-size: 9.5px;
+    color: #111827;
+    font-weight: 600;
+  }
+
+  /* ── Print Setup ── */
+  @media print {
+    body {
+      background: none;
+    }
+    .screen-toolbar {
+      display: none !important;
+    }
+    .proposal-document {
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      box-shadow: none;
+    }
+    .avoid-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    @page {
+      size: A4 portrait;
+      margin: 14mm 16mm 14mm 16mm;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Floating Screen Actions -->
+<div class="screen-toolbar">
+  <a href="{% url 'quotation_detail' quotation.pk %}" class="btn-back">← Back</a>
+  <button class="btn-print" onclick="window.print();">🖨️ Print / Save PDF</button>
+</div>
+
+<div class="proposal-document">
+
+  <!-- Header Banner -->
+  <div class="header-banner">
+    <div class="brand-logo-block">
+      <div class="brand-logo-text">DANPITE.TECH</div>
+      <div class="brand-logo-sub">YOUR SUCCESS, OUR CODE</div>
+    </div>
+    <div class="banner-contacts-pill">
+      <div class="banner-contacts-row">
+        <span>📞 +8801613-833722</span>
+        <span>📱 +8801877779338</span>
+      </div>
+      <div class="banner-contacts-row" style="margin-top: 2px;">
+        <span>✉️ contact@danpitetech.com</span>
+        <span>🌐 www.danpitetech.com</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Document Title -->
+  <div class="doc-title">QUOTATION</div>
+
+  <!-- Metadata & Parties -->
+  <div class="meta-section">
+    <div class="meta-line"><strong>Quotation No:</strong> {{ quotation.code }}</div>
+    <div class="meta-line"><strong>Date:</strong> {{ quotation.quotation_date|date:"d F Y" }}</div>
+    <div class="meta-line"><strong>Valid Till:</strong> {{ quotation.valid_days }} Days</div>
+    
+    <div style="margin-top: 10px;">
+      <div>From,</div>
+      <div style="font-weight: 800;">DANPITE TECH</div>
+      <div>CRM & Software Solutions Provider</div>
+    </div>
+
+    <div style="margin-top: 10px;">
+      <div>To,</div>
+      <div class="meta-line"><strong>Company Name:</strong> {% if quotation.company_name %}{{ quotation.company_name }}{% elif quotation.client %}{{ quotation.client.company|default:quotation.client.name }}{% elif quotation.lead %}{{ quotation.lead.company|default:quotation.lead.name }}{% else %}{{ quotation.contact_person }}{% endif %}</div>
+      {% if quotation.address %}<div class="meta-line"><strong>Address:</strong> {{ quotation.address }}</div>{% endif %}
+      {% if quotation.contact_person %}<div class="meta-line"><strong>Contact Person:</strong> {{ quotation.contact_person }}</div>{% endif %}
+      {% if quotation.designation %}<div class="meta-line"><strong>Designation:</strong> {{ quotation.designation }}</div>{% endif %}
+      {% if quotation.contact_number %}<div class="meta-line"><strong>Contact:</strong> {{ quotation.contact_number }}</div>{% endif %}
+      {% if quotation.email %}<div class="meta-line"><strong>Email:</strong> {{ quotation.email }}</div>{% endif %}
+    </div>
+  </div>
+
+  <!-- Subject & Letter Body -->
+  <div class="subject-line">Subject: {{ quotation.subject }}</div>
+  <div class="letter-paragraph">
+    <div>Dear Sir,</div>
+    <p style="margin-top: 4px;">{{ quotation.intro_letter }}</p>
+    <div style="margin-top: 4px;">
+      Address: House No. 1, 4th floor Walton Plaza building, Block B Road-2, Mirpur-6, Dhaka 1216<br>
+      www.danpitetech.com
+    </div>
+  </div>
+
+  <!-- Scope of Work & Feature Bullet Points -->
+  <div class="main-heading">Scope of Work / Features Included</div>
+
+  {% if quotation.crm_features %}
+  <div class="avoid-break">
+    <div class="sub-heading">CRM FEATURES</div>
+    <ul class="bullet-list">
+      {% for f in quotation.crm_features %}
+      <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if quotation.hrm_features %}
+  <div class="avoid-break">
+    <div class="sub-heading">HRM FEATURES</div>
+    <ul class="bullet-list">
+      {% for f in quotation.hrm_features %}
+      <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if quotation.mobile_app_features %}
+  <div class="avoid-break">
+    <div class="sub-heading">MOBILE APP FEATURES</div>
+    <ul class="bullet-list">
+      {% for f in quotation.mobile_app_features %}
+      <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if quotation.system_features %}
+  <div class="avoid-break">
+    <div class="sub-heading">SYSTEM & GENERAL FEATURES</div>
+    <ul class="bullet-list">
+      {% for f in quotation.system_features %}
+      <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if quotation.tech_stack %}
+  <div class="avoid-break">
+    <div class="sub-heading">TECHNOLOGY STACK</div>
+    <ul class="bullet-list">
+      {% for f in quotation.tech_stack %}
+      <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if quotation.security_features %}
+  <div class="avoid-break">
+    <div class="sub-heading">SECURITY FEATURES</div>
+    <ul class="bullet-list">
+      {% for f in quotation.security_features %}
+      <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if quotation.training_support %}
+  <div class="avoid-break">
+    <div class="sub-heading">TRAINING & SUPPORT</div>
+    <ul class="bullet-list">
+      {% for f in quotation.training_support %}
+      <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if quotation.deliverables %}
+  <div class="avoid-break">
+    <div class="sub-heading">DELIVERABLES</div>
+    <ul class="bullet-list">
+      {% for f in quotation.deliverables %}
+      <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Pricing Plan Table -->
+  {% if quotation.pricing_plans %}
+  <div class="avoid-break">
+    <div class="sub-heading">PRICING PLAN</div>
+    <table class="pricing-table">
+      <thead>
+        <tr>
+          <th>Package</th>
+          <th>License</th>
+          <th>Price</th>
+          <th>Delivery Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for plan in quotation.pricing_plans %}
+        <tr {% if plan.is_selected %}class="selected-row"{% endif %}>
+          <td>{{ plan.package }}</td>
+          <td>{{ plan.license }}</td>
+          <td>{{ plan.price }}</td>
+          <td>{{ plan.delivery_time }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="vat-note">*Prices are exclusive of VAT and Taxes (if applicable)</div>
+  </div>
+  {% endif %}
+
+  <!-- Payment Terms -->
+  {% if quotation.payment_terms %}
+  <div class="avoid-break">
+    <div class="sub-heading">PAYMENT TERMS</div>
+    <div class="text-block">
+      {{ quotation.payment_terms|render_rich_text }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Delivery & Support -->
+  {% if quotation.delivery_terms %}
+  <div class="avoid-break">
+    <div class="sub-heading">DELIVERY & SUPPORT</div>
+    <div class="text-block">
+      {{ quotation.delivery_terms|render_rich_text }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Terms & Conditions -->
+  {% if quotation.terms_conditions %}
+  <div class="avoid-break">
+    <div class="sub-heading">TERMS & CONDITIONS</div>
+    <div class="text-block">
+      {{ quotation.terms_conditions|render_rich_text }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Warranty -->
+  {% if quotation.warranty %}
+  <div class="avoid-break">
+    <div class="sub-heading">WARRANTY</div>
+    <div class="text-block">
+      {{ quotation.warranty|render_rich_text }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Not Included -->
+  {% if quotation.not_included %}
+  <div class="avoid-break">
+    <div class="sub-heading">NOT INCLUDED</div>
+    <div class="text-block">
+      {{ quotation.not_included|render_rich_text }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Why Danpite Tech? -->
+  {% if quotation.why_danpite %}
+  <div class="avoid-break">
+    <div class="sub-heading">WHY DANPITE TECH?</div>
+    <div class="text-block">
+      {{ quotation.why_danpite|render_rich_text }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Closing & Sign-off -->
+  <div class="avoid-break">
+    <div class="closing-text">
+      If you have any questions or need further customization, please feel free to contact us.<br>
+      We look forward to the opportunity to work with <strong>{% if quotation.company_name %}{{ quotation.company_name }}{% elif quotation.client %}{{ quotation.client.company|default:quotation.client.name }}{% elif quotation.lead %}{{ quotation.lead.company|default:quotation.lead.name }}{% else %}your team{% endif %}</strong>.
+    </div>
+
+    <div class="sign-off-block">
+      <div>Best Regards,</div>
+      <div class="company-title">DANPITE TECH</div>
+      <div>CRM & Software Solutions Provider</div>
+      <div>www.danpitetech.com</div>
+    </div>
+  </div>
+
+  <!-- Bottom Page Footer -->
+  <div class="page-footer">
+    Head Office Address: Mirpur-6, House No. 1, Walton Plaza building 5th floor, Block B Road-2, Dhaka 1216
+  </div>
+
+</div>
+
+</body>
+</html>

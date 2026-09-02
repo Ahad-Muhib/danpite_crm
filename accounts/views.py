@@ -12,10 +12,14 @@ from django.template.loader import render_to_string
 
 from core.models import log_action
 from clients.models import Client
+from leads.models import LeadContact
 
-from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm, TransferForm
-from .models import (AccountCategory, AccountType, BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer,
-                     METHOD_CHOICES, CATEGORY_KEY_MAP)
+from .forms import BankAccountForm, ExpenseForm, InvoiceForm, InvoiceItemFormSet, PaymentForm, TransferForm, QuotationForm
+from .models import (AccountCategory, AccountType, BankAccount, Expense, ExpenseCategory, Invoice, Payment, Transfer, Quotation,
+                     METHOD_CHOICES, CATEGORY_KEY_MAP,
+                     DEFAULT_CRM_FEATURES, DEFAULT_HRM_FEATURES, DEFAULT_MOBILE_FEATURES, DEFAULT_SYSTEM_FEATURES,
+                     DEFAULT_TECH_STACK, DEFAULT_SECURITY_FEATURES, DEFAULT_TRAINING_SUPPORT, DEFAULT_DELIVERABLES,
+                     DEFAULT_PRICING_PLANS)
 from orders.models import Order, OrderItem
 from datetime import date
 
@@ -1233,3 +1237,277 @@ def transfer_delete(request, pk):
     obj.delete()
     messages.success(request, 'Transfer deleted.')
     return redirect('transfer_list')
+
+
+# ── Quotation Views ────────────────────────────────────────────────────────────
+
+@login_required
+def lead_data_api(request):
+    lead_id = request.GET.get('id')
+    if not lead_id:
+        return JsonResponse({'error': 'missing id'}, status=400)
+    try:
+        lead = LeadContact.objects.get(pk=lead_id)
+    except LeadContact.DoesNotExist:
+        return JsonResponse({'error': 'not found'}, status=404)
+    return JsonResponse({
+        'name': lead.name,
+        'phone': lead.phone or '',
+        'email': lead.email or '',
+        'company': lead.company or '',
+        'address': lead.address or '',
+    })
+
+
+@login_required
+def quotation_list(request):
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        selected_ids = request.POST.getlist('selected_quotations')
+        if not selected_ids:
+            messages.error(request, 'Select at least one quotation first.')
+            return redirect('quotation_list')
+        action = request.POST.get('bulk_action')
+        qs = Quotation.objects.filter(pk__in=selected_ids)
+        if action == 'delete':
+            count = qs.count()
+            for obj in qs:
+                log_action(request, 'delete', 'Quotation', obj, description=f'Bulk deleted quotation {obj.code}')
+            qs.delete()
+            messages.success(request, f'Deleted {count} quotation(s).')
+        elif action in ('draft', 'sent', 'accepted', 'rejected', 'expired'):
+            count = qs.update(status=action)
+            messages.success(request, f'Updated status of {count} quotation(s) to {action.title()}.')
+        return redirect('quotation_list')
+
+    qs = Quotation.objects.select_related('client', 'lead', 'created_by').all()
+    q = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
+
+    if q:
+        qs = qs.filter(
+            Q(code__icontains=q) |
+            Q(company_name__icontains=q) |
+            Q(contact_person__icontains=q) |
+            Q(client__name__icontains=q) |
+            Q(client__company__icontains=q) |
+            Q(lead__name__icontains=q) |
+            Q(subject__icontains=q)
+        )
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if date_from:
+        qs = qs.filter(quotation_date__gte=date_from)
+    if date_to:
+        qs = qs.filter(quotation_date__lte=date_to)
+
+    total_count = Quotation.objects.count()
+    draft_count = Quotation.objects.filter(status='draft').count()
+    sent_count = Quotation.objects.filter(status='sent').count()
+    accepted_count = Quotation.objects.filter(status='accepted').count()
+
+    paginator = Paginator(qs, 15)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'accounts/quotations.html', {
+        'page_obj': page_obj,
+        'quotations': page_obj,
+        'q': q,
+        'status_filter': status_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_count': total_count,
+        'draft_count': draft_count,
+        'sent_count': sent_count,
+        'accepted_count': accepted_count,
+    })
+
+
+def _extract_quotation_lists(request):
+    """Extract and sanitize multi-select feature lists and pricing plans from POST."""
+    crm_features = request.POST.getlist('crm_features') or DEFAULT_CRM_FEATURES
+    hrm_features = request.POST.getlist('hrm_features') or DEFAULT_HRM_FEATURES
+    mobile_app_features = request.POST.getlist('mobile_app_features') or DEFAULT_MOBILE_FEATURES
+    system_features = request.POST.getlist('system_features') or DEFAULT_SYSTEM_FEATURES
+    tech_stack = request.POST.getlist('tech_stack') or DEFAULT_TECH_STACK
+    security_features = request.POST.getlist('security_features') or DEFAULT_SECURITY_FEATURES
+    training_support = request.POST.getlist('training_support') or DEFAULT_TRAINING_SUPPORT
+    deliverables = request.POST.getlist('deliverables') or DEFAULT_DELIVERABLES
+
+    # Dynamic pricing plans
+    pricing_plans = []
+    total_plans = 0
+    try:
+        total_plans = int(request.POST.get('pricing_plans_count', 0))
+    except (ValueError, TypeError):
+        total_plans = 0
+
+    if total_plans > 0:
+        for i in range(total_plans):
+            pkg = request.POST.get(f'plan_pkg_{i}', '').strip()
+            lic = request.POST.get(f'plan_lic_{i}', '').strip()
+            prc = request.POST.get(f'plan_prc_{i}', '').strip()
+            dt = request.POST.get(f'plan_dt_{i}', '').strip()
+            is_sel = (request.POST.get(f'plan_sel_{i}') in ('on', 'true', '1')) or (request.POST.get('plan_selected_radio') == str(i))
+            if pkg:
+                pricing_plans.append({
+                    'package': pkg,
+                    'license': lic,
+                    'price': prc,
+                    'delivery_time': dt,
+                    'is_selected': is_sel,
+                })
+    if not pricing_plans:
+        pricing_plans = DEFAULT_PRICING_PLANS
+
+    return {
+        'crm_features': crm_features,
+        'hrm_features': hrm_features,
+        'mobile_app_features': mobile_app_features,
+        'system_features': system_features,
+        'tech_stack': tech_stack,
+        'security_features': security_features,
+        'training_support': training_support,
+        'deliverables': deliverables,
+        'pricing_plans': pricing_plans,
+    }
+
+
+@login_required
+def quotation_create(request):
+    clients = Client.objects.filter(status='active').order_by('name')
+
+    if request.method == 'POST':
+        form = QuotationForm(request.POST)
+        if form.is_valid():
+            quotation = form.save(commit=False)
+            quotation.created_by = request.user
+            quotation.updated_by = request.user
+
+            extracted = _extract_quotation_lists(request)
+            for k, v in extracted.items():
+                setattr(quotation, k, v)
+
+            quotation.save()
+            log_action(request, 'create', 'Quotation', quotation, description=f'Created quotation {quotation.code} for {quotation.company_name}')
+            messages.success(request, f'Quotation {quotation.code} created successfully.')
+            return redirect('quotation_detail', pk=quotation.pk)
+    else:
+        form = QuotationForm()
+
+    return render(request, 'accounts/quotation_form.html', {
+        'form': form,
+        'action': 'Create',
+        'clients': clients,
+        'default_crm_features': DEFAULT_CRM_FEATURES,
+        'default_hrm_features': DEFAULT_HRM_FEATURES,
+        'default_mobile_features': DEFAULT_MOBILE_FEATURES,
+        'default_system_features': DEFAULT_SYSTEM_FEATURES,
+        'default_tech_stack': DEFAULT_TECH_STACK,
+        'default_security_features': DEFAULT_SECURITY_FEATURES,
+        'default_training_support': DEFAULT_TRAINING_SUPPORT,
+        'default_deliverables': DEFAULT_DELIVERABLES,
+        'default_pricing_plans': DEFAULT_PRICING_PLANS,
+    })
+
+
+@login_required
+def quotation_edit(request, pk):
+    quotation = get_object_or_404(Quotation, pk=pk)
+    clients = Client.objects.filter(status='active').order_by('name')
+
+    if request.method == 'POST':
+        form = QuotationForm(request.POST, instance=quotation)
+        if form.is_valid():
+            quotation = form.save(commit=False)
+            quotation.updated_by = request.user
+
+            extracted = _extract_quotation_lists(request)
+            for k, v in extracted.items():
+                setattr(quotation, k, v)
+
+            quotation.save()
+            log_action(request, 'update', 'Quotation', quotation, description=f'Updated quotation {quotation.code}')
+            messages.success(request, f'Quotation {quotation.code} updated.')
+            return redirect('quotation_detail', pk=quotation.pk)
+    else:
+        form = QuotationForm(instance=quotation)
+
+    return render(request, 'accounts/quotation_form.html', {
+        'form': form,
+        'action': 'Edit',
+        'quotation': quotation,
+        'clients': clients,
+        'default_crm_features': DEFAULT_CRM_FEATURES,
+        'default_hrm_features': DEFAULT_HRM_FEATURES,
+        'default_mobile_features': DEFAULT_MOBILE_FEATURES,
+        'default_system_features': DEFAULT_SYSTEM_FEATURES,
+        'default_tech_stack': DEFAULT_TECH_STACK,
+        'default_security_features': DEFAULT_SECURITY_FEATURES,
+        'default_training_support': DEFAULT_TRAINING_SUPPORT,
+        'default_deliverables': DEFAULT_DELIVERABLES,
+        'default_pricing_plans': quotation.pricing_plans or DEFAULT_PRICING_PLANS,
+    })
+
+
+@login_required
+def quotation_detail(request, pk):
+    quotation = get_object_or_404(Quotation.objects.select_related('client', 'lead', 'created_by'), pk=pk)
+    return render(request, 'accounts/quotation_detail.html', {
+        'quotation': quotation,
+    })
+
+
+@login_required
+def quotation_duplicate(request, pk):
+    original = get_object_or_404(Quotation, pk=pk)
+    quotation = Quotation.objects.get(pk=pk)
+    quotation.pk = None
+    quotation.code = ''
+    quotation.status = 'draft'
+    quotation.quotation_date = date.today()
+    quotation.created_by = request.user
+    quotation.updated_by = request.user
+    quotation.save()
+    log_action(request, 'create', 'Quotation', quotation, description=f'Cloned from {original.code} to {quotation.code}')
+    messages.success(request, f'Quotation duplicated as draft {quotation.code}.')
+    return redirect('quotation_edit', pk=quotation.pk)
+
+
+@login_required
+def quotation_delete(request, pk):
+    quotation = get_object_or_404(Quotation, pk=pk)
+    code = quotation.code
+    log_action(request, 'delete', 'Quotation', quotation, description=f'Deleted quotation {code}')
+    quotation.delete()
+    messages.success(request, f'Quotation {code} deleted.')
+    return redirect('quotation_list')
+
+
+@login_required
+def quotation_pdf(request, pk):
+    quotation = get_object_or_404(Quotation.objects.select_related('client', 'lead'), pk=pk)
+    html_string = render_to_string('accounts/quotation_pdf.html', {'quotation': quotation}, request=request)
+    html_string = html_string.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},400);}</script></body>')
+    return HttpResponse(html_string)
+
+
+@login_required
+def quotation_print(request, pk):
+    return quotation_pdf(request, pk)
+
+
+@login_required
+def quotation_update_status(request, pk):
+    if request.method == 'POST':
+        quotation = get_object_or_404(Quotation, pk=pk)
+        new_status = request.POST.get('status', '').strip()
+        if new_status in dict(Quotation.STATUS_CHOICES):
+            quotation.status = new_status
+            quotation.updated_by = request.user
+            quotation.save(update_fields=['status', 'updated_by', 'updated_at'])
+            log_action(request, 'update', 'Quotation', quotation, description=f'Changed status to {new_status}')
+            messages.success(request, f'Status updated to {quotation.get_status_display()}.')
+    return redirect('quotation_detail', pk=pk)
+

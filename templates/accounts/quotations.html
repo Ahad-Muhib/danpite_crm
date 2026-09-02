@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load crm_tags %}
+{% block title %}Quotations{% endblock %}
+{% block page_title %}Quotations{% endblock %}
+{% block content %}
+
+<!-- Stat Summary Row -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="crm-card p-3 d-flex align-items-center justify-content-between">
+      <div>
+        <div class="text-muted small text-uppercase fw-semibold">Total Quotations</div>
+        <div class="fs-4 fw-bold text-dark mt-1">{{ total_count }}</div>
+      </div>
+      <div class="avatar bg-primary-subtle text-primary rounded-3 p-3">
+        <i class="bi bi-file-earmark-text fs-4"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="crm-card p-3 d-flex align-items-center justify-content-between">
+      <div>
+        <div class="text-muted small text-uppercase fw-semibold">Drafts</div>
+        <div class="fs-4 fw-bold text-secondary mt-1">{{ draft_count }}</div>
+      </div>
+      <div class="avatar bg-secondary-subtle text-secondary rounded-3 p-3">
+        <i class="bi bi-pencil-square fs-4"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="crm-card p-3 d-flex align-items-center justify-content-between">
+      <div>
+        <div class="text-muted small text-uppercase fw-semibold">Sent to Client</div>
+        <div class="fs-4 fw-bold text-info mt-1">{{ sent_count }}</div>
+      </div>
+      <div class="avatar bg-info-subtle text-info rounded-3 p-3">
+        <i class="bi bi-send fs-4"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="crm-card p-3 d-flex align-items-center justify-content-between">
+      <div>
+        <div class="text-muted small text-uppercase fw-semibold">Accepted</div>
+        <div class="fs-4 fw-bold text-success mt-1">{{ accepted_count }}</div>
+      </div>
+      <div class="avatar bg-success-subtle text-success rounded-3 p-3">
+        <i class="bi bi-check-circle fs-4"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="crm-card">
+  <div class="crm-card-header flex-wrap gap-2 d-flex justify-content-between align-items-center">
+    <form class="d-flex gap-2 search-form flex-wrap align-items-center" method="get">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search code, client, company..." style="width:230px;">
+      <select name="status" class="form-select form-select-sm" style="width:140px;">
+        <option value="">All Statuses</option>
+        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+        <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+        <option value="accepted" {% if status_filter == 'accepted' %}selected{% endif %}>Accepted</option>
+        <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+        <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+      </select>
+      <input type="date" name="date_from" value="{{ date_from }}" class="form-control form-control-sm" title="From Date" style="width:135px;">
+      <input type="date" name="date_to" value="{{ date_to }}" class="form-control form-control-sm" title="To Date" style="width:135px;">
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search me-1"></i>Filter</button>
+      {% if q or status_filter or date_from or date_to %}
+      <a href="{% url 'quotation_list' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Clear</a>
+      {% endif %}
+    </form>
+    <div class="d-flex gap-2">
+      <form method="post" id="quotation-bulk-form" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" id="bulk-action-type" value="delete">
+        {% if request.user.is_superuser %}
+        <button type="submit" class="btn btn-sm btn-outline-danger" id="bulk-delete-btn" style="display:none;"><i class="bi bi-trash me-1"></i>Delete Selected</button>
+        {% endif %}
+      </form>
+      <a href="{% url 'quotation_create' %}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Create Quotation</a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          {% if request.user.is_superuser %}<th style="width:40px;"><input type="checkbox" class="form-check-input" id="select-all-quotations" aria-label="Select all"></th>{% endif %}
+          <th>Quotation #</th>
+          <th>Recipient / Company</th>
+          <th>Contact Person</th>
+          <th>Subject</th>
+          <th>Date</th>
+          <th>Validity</th>
+          <th>Status</th>
+          <th class="text-end" style="min-width: 140px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for quo in quotations %}
+        <tr>
+          {% if request.user.is_superuser %}
+          <td><input type="checkbox" name="selected_quotations" value="{{ quo.pk }}" class="form-check-input quotation-checkbox" form="quotation-bulk-form"></td>
+          {% endif %}
+          <td>
+            <a href="{% url 'quotation_detail' quo.pk %}" class="fw-bold text-primary text-decoration-none">{{ quo.code }}</a>
+            {% if quo.updated_by %}<span class="badge bg-secondary ms-1" style="font-size:9px;" title="Edited by {{ quo.updated_by.username }}">E</span>{% endif %}
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">
+              {% if quo.company_name %}
+                {{ quo.company_name }}
+              {% elif quo.client %}
+                {{ quo.client.company|default:quo.client.name }}
+              {% elif quo.lead %}
+                {{ quo.lead.company|default:quo.lead.name }}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </div>
+            {% if quo.client %}
+              <small class="badge bg-light text-primary border" style="font-size:10px;">Client: {{ quo.client.name }}</small>
+            {% elif quo.lead %}
+              <small class="badge bg-light text-warning border" style="font-size:10px;">Lead: {{ quo.lead.name }}</small>
+            {% endif %}
+          </td>
+          <td>
+            <div>{{ quo.contact_person|default:"—" }}</div>
+            {% if quo.contact_number %}<small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ quo.contact_number }}</small>{% endif %}
+          </td>
+          <td class="text-truncate" style="max-width: 200px;" title="{{ quo.subject }}">{{ quo.subject }}</td>
+          <td style="white-space:nowrap;">{{ quo.quotation_date|date:"d M Y" }}</td>
+          <td><span class="badge bg-light text-dark border">{{ quo.valid_days }} Days</span></td>
+          <td>
+            <form method="post" action="{% url 'quotation_update_status' quo.pk %}" class="d-inline">
+              {% csrf_token %}
+              <select name="status" onchange="this.form.submit()" class="form-select form-select-sm
+                {% if quo.status == 'accepted' %}bg-success text-white border-0
+                {% elif quo.status == 'sent' %}bg-primary text-white border-0
+                {% elif quo.status == 'rejected' %}bg-danger text-white border-0
+                {% elif quo.status == 'expired' %}bg-warning text-dark border-0
+                {% else %}bg-secondary text-white border-0{% endif %}" style="width: auto; font-size: 11px; padding: 2px 20px 2px 8px; cursor: pointer;">
+                {% for s_key, s_label in quo.STATUS_CHOICES %}
+                <option value="{{ s_key }}" {% if quo.status == s_key %}selected{% endif %} class="bg-white text-dark">{{ s_label }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <a href="{% url 'quotation_detail' quo.pk %}" class="btn btn-outline-secondary" title="View Proposal"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'quotation_pdf' quo.pk %}" class="btn btn-outline-primary" target="_blank" title="Print / PDF"><i class="bi bi-printer"></i></a>
+              <a href="{% url 'quotation_edit' quo.pk %}" class="btn btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'quotation_duplicate' quo.pk %}" class="btn btn-outline-secondary" title="Duplicate / Clone"><i class="bi bi-copy"></i></a>
+              {% if request.user.is_superuser %}
+              <a href="{% url 'quotation_delete' quo.pk %}" class="btn btn-outline-danger" onclick="return confirm('Delete quotation {{ quo.code }}?');" title="Delete"><i class="bi bi-trash"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="text-center text-muted py-5">
+            <i class="bi bi-file-earmark-plus fs-1 d-block mb-2 text-secondary opacity-50"></i>
+            No quotations found. Click <strong>"Create Quotation"</strong> to generate your first software proposal.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include 'includes/pagination.html' with page_obj=quotations %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('select-all-quotations');
+  const checkboxes = document.querySelectorAll('.quotation-checkbox');
+  const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+
+  function updateBulkBtn() {
+    const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+    if (bulkDeleteBtn) {
+      bulkDeleteBtn.style.display = anyChecked ? 'inline-block' : 'none';
+    }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      checkboxes.forEach(cb => { cb.checked = selectAll.checked; });
+      updateBulkBtn();
+    });
+  }
+
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', updateBulkBtn);
+  });
+});
+</script>
+{% endblock %}

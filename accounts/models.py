@@ -251,3 +251,232 @@ class Transfer(models.Model):
 
     def __str__(self):
         return f"{self.from_account} → {self.to_account}: {self.amount}"
+
+
+DEFAULT_CRM_FEATURES = [
+    "Dashboard",
+    "User Management",
+    "Role & Permission Management",
+    "Branch Management",
+    "Activity Management",
+    "Follow-up Management",
+    "Lead Management",
+    "Quotation Management",
+    "Sales Management",
+    "Product Category & Subcategory Management",
+    "Brand Management",
+    "Organization Management",
+    "Organization Category & Type Management",
+    "Division, District, Upazila & Union Management",
+    "Sales Report",
+    "Leads Report",
+    "Project Report",
+    "Activity Report",
+    "Business Settings",
+]
+
+DEFAULT_HRM_FEATURES = [
+    "Employee Management",
+    "Department & Designation",
+    "Attendance Management",
+    "Leave Management",
+    "Holiday Management",
+    "Payroll & Payslip",
+    "Salary Advance",
+    "Employee Documents",
+    "Notice & Announcement",
+    "Employee Performance",
+    "Resignation & Exit Management",
+    "HRM Reports",
+]
+
+DEFAULT_MOBILE_FEATURES = [
+    "Dashboard",
+    "Lead Management",
+    "Follow-up Management",
+    "Customer Management",
+    "Organization Management",
+    "Activity & Task Management",
+    "Quotation Management",
+    "Sales Management",
+    "Product Management",
+    "Employee Management",
+    "Attendance Management",
+    "Leave Management",
+    "Payroll Management",
+]
+
+DEFAULT_SYSTEM_FEATURES = [
+    "Performance Management",
+    "Reports & Analytics",
+    "Calendar & Schedule",
+    "Notifications",
+    "Document Management",
+    "Approval Center",
+    "Settings",
+]
+
+DEFAULT_TECH_STACK = [
+    "Frontend: Bootstrap, Laravel Blade, HTML, CSS, JavaScript, jQuery",
+    "Backend: PHP Laravel (REST API)",
+    "Mobile App: Flutter (Android & iOS)",
+    "Database: MySQL",
+    "Authentication: Laravel Sanctum",
+    "Deployment: Linux, Apache/Nginx, Git, SSL",
+]
+
+DEFAULT_SECURITY_FEATURES = [
+    "Multi-Factor Authentication (MFA)",
+    "Role-Based Access Control (RBAC)",
+    "End-to-End Data Encryption",
+    "Secure REST API",
+    "Audit Trail & Activity Logs",
+    "Automated Backup & Disaster Recovery",
+    "SSL/TLS Secure Communication",
+    "Advanced Threat Protection",
+]
+
+DEFAULT_TRAINING_SUPPORT = [
+    "Installation",
+    "User Training",
+    "Bug Fix Support",
+    "Technical Support",
+    "Pre-recorded Video",
+    "Remote Assistance",
+]
+
+DEFAULT_DELIVERABLES = [
+    "Web Application",
+    "Android Mobile Application",
+    "REST API",
+    "Admin Panel",
+    "Source Code (One-Time License Only)",
+    "MySQL Database",
+    "User Documentation",
+]
+
+DEFAULT_PRICING_PLANS = [
+    {"package": "CRM", "license": "One-Time", "price": "BDT 100,000", "delivery_time": "10 Days", "is_selected": True},
+    {"package": "CRM + HRM", "license": "One-Time", "price": "BDT 180,000", "delivery_time": "20 Days", "is_selected": False},
+    {"package": "CRM + HRM + App", "license": "One-Time", "price": "BDT 260,000", "delivery_time": "30 Days", "is_selected": False},
+    {"package": "CRM SaaS", "license": "Setup Fee + Monthly", "price": "BDT 30,000 + BDT 3,000", "delivery_time": "7 Days", "is_selected": False},
+    {"package": "CRM + HRM SaaS", "license": "Setup Fee + Monthly", "price": "BDT 45,000 + BDT 4,000", "delivery_time": "20 Days", "is_selected": False},
+    {"package": "CRM + HRM + App SaaS", "license": "Setup Fee + Monthly", "price": "BDT 60,000 + BDT 4,500", "delivery_time": "30 Days", "is_selected": False},
+]
+
+DEFAULT_PAYMENT_TERMS = """• One-Time License:
+  - 40% Advance
+  - 30% Before Testing
+  - 30% Before Final Delivery
+
+• SaaS:
+  - Setup Fee: 100% Advance
+  - Monthly Subscription: Payable in Advance"""
+
+DEFAULT_DELIVERY_SUPPORT = """• Deployment Time: 7–30 Working Days after confirmation
+• Training: Basic system training included
+• Support: Standard technical support included"""
+
+DEFAULT_TERMS_CONDITIONS = """• Monthly subscription fee payable in advance
+• SaaS access will be activated after payment confirmation
+• Any additional customization will be charged separately
+• Client will provide Domain, Hosting and Console account (Not for SaaS)"""
+
+DEFAULT_WARRANTY = """• 3 Months Free Bug Fix Warranty (One-Time License)
+• SaaS Customers receive free updates during the active subscription."""
+
+DEFAULT_NOT_INCLUDED = """• Third-party API Charges
+• SMS Gateway Charges
+• Domain & Hosting Charges (One-Time License)
+• Google Play & Apple Developer Fees"""
+
+DEFAULT_WHY_DANPITE = """✓ Custom Software Development
+✓ Modern UI/UX
+✓ Secure Architecture
+✓ Lifetime Scalability
+✓ Dedicated Support"""
+
+
+class Quotation(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('sent', 'Sent'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('expired', 'Expired'),
+    ]
+
+    code = models.CharField(max_length=50, unique=True, blank=True)
+    quotation_date = models.DateField(null=True, blank=True)
+    valid_days = models.IntegerField(default=15)
+
+    # Linked Client / Lead
+    client = models.ForeignKey(Client, null=True, blank=True, on_delete=models.SET_NULL, related_name='quotations')
+    lead = models.ForeignKey('leads.LeadContact', null=True, blank=True, on_delete=models.SET_NULL, related_name='quotations')
+
+    # Recipient Information
+    company_name = models.CharField(max_length=200, blank=True)
+    contact_person = models.CharField(max_length=200, blank=True)
+    designation = models.CharField(max_length=150, blank=True)
+    contact_number = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(blank=True)
+    address = models.TextField(blank=True)
+
+    # Proposal Introduction
+    subject = models.CharField(max_length=300, default='Quotation for CRM & HRM Software Solution')
+    intro_letter = models.TextField(
+        blank=True,
+        default='Thank you for your interest in our CRM & HRM solution. Based on your requirements, we are pleased to submit the following quotation for our CRM & HRM Software Solution.'
+    )
+
+    # Feature Modules (JSON lists)
+    crm_features = models.JSONField(default=list, blank=True)
+    hrm_features = models.JSONField(default=list, blank=True)
+    mobile_app_features = models.JSONField(default=list, blank=True)
+    system_features = models.JSONField(default=list, blank=True)
+    tech_stack = models.JSONField(default=list, blank=True)
+    security_features = models.JSONField(default=list, blank=True)
+    training_support = models.JSONField(default=list, blank=True)
+    deliverables = models.JSONField(default=list, blank=True)
+
+    # Pricing Table & Terms
+    pricing_plans = models.JSONField(default=list, blank=True)
+    payment_terms = models.TextField(blank=True, default=DEFAULT_PAYMENT_TERMS)
+    delivery_terms = models.TextField(blank=True, default=DEFAULT_DELIVERY_SUPPORT)
+    terms_conditions = models.TextField(blank=True, default=DEFAULT_TERMS_CONDITIONS)
+    warranty = models.TextField(blank=True, default=DEFAULT_WARRANTY)
+    not_included = models.TextField(blank=True, default=DEFAULT_NOT_INCLUDED)
+    why_danpite = models.TextField(blank=True, default=DEFAULT_WHY_DANPITE)
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0, blank=True)
+    currency = models.CharField(max_length=5, choices=CURRENCY_CHOICES, default='BDT')
+
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-quotation_date', '-id']
+
+    def __str__(self):
+        return f"{self.code} - {self.company_name or (self.client.name if self.client else 'Quotation')}"
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            import re
+            existing_codes = Quotation.objects.values_list('code', flat=True)
+            max_num = 0
+            for c in existing_codes:
+                m = re.search(r'(\d+)$', c or '')
+                if m:
+                    max_num = max(max_num, int(m.group(1)))
+            candidate = max_num + 1
+            while Quotation.objects.filter(code=f"DPT-CRM-{candidate:03d}").exists():
+                candidate += 1
+            self.code = f"DPT-CRM-{candidate:03d}"
+        if not self.quotation_date:
+            from datetime import date
+            self.quotation_date = date.today()
+        super().save(*args, **kwargs)

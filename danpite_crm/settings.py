@@ -77,9 +77,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'danpite_crm.wsgi.application'
 
 # Database Configuration (Supports PostgreSQL / MySQL via DATABASE_URL or SQLite fallback)
+_db_url = os.environ.get('DATABASE_URL', '').strip() or f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+    'default': dj_database_url.parse(
+        _db_url,
         conn_max_age=600,
         conn_health_checks=True,
     )

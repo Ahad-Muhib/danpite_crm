@@ -5,7 +5,7 @@ from django.forms import inlineformset_factory
 
 from clients.models import Client
 
-from .models import (AccountCategory, BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, Transfer,
+from .models import (AccountCategory, BankAccount, Expense, ExpenseCategory, Invoice, InvoiceItem, Payment, Transfer, Quotation,
                      CURRENCY_CHOICES, METHOD_CHOICES, CATEGORY_KEY_MAP)
 
 
@@ -345,3 +345,59 @@ class TransferForm(forms.ModelForm):
             if amount > balance:
                 self.add_error('amount', f'Insufficient balance in source account. Available: {balance}')
         return cleaned
+
+
+class QuotationForm(forms.ModelForm):
+    client_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'id': 'id_client_search',
+            'placeholder': 'Type to search client by name or company...',
+            'autocomplete': 'off',
+        })
+    )
+
+    class Meta:
+        model = Quotation
+        fields = [
+            'quotation_date', 'valid_days', 'client',
+            'company_name', 'contact_person', 'designation', 'contact_number', 'email', 'address',
+            'subject', 'intro_letter', 'status', 'currency', 'total_amount',
+            'payment_terms', 'delivery_terms', 'terms_conditions',
+            'warranty', 'not_included', 'why_danpite',
+        ]
+        widgets = {
+            'client': forms.HiddenInput(attrs={'id': 'id_client_pk'}),
+            'quotation_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'valid_days': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'company_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_company_name', 'placeholder': 'Company / Organization name'}),
+            'contact_person': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contact_person', 'placeholder': 'Contact person name'}),
+            'designation': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_designation', 'placeholder': 'Designation'}),
+            'contact_number': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_contact_number', 'placeholder': 'Contact phone / mobile'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'id': 'id_email', 'placeholder': 'Email address'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'id': 'id_address', 'rows': 3, 'placeholder': 'Address'}),
+            'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Quotation subject'}),
+            'intro_letter': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'currency': forms.Select(attrs={'class': 'form-select'}),
+            'total_amount': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
+            'payment_terms': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
+            'delivery_terms': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'terms_conditions': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
+            'warranty': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'not_included': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'why_danpite': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.client:
+            self.fields['client_search'].initial = self.instance.client.name
+        if not self.instance.pk:
+            self.fields['quotation_date'].initial = date.today()
+            self.fields['valid_days'].initial = 15
+            self.fields['status'].initial = 'draft'
+            self.fields['currency'].initial = 'BDT'
+        for f in self.fields:
+            self.fields[f].required = False

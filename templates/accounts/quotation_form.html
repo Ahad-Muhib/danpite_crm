@@ -1,0 +1,734 @@
+{% extends 'base.html' %}
+{% load crm_tags %}
+{% block title %}{{ action }} Quotation{% endblock %}
+{% block page_title %}{{ action }} Quotation{% endblock %}
+
+{% block extra_head %}
+<!-- Quill CSS -->
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+<style>
+  .ql-toolbar.ql-snow {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    background: #f9fafb;
+    border-color: #dee2e6;
+  }
+  .ql-container.ql-snow {
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background: #ffffff;
+    border-color: #dee2e6;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .quill-note-editor {
+    height: 150px;
+  }
+  /* Searchable Client Dropdown */
+  .acct-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    max-height: 240px;
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+  .acct-dropdown-item {
+    padding: 8px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s ease;
+  }
+  .acct-dropdown-item:last-child {
+    border-bottom: none;
+  }
+  .acct-dropdown-item:hover, .acct-dropdown-item.active {
+    background: #eff6ff;
+  }
+  .acct-dropdown-item .client-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #111827;
+  }
+  .acct-dropdown-item .client-sub {
+    font-size: 11.5px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-xl-11">
+    <form method="post" id="quotation-form">
+      {% csrf_token %}
+
+      <!-- Top Action Bar -->
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <a href="{% url 'quotation_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back to Quotations
+          </a>
+          <span class="fs-5 fw-bold text-dark">{{ action }} Proposal / Quotation</span>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-check2-circle me-1"></i>Save Quotation
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Template Presets -->
+      <div class="crm-card p-3 mb-4 bg-light border-0 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <span class="fw-bold text-dark"><i class="bi bi-magic me-1 text-primary"></i>Quick Presets:</span>
+            <span class="text-muted small ms-1">Auto-select standard features from the proposal</span>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-preset-all">
+              <i class="bi bi-boxes me-1"></i>Full CRM + HRM + App
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-preset-crm">
+              <i class="bi bi-person-lines-fill me-1"></i>CRM Only
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-preset-crm-hrm">
+              <i class="bi bi-people me-1"></i>CRM + HRM
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-dark" id="btn-select-all">
+              Select All Features
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="btn-clear-all">
+              Clear All
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1: Client & Recipient Information -->
+      <div class="crm-card p-4 mb-4">
+        <h5 class="fw-bold text-primary mb-3"><i class="bi bi-building me-2"></i>1. Client & Recipient Details</h5>
+        
+        <div class="row g-3">
+          <!-- Client Autocomplete Search -->
+          <div class="col-12">
+            <label class="form-label fw-semibold">Search Client <span class="text-muted fw-normal">(Type to search from active clients)</span></label>
+            <div style="position: relative;">
+              {{ form.client_search }}
+              {{ form.client }}
+              <div id="client-dropdown" class="acct-dropdown" style="display: none;"></div>
+            </div>
+            <div class="form-text">Selecting a client will auto-fill Company, Contact Person, Phone, Email & Address.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Company / Organization Name</label>
+            {{ form.company_name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Contact Person</label>
+            {{ form.contact_person }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Designation</label>
+            {{ form.designation }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Contact Phone / Mobile</label>
+            {{ form.contact_number }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Email Address</label>
+            {{ form.email }}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Client Address</label>
+            {{ form.address }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Proposal Header & Intro (Quotation code auto-generates) -->
+      <div class="crm-card p-4 mb-4">
+        <h5 class="fw-bold text-primary mb-3"><i class="bi bi-file-text me-2"></i>2. Quotation Header & Subject</h5>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Quotation Date</label>
+            {{ form.quotation_date }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Validity (Days)</label>
+            {{ form.valid_days }}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Subject Line</label>
+            {{ form.subject }}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Introductory Greeting & Message (Editable Notes)</label>
+            <div id="quill-intro-letter" class="quill-note-editor"></div>
+            <textarea name="intro_letter" id="id_intro_letter" style="display:none;">{{ form.intro_letter.value|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Feature Checklists & Scope of Work -->
+      <div class="crm-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <h5 class="fw-bold text-primary mb-0"><i class="bi bi-check2-square me-2"></i>3. Scope of Work & Included Modules</h5>
+          <span class="text-muted small">Checked items will appear in the proposal document</span>
+        </div>
+
+        <div class="accordion" id="featuresAccordion">
+          <!-- CRM Features -->
+          <div class="accordion-item mb-2 border rounded">
+            <h2 class="accordion-header" id="headingCRM">
+              <button class="accordion-button fw-bold text-dark py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCRM" aria-expanded="true">
+                <i class="bi bi-person-workspace text-primary me-2"></i>CRM Features ({{ default_crm_features|length }} items)
+              </button>
+            </h2>
+            <div id="collapseCRM" class="accordion-collapse collapse show">
+              <div class="accordion-body bg-light p-3">
+                <div class="row g-2">
+                  {% for item in default_crm_features %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                      <input class="form-check-input feature-item feature-crm" type="checkbox" name="crm_features" value="{{ item }}" id="crm_{{ forloop.counter }}"
+                        {% if not quotation or item in quotation.crm_features or not quotation.crm_features %}checked{% endif %}>
+                      <label class="form-check-label small" for="crm_{{ forloop.counter }}">{{ item }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HRM Features -->
+          <div class="accordion-item mb-2 border rounded">
+            <h2 class="accordion-header" id="headingHRM">
+              <button class="accordion-button collapsed fw-bold text-dark py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHRM">
+                <i class="bi bi-people text-info me-2"></i>HRM Features ({{ default_hrm_features|length }} items)
+              </button>
+            </h2>
+            <div id="collapseHRM" class="accordion-collapse collapse show">
+              <div class="accordion-body bg-light p-3">
+                <div class="row g-2">
+                  {% for item in default_hrm_features %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                      <input class="form-check-input feature-item feature-hrm" type="checkbox" name="hrm_features" value="{{ item }}" id="hrm_{{ forloop.counter }}"
+                        {% if not quotation or item in quotation.hrm_features or not quotation.hrm_features %}checked{% endif %}>
+                      <label class="form-check-label small" for="hrm_{{ forloop.counter }}">{{ item }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile App Features -->
+          <div class="accordion-item mb-2 border rounded">
+            <h2 class="accordion-header" id="headingMobile">
+              <button class="accordion-button collapsed fw-bold text-dark py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMobile">
+                <i class="bi bi-phone text-success me-2"></i>Mobile App Features ({{ default_mobile_features|length }} items)
+              </button>
+            </h2>
+            <div id="collapseMobile" class="accordion-collapse collapse show">
+              <div class="accordion-body bg-light p-3">
+                <div class="row g-2">
+                  {% for item in default_mobile_features %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                      <input class="form-check-input feature-item feature-mobile" type="checkbox" name="mobile_app_features" value="{{ item }}" id="mob_{{ forloop.counter }}"
+                        {% if not quotation or item in quotation.mobile_app_features or not quotation.mobile_app_features %}checked{% endif %}>
+                      <label class="form-check-label small" for="mob_{{ forloop.counter }}">{{ item }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- System & General Features -->
+          <div class="accordion-item mb-2 border rounded">
+            <h2 class="accordion-header" id="headingSys">
+              <button class="accordion-button collapsed fw-bold text-dark py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSys">
+                <i class="bi bi-gear-wide-connected text-secondary me-2"></i>General / System Features ({{ default_system_features|length }} items)
+              </button>
+            </h2>
+            <div id="collapseSys" class="accordion-collapse collapse">
+              <div class="accordion-body bg-light p-3">
+                <div class="row g-2">
+                  {% for item in default_system_features %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                      <input class="form-check-input feature-item feature-sys" type="checkbox" name="system_features" value="{{ item }}" id="sys_{{ forloop.counter }}"
+                        {% if not quotation or item in quotation.system_features or not quotation.system_features %}checked{% endif %}>
+                      <label class="form-check-label small" for="sys_{{ forloop.counter }}">{{ item }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Technology Stack -->
+          <div class="accordion-item mb-2 border rounded">
+            <h2 class="accordion-header" id="headingTech">
+              <button class="accordion-button collapsed fw-bold text-dark py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTech">
+                <i class="bi bi-code-slash text-warning me-2"></i>Technology Stack ({{ default_tech_stack|length }} items)
+              </button>
+            </h2>
+            <div id="collapseTech" class="accordion-collapse collapse">
+              <div class="accordion-body bg-light p-3">
+                <div class="row g-2">
+                  {% for item in default_tech_stack %}
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input feature-item" type="checkbox" name="tech_stack" value="{{ item }}" id="tech_{{ forloop.counter }}"
+                        {% if not quotation or item in quotation.tech_stack or not quotation.tech_stack %}checked{% endif %}>
+                      <label class="form-check-label small" for="tech_{{ forloop.counter }}">{{ item }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security Features -->
+          <div class="accordion-item mb-2 border rounded">
+            <h2 class="accordion-header" id="headingSec">
+              <button class="accordion-button collapsed fw-bold text-dark py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSec">
+                <i class="bi bi-shield-lock text-danger me-2"></i>Security Features ({{ default_security_features|length }} items)
+              </button>
+            </h2>
+            <div id="collapseSec" class="accordion-collapse collapse">
+              <div class="accordion-body bg-light p-3">
+                <div class="row g-2">
+                  {% for item in default_security_features %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                      <input class="form-check-input feature-item" type="checkbox" name="security_features" value="{{ item }}" id="sec_{{ forloop.counter }}"
+                        {% if not quotation or item in quotation.security_features or not quotation.security_features %}checked{% endif %}>
+                      <label class="form-check-label small" for="sec_{{ forloop.counter }}">{{ item }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Training & Support -->
+          <div class="accordion-item mb-2 border rounded">
+            <h2 class="accordion-header" id="headingTrain">
+              <button class="accordion-button collapsed fw-bold text-dark py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTrain">
+                <i class="bi bi-headset text-primary me-2"></i>Training & Support ({{ default_training_support|length }} items)
+              </button>
+            </h2>
+            <div id="collapseTrain" class="accordion-collapse collapse">
+              <div class="accordion-body bg-light p-3">
+                <div class="row g-2">
+                  {% for item in default_training_support %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                      <input class="form-check-input feature-item" type="checkbox" name="training_support" value="{{ item }}" id="train_{{ forloop.counter }}"
+                        {% if not quotation or item in quotation.training_support or not quotation.training_support %}checked{% endif %}>
+                      <label class="form-check-label small" for="train_{{ forloop.counter }}">{{ item }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Deliverables -->
+          <div class="accordion-item border rounded">
+            <h2 class="accordion-header" id="headingDeliv">
+              <button class="accordion-button collapsed fw-bold text-dark py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDeliv">
+                <i class="bi bi-box-seam text-success me-2"></i>Deliverables ({{ default_deliverables|length }} items)
+              </button>
+            </h2>
+            <div id="collapseDeliv" class="accordion-collapse collapse">
+              <div class="accordion-body bg-light p-3">
+                <div class="row g-2">
+                  {% for item in default_deliverables %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="form-check">
+                      <input class="form-check-input feature-item" type="checkbox" name="deliverables" value="{{ item }}" id="deliv_{{ forloop.counter }}"
+                        {% if not quotation or item in quotation.deliverables or not quotation.deliverables %}checked{% endif %}>
+                      <label class="form-check-label small" for="deliv_{{ forloop.counter }}">{{ item }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Section 4: Pricing Plan Table -->
+      <div class="crm-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <h5 class="fw-bold text-primary mb-0"><i class="bi bi-tag me-2"></i>4. Pricing Plan & Package Options</h5>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-plan">
+            <i class="bi bi-plus-lg me-1"></i>Add Package Row
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle mb-2" id="plans-table">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 50px; text-align: center;">Selected</th>
+                <th>Package Name</th>
+                <th>License Type</th>
+                <th>Price</th>
+                <th>Delivery Timeline</th>
+                <th style="width: 50px; text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="plans-body">
+              {% for plan in default_pricing_plans %}
+              <tr class="plan-row">
+                <td class="text-center">
+                  <input type="checkbox" name="plan_sel_{{ forloop.counter0 }}" class="form-check-input" {% if plan.is_selected %}checked{% endif %} title="Check if this package is recommended/selected">
+                </td>
+                <td><input type="text" name="plan_pkg_{{ forloop.counter0 }}" value="{{ plan.package }}" class="form-control form-control-sm" placeholder="Package name"></td>
+                <td><input type="text" name="plan_lic_{{ forloop.counter0 }}" value="{{ plan.license }}" class="form-control form-control-sm" placeholder="One-Time / SaaS"></td>
+                <td><input type="text" name="plan_prc_{{ forloop.counter0 }}" value="{{ plan.price }}" class="form-control form-control-sm fw-bold" placeholder="Price"></td>
+                <td><input type="text" name="plan_dt_{{ forloop.counter0 }}" value="{{ plan.delivery_time }}" class="form-control form-control-sm" placeholder="Delivery time"></td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <input type="hidden" name="pricing_plans_count" id="pricing_plans_count" value="{{ default_pricing_plans|length }}">
+        </div>
+      </div>
+
+      <!-- Section 5: Terms, Warranty & Company Pitch (Rich Editable Notes) -->
+      <div class="crm-card p-4 mb-4">
+        <h5 class="fw-bold text-primary mb-3"><i class="bi bi-file-earmark-lock me-2"></i>5. Terms, Conditions & Warranty (Editable Notes)</h5>
+        
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Payment Terms</label>
+            <div id="quill-payment-terms" class="quill-note-editor"></div>
+            <textarea name="payment_terms" id="id_payment_terms" style="display:none;">{{ form.payment_terms.value|default:'' }}</textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Delivery & Support Policy</label>
+            <div id="quill-delivery-terms" class="quill-note-editor"></div>
+            <textarea name="delivery_terms" id="id_delivery_terms" style="display:none;">{{ form.delivery_terms.value|default:'' }}</textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Terms & Conditions</label>
+            <div id="quill-terms-conditions" class="quill-note-editor"></div>
+            <textarea name="terms_conditions" id="id_terms_conditions" style="display:none;">{{ form.terms_conditions.value|default:'' }}</textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Warranty Details</label>
+            <div id="quill-warranty" class="quill-note-editor"></div>
+            <textarea name="warranty" id="id_warranty" style="display:none;">{{ form.warranty.value|default:'' }}</textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Not Included / Exclusions</label>
+            <div id="quill-not-included" class="quill-note-editor"></div>
+            <textarea name="not_included" id="id_not_included" style="display:none;">{{ form.not_included.value|default:'' }}</textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Why Danpite Tech?</label>
+            <div id="quill-why-danpite" class="quill-note-editor"></div>
+            <textarea name="why_danpite" id="id_why_danpite" style="display:none;">{{ form.why_danpite.value|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 6: Status & Currency -->
+      <div class="crm-card p-4 mb-4">
+        <div class="row g-3 align-items-center">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Quotation Status</label>
+            {{ form.status }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Currency</label>
+            {{ form.currency }}
+          </div>
+          <div class="col-md-4 text-end pt-3">
+            <a href="{% url 'quotation_list' %}" class="btn btn-secondary me-2">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2-circle me-1"></i>Save Quotation</button>
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- Quill JS -->
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Clients Data for Autocomplete Search
+  var clientsData = [
+    {% for c in clients %}
+    {
+      pk: {{ c.pk }},
+      name: "{{ c.name|escapejs }}",
+      company: "{{ c.company|default:''|escapejs }}",
+      phone: "{{ c.phone|default:c.mobile|default:''|escapejs }}",
+      email: "{{ c.email|default:''|escapejs }}",
+      address: "{{ c.address|default:''|escapejs }}"
+    },
+    {% endfor %}
+  ];
+
+  var clientSearchInput = document.getElementById('id_client_search');
+  var clientPkInput = document.getElementById('id_client_pk');
+  var clientDropdown = document.getElementById('client-dropdown');
+
+  var companyNameInput = document.getElementById('id_company_name');
+  var contactPersonInput = document.getElementById('id_contact_person');
+  var contactNumberInput = document.getElementById('id_contact_number');
+  var emailInput = document.getElementById('id_email');
+  var addressInput = document.getElementById('id_address');
+
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderClientDropdown(items) {
+    clientDropdown.innerHTML = '';
+    if (!items.length) {
+      clientDropdown.style.display = 'none';
+      return;
+    }
+    items.forEach(function(c) {
+      var item = document.createElement('div');
+      item.className = 'acct-dropdown-item';
+      var subtitle = [c.company, c.phone, c.address].filter(Boolean).join(' · ');
+      item.innerHTML = '<div class="client-title">' + escHtml(c.name) + (c.company ? ' <span class="badge bg-light text-dark fw-normal border ms-1">' + escHtml(c.company) + '</span>' : '') + '</div>'
+                     + (subtitle ? '<div class="client-sub">' + escHtml(subtitle) + '</div>' : '');
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        clientSearchInput.value = c.name;
+        if (clientPkInput) clientPkInput.value = c.pk;
+        if (companyNameInput) companyNameInput.value = c.company || c.name;
+        if (contactPersonInput) contactPersonInput.value = c.name;
+        if (contactNumberInput) contactNumberInput.value = c.phone;
+        if (emailInput) emailInput.value = c.email;
+        if (addressInput) addressInput.value = c.address;
+        clientDropdown.style.display = 'none';
+      });
+      clientDropdown.appendChild(item);
+    });
+    clientDropdown.style.display = 'block';
+  }
+
+  function closeClientDropdown() {
+    if (clientDropdown) clientDropdown.style.display = 'none';
+  }
+
+  if (clientSearchInput) {
+    clientSearchInput.addEventListener('input', function() {
+      var q = this.value.trim().toLowerCase();
+      if (!q) {
+        if (clientPkInput) clientPkInput.value = '';
+        closeClientDropdown();
+        return;
+      }
+      var results = clientsData.filter(function(c) {
+        return (c.name && c.name.toLowerCase().includes(q)) ||
+               (c.company && c.company.toLowerCase().includes(q)) ||
+               (c.phone && c.phone.toLowerCase().includes(q)) ||
+               (c.email && c.email.toLowerCase().includes(q));
+      });
+      renderClientDropdown(results);
+    });
+
+    clientSearchInput.addEventListener('focus', function() {
+      var q = this.value.trim().toLowerCase();
+      if (q) {
+        var results = clientsData.filter(function(c) {
+          return (c.name && c.name.toLowerCase().includes(q)) ||
+                 (c.company && c.company.toLowerCase().includes(q)) ||
+                 (c.phone && c.phone.toLowerCase().includes(q)) ||
+                 (c.email && c.email.toLowerCase().includes(q));
+        });
+        renderClientDropdown(results);
+      } else if (clientsData.length > 0) {
+        renderClientDropdown(clientsData.slice(0, 10));
+      }
+    });
+
+    clientSearchInput.addEventListener('blur', function() {
+      setTimeout(closeClientDropdown, 200);
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#id_client_search') && !e.target.closest('#client-dropdown')) {
+      closeClientDropdown();
+    }
+  });
+
+  // Quill Editor Initializer
+  function makeQuill(selector, placeholder) {
+    var el = document.querySelector(selector);
+    if (!el) return null;
+    return new Quill(selector, {
+      theme: 'snow',
+      placeholder: placeholder,
+      modules: {
+        toolbar: [
+          [{ 'header': [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          [{ 'color': [] }, { 'background': [] }],
+          ['clean']
+        ]
+      }
+    });
+  }
+
+  var editors = {
+    intro_letter: makeQuill('#quill-intro-letter', 'Write introductory greeting message...'),
+    payment_terms: makeQuill('#quill-payment-terms', 'Write payment terms...'),
+    delivery_terms: makeQuill('#quill-delivery-terms', 'Write delivery and support terms...'),
+    terms_conditions: makeQuill('#quill-terms-conditions', 'Write terms & conditions...'),
+    warranty: makeQuill('#quill-warranty', 'Write warranty details...'),
+    not_included: makeQuill('#quill-not-included', 'Write exclusions...'),
+    why_danpite: makeQuill('#quill-why-danpite', 'Write why choose Danpite Tech...'),
+  };
+
+  // Populate Editors from hidden textareas
+  for (var key in editors) {
+    var q = editors[key];
+    if (!q) continue;
+    var field = document.getElementById('id_' + key);
+    if (field && field.value && field.value.trim()) {
+      var val = field.value.trim();
+      if (val.indexOf('<p>') !== -1 || val.indexOf('<ul>') !== -1 || val.indexOf('<li>') !== -1 || val.indexOf('<br>') !== -1) {
+        q.root.innerHTML = val;
+      } else {
+        q.setText(val);
+      }
+    }
+  }
+
+  // Preset Buttons
+  document.getElementById('btn-preset-all')?.addEventListener('click', function() {
+    document.querySelectorAll('.feature-item').forEach(function(cb) { cb.checked = true; });
+  });
+
+  document.getElementById('btn-preset-crm')?.addEventListener('click', function() {
+    document.querySelectorAll('.feature-item').forEach(function(cb) { cb.checked = false; });
+    document.querySelectorAll('.feature-crm').forEach(function(cb) { cb.checked = true; });
+  });
+
+  document.getElementById('btn-preset-crm-hrm')?.addEventListener('click', function() {
+    document.querySelectorAll('.feature-item').forEach(function(cb) { cb.checked = false; });
+    document.querySelectorAll('.feature-crm').forEach(function(cb) { cb.checked = true; });
+    document.querySelectorAll('.feature-hrm').forEach(function(cb) { cb.checked = true; });
+  });
+
+  document.getElementById('btn-select-all')?.addEventListener('click', function() {
+    document.querySelectorAll('.feature-item').forEach(function(cb) { cb.checked = true; });
+  });
+
+  document.getElementById('btn-clear-all')?.addEventListener('click', function() {
+    document.querySelectorAll('.feature-item').forEach(function(cb) { cb.checked = false; });
+  });
+
+  // Dynamic Pricing Table
+  var plansBody = document.getElementById('plans-body');
+  var countInput = document.getElementById('pricing_plans_count');
+
+  function updateRowCount() {
+    var rows = plansBody.querySelectorAll('.plan-row');
+    countInput.value = rows.length;
+    rows.forEach(function(row, idx) {
+      row.querySelector('input[type="checkbox"]').name = 'plan_sel_' + idx;
+      row.querySelectorAll('input[type="text"]')[0].name = 'plan_pkg_' + idx;
+      row.querySelectorAll('input[type="text"]')[1].name = 'plan_lic_' + idx;
+      row.querySelectorAll('input[type="text"]')[2].name = 'plan_prc_' + idx;
+      row.querySelectorAll('input[type="text"]')[3].name = 'plan_dt_' + idx;
+    });
+  }
+
+  document.getElementById('btn-add-plan')?.addEventListener('click', function() {
+    var idx = plansBody.querySelectorAll('.plan-row').length;
+    var tr = document.createElement('tr');
+    tr.className = 'plan-row';
+    tr.innerHTML = `
+      <td class="text-center"><input type="checkbox" name="plan_sel_${idx}" class="form-check-input"></td>
+      <td><input type="text" name="plan_pkg_${idx}" class="form-control form-control-sm" placeholder="Package name"></td>
+      <td><input type="text" name="plan_lic_${idx}" class="form-control form-control-sm" placeholder="One-Time / SaaS"></td>
+      <td><input type="text" name="plan_prc_${idx}" class="form-control form-control-sm fw-bold" placeholder="Price"></td>
+      <td><input type="text" name="plan_dt_${idx}" class="form-control form-control-sm" placeholder="Delivery time"></td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i class="bi bi-trash"></i></button>
+      </td>
+    `;
+    plansBody.appendChild(tr);
+    updateRowCount();
+  });
+
+  plansBody?.addEventListener('click', function(e) {
+    if (e.target.closest('.btn-remove-row')) {
+      var row = e.target.closest('.plan-row');
+      if (plansBody.querySelectorAll('.plan-row').length > 1) {
+        row.remove();
+        updateRowCount();
+      } else {
+        alert('You must have at least one pricing package row.');
+      }
+    }
+  });
+
+  // Sync Quill HTML to hidden fields on Form Submit
+  document.getElementById('quotation-form').addEventListener('submit', function() {
+    for (var key in editors) {
+      var q = editors[key];
+      if (!q) continue;
+      var field = document.getElementById('id_' + key);
+      if (field) {
+        field.value = q.root.innerHTML;
+      }
+    }
+  });
+
+});
+</script>
+{% endblock %}

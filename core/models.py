@@ -46,7 +46,7 @@ CURRENCY_SYMBOLS = {
 
 
 class CurrencySettings(models.Model):
-    currency_code = models.CharField(max_length=10, choices=CURRENCY_CHOICES, default='USD')
+    currency_code = models.CharField(max_length=10, choices=CURRENCY_CHOICES, default='BDT')
 
     class Meta:
         verbose_name = 'Currency Settings'

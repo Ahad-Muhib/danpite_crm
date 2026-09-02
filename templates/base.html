@@ -114,6 +114,8 @@
             <span class="material-symbols-outlined arrow">expand_more</span>
           </a>
           <div class="collapse submenu {% if '/accounts/' in request.path %}show{% endif %}" id="accMenu">
+            <a href="{% url 'quotation_list' %}"
+              class="nav-link {% if 'quotation' in request.path %}active{% endif %}">Quotations</a>
             <a href="{% url 'invoice_list' %}"
               class="nav-link {% if request.resolver_match.url_name == 'invoice_list' %}active{% endif %}">Invoices</a>
             <a href="{% url 'payment_list' %}"

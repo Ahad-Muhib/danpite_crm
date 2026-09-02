@@ -153,7 +153,7 @@ class Deal(models.Model):
     pipeline = models.CharField(max_length=30, choices=PIPELINE, default='sales')
     stage = models.CharField(max_length=30, choices=STAGE, default='generated')
     value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    currency = models.CharField(max_length=10, default='USD')
+    currency = models.CharField(max_length=10, default='BDT')
     close_date = models.DateField(null=True, blank=True)
     next_follow_up = models.DateField(null=True, blank=True)
     deal_agent = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='agent_deals')
