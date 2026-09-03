@@ -75,10 +75,14 @@
       </div>
 
       <!-- Subject & Intro -->
+      {% if quotation.subject or quotation.intro_letter|render_rich_text %}
       <div class="bg-light p-3 rounded-3 mb-4 border">
-        <div class="fw-bold text-dark mb-1">Subject: {{ quotation.subject }}</div>
-        <p class="mb-0 text-muted small">{{ quotation.intro_letter|linebreaksbr }}</p>
+        {% if quotation.subject %}<div class="fw-bold text-dark mb-1">Subject: {{ quotation.subject }}</div>{% endif %}
+        {% if quotation.intro_letter|render_rich_text %}
+        <div class="mb-0 text-muted small">{{ quotation.intro_letter|render_rich_text }}</div>
+        {% endif %}
       </div>
+      {% endif %}
 
       <!-- Pricing Plans Table -->
       {% with table=quotation.pricing_plans|normalize_pricing_table %}

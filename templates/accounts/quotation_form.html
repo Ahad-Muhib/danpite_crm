@@ -1318,9 +1318,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Serialize Dynamic Pricing Table JSON
     serializePricingTable();
 
+    // Helper to extract clean HTML or empty string if Quill only contains whitespace
+    function getCleanQuillHtml(q) {
+      if (!q) return '';
+      var text = q.getText().trim();
+      var html = q.root.innerHTML.trim();
+      if (!text && html.indexOf('<img') === -1 && html.indexOf('<table') === -1) {
+        return '';
+      }
+      return html;
+    }
+
     // Sync Intro Letter
     if (introLetterEditor && introField) {
-      introField.value = introLetterEditor.root.innerHTML;
+      introField.value = getCleanQuillHtml(introLetterEditor);
     }
 
     // Sync Dynamic Feature Section Editors
@@ -1331,7 +1342,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (editorDiv && hiddenArea) {
         var qInst = Quill.find(editorDiv);
         if (qInst) {
-          hiddenArea.value = qInst.root.innerHTML;
+          hiddenArea.value = getCleanQuillHtml(qInst);
         }
       }
     });
@@ -1345,7 +1356,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (editorDiv && hiddenArea) {
           var qInst = Quill.find(editorDiv);
           if (qInst) {
-            hiddenArea.value = qInst.root.innerHTML;
+            hiddenArea.value = getCleanQuillHtml(qInst);
           }
         }
       });

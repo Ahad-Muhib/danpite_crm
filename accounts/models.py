@@ -461,6 +461,11 @@ class Quotation(models.Model):
         return f"{self.code} - {self.company_name or (self.client.name if self.client else 'Quotation')}"
 
     def save(self, *args, **kwargs):
+        if self.intro_letter:
+            import re
+            plain = re.sub(r'<[^>]*>', '', str(self.intro_letter)).replace('&nbsp;', ' ').replace('&#160;', ' ').strip()
+            if not plain and not any(tag in str(self.intro_letter).lower() for tag in ('<img', '<hr', '<table', '<iframe')):
+                self.intro_letter = ''
         if not self.code:
             import re
             existing_codes = Quotation.objects.values_list('code', flat=True)

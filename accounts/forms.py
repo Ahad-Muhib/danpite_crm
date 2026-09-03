@@ -406,6 +406,15 @@ class QuotationForm(forms.ModelForm):
         for f in self.fields:
             self.fields[f].required = False
 
+    def clean_intro_letter(self):
+        val = self.cleaned_data.get('intro_letter', '')
+        if val:
+            import re
+            text_content = re.sub(r'<[^>]*>', '', str(val)).replace('&nbsp;', ' ').replace('&#160;', ' ').strip()
+            if not text_content and not any(tag in str(val).lower() for tag in ('<img', '<hr', '<table', '<iframe')):
+                return ''
+        return val
+
     def clean(self):
         cleaned = super().clean()
         client = cleaned.get('client')

@@ -430,10 +430,10 @@
 
   <!-- Subject & Letter Body -->
   {% if quotation.subject %}<div class="subject-line">Subject: {{ quotation.subject }}</div>{% endif %}
-  {% if quotation.intro_letter %}
+  {% if quotation.intro_letter and quotation.intro_letter|render_rich_text %}
   <div class="letter-paragraph">
     <div>Dear Sir,</div>
-    <p style="margin-top: 4px;">{{ quotation.intro_letter }}</p>
+    <div style="margin-top: 4px;">{{ quotation.intro_letter|render_rich_text }}</div>
     <div style="margin-top: 4px;">
       Address: House No. 1, 4th floor Walton Plaza building, Block B Road-2, Mirpur-6, Dhaka 1216<br>
       www.danpitetech.com

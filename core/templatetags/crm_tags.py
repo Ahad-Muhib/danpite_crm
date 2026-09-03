@@ -63,11 +63,17 @@ def render_rich_text(value):
     if not value:
         return ''
     val = str(value).strip()
+    import re
+    # Check if empty HTML (e.g. <p><br></p>, <p></p>, <p>&nbsp;</p>, etc.)
+    text_content = re.sub(r'<[^>]*>', '', val).replace('&nbsp;', ' ').replace('&#160;', ' ').strip()
+    if not text_content and not any(tag in val.lower() for tag in ('<img', '<hr', '<table', '<iframe')):
+        return ''
     from django.utils.safestring import mark_safe
     from django.template.defaultfilters import linebreaksbr
-    if any(tag in val for tag in ('<p>', '<ul>', '<ol>', '<br>', '<div>', '<strong>', '<em>', '<li>')):
+    if any(tag in val.lower() for tag in ('<p>', '<ul>', '<ol>', '<br>', '<br/>', '<br />', '<div>', '<strong>', '<em>', '<li>', '<span>', '<h1', '<h2', '<h3', '<h4', '<h5', '<h6', '<table>')):
         return mark_safe(val)
     return mark_safe(linebreaksbr(val))
+
 
 
 @register.filter(name='normalize_pricing_table')

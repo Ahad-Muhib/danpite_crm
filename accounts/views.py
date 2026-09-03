@@ -1383,13 +1383,22 @@ def _extract_quotation_lists(request):
                 'rows': legacy_rows
             }
 
+    def _clean_content(text):
+        if not text:
+            return ''
+        import re
+        plain = re.sub(r'<[^>]*>', '', str(text)).replace('&nbsp;', ' ').replace('&#160;', ' ').strip()
+        if not plain and not any(tag in str(text).lower() for tag in ('<img', '<hr', '<table', '<iframe')):
+            return ''
+        return text
+
     # Extract Dynamic Feature Sections
     sections_count = int(request.POST.get('sections_count', 0))
     feature_sections = []
     for i in range(sections_count):
         title = request.POST.get(f'section_title_{i}', '').strip()
-        content = request.POST.get(f'section_content_{i}', '').strip()
-        if title or (content and content not in ('<p><br></p>', '<p></p>', '')):
+        content = _clean_content(request.POST.get(f'section_content_{i}', '').strip())
+        if title or content:
             feature_sections.append({
                 'title': title,
                 'content': content
@@ -1400,8 +1409,8 @@ def _extract_quotation_lists(request):
     terms_sections = []
     for i in range(terms_count):
         title = request.POST.get(f'term_title_{i}', '').strip()
-        content = request.POST.get(f'term_content_{i}', '').strip()
-        if title or (content and content not in ('<p><br></p>', '<p></p>', '')):
+        content = _clean_content(request.POST.get(f'term_content_{i}', '').strip())
+        if title or content:
             terms_sections.append({
                 'title': title or 'Terms Section',
                 'content': content
