@@ -83,9 +83,20 @@ class EmployeeForm(forms.ModelForm):
                 instance.user = user
                 instance.save()
                 instance._raw_password = raw_password
-            elif instance.user and self.cleaned_data.get('login_password'):
-                instance.user.set_password(self.cleaned_data['login_password'])
-                instance.user.save()
+            elif instance.user:
+                user_updated = False
+                if self.cleaned_data.get('login_password'):
+                    instance.user.set_password(self.cleaned_data['login_password'])
+                    user_updated = True
+                if instance.email and instance.user.email != instance.email:
+                    instance.user.email = instance.email
+                    user_updated = True
+                if instance.name:
+                    instance.user.first_name = instance.name.split()[0]
+                    instance.user.last_name = ' '.join(instance.name.split()[1:]) if len(instance.name.split()) > 1 else ''
+                    user_updated = True
+                if user_updated:
+                    instance.user.save()
         return instance
 
 

@@ -25,21 +25,24 @@
 
     {% if form.errors %}
     <div class="alert alert-danger py-2" style="font-size:13px;">
-      <i class="bi bi-exclamation-circle me-1"></i> Invalid username or password.
+      <i class="bi bi-exclamation-circle me-1"></i> Invalid email/username or password.
     </div>
     {% endif %}
 
     <form method="post">
       {% csrf_token %}
       <div class="mb-3">
-        <label class="form-label fw-medium">Username</label>
+        <label class="form-label fw-medium">Email or Username</label>
         <div class="input-group">
-          <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
-          <input type="text" name="username" class="form-control border-start-0 ps-0" placeholder="Enter username" autofocus required>
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-person-badge text-muted"></i></span>
+          <input type="text" name="username" class="form-control border-start-0 ps-0" placeholder="Enter your email or username" autofocus required>
         </div>
       </div>
       <div class="mb-4">
-        <label class="form-label fw-medium">Password</label>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <label class="form-label fw-medium mb-0">Password</label>
+          <a href="{% url 'password_reset' %}" class="small text-primary text-decoration-none fw-medium">Forgot password?</a>
+        </div>
         <div class="input-group">
           <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
           <input type="password" name="password" class="form-control border-start-0 ps-0" placeholder="Enter password" required>
