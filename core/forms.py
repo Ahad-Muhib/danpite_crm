@@ -85,12 +85,13 @@ class EmailOrUsernamePasswordResetForm(forms.Form):
         from django.contrib.auth import get_user_model
         from django.db.models import Q
         UserModel = get_user_model()
-        active_users = UserModel._default_manager.filter(
+        active_superusers = UserModel._default_manager.filter(
             Q(email__iexact=email_or_username) | Q(username__iexact=email_or_username),
             is_active=True,
+            is_superuser=True,
         )
         return (
-            u for u in active_users
+            u for u in active_superusers
             if u.has_usable_password() and u.email and u.email.strip()
         )
 
